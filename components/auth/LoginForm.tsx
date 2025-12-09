@@ -80,16 +80,42 @@ export function LoginForm() {
         } else {
           setErrors({ general: error.message })
         }
+        setIsLoading(false)
         return
       }
 
+      // Login successful - verify we have data
+      if (!data || !data.user) {
+        setErrors({ general: 'Login succeeded but no user data received. Please try again.' })
+        setIsLoading(false)
+        return
+      }
+
+      console.log('✅ Login successful, user:', data.user.email)
+      
       // Success animation
       setSuccess(true)
       
-      // Simple redirect - no checks, no middleware complications
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 1000)
+      // Wait for cookies to be set, then redirect
+      // Use a longer delay to ensure cookies are available to middleware
+      setTimeout(async () => {
+        // Verify session before redirecting
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log('Session check:', session ? 'Found ✅' : 'Not found ❌')
+        
+        if (session) {
+          console.log('Redirecting to dashboard...')
+          // Force a hard redirect - this ensures cookies are sent with the request
+          window.location.replace('/dashboard')
+        } else {
+          console.log('Session not ready, waiting longer...')
+          // Wait more and try again
+          setTimeout(() => {
+            console.log('Force redirecting to dashboard...')
+            window.location.replace('/dashboard')
+          }, 2000)
+        }
+      }, 3000)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
     } finally {
