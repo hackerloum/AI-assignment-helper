@@ -15,23 +15,39 @@ export function useCredits() {
       
       if (!user) {
         setCredits(0)
+        setLoading(false)
         return
       }
 
-      // Get user profile with credits
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('credits, subscription_tier')
+      // Get user credits from the correct table
+      const { data: creditRecord, error } = await supabase
+        .from('user_credits')
+        .select('balance')
         .eq('user_id', user.id)
         .single()
 
-      if (profile) {
-        // If user has subscription, set to unlimited (999)
-        if (profile.subscription_tier === 'premium' || profile.subscription_tier === 'pro') {
-          setCredits(999)
+      if (error) {
+        // If record doesn't exist, create it with default 50 credits for new users
+        if (error.code === 'PGRST116') {
+          // No rows returned - create new record
+          const { data: newRecord, error: insertError } = await supabase
+            .from('user_credits')
+            .insert({ user_id: user.id, balance: 50 })
+            .select('balance')
+            .single()
+
+          if (insertError) {
+            console.error('Error creating credit record:', insertError)
+            setCredits(50) // Default credits even if insert fails
+          } else {
+            setCredits(newRecord?.balance || 50)
+          }
         } else {
-          setCredits(profile.credits || 0)
+          console.error('Error fetching credits:', error)
+          setCredits(0)
         }
+      } else if (creditRecord) {
+        setCredits(creditRecord.balance || 0)
       } else {
         setCredits(0)
       }

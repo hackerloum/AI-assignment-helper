@@ -70,6 +70,10 @@ CREATE POLICY "Users can update own credits"
   ON user_credits FOR UPDATE
   USING (auth.uid() = user_id);
 
+CREATE POLICY "Users can insert own credits"
+  ON user_credits FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
 -- Policy: Users can only see their own transactions
 CREATE POLICY "Users can view own transactions"
   ON credit_transactions FOR SELECT
