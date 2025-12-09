@@ -4,6 +4,7 @@ export const CREDIT_COSTS = {
   grammar: 3,
   citation: 2,
   summarizer: 4,
+  powerpoint: 6,
 } as const;
 
 export const FREE_CREDITS_ON_SIGNUP = 50;
@@ -40,6 +41,11 @@ export const TOOL_DESCRIPTIONS = {
     title: "Text Summarizer",
     description: "Summarize long texts into concise summaries",
     icon: "📄",
+  },
+  powerpoint: {
+    title: "PowerPoint Maker",
+    description: "Create professional presentations with AI",
+    icon: "📊",
   },
 } as const;
 

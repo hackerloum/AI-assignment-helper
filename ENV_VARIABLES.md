@@ -33,7 +33,39 @@ GEMINI_API_KEY=your_gemini_api_key
 2. Create a new API key
 3. Copy the key (it's only shown once!)
 
-**Note:** The application uses Google's Gemini 2.5 Flash model for all AI features.
+**Note:** The application uses Google's Gemini 2.5 Flash model for most AI features (essay writing, paraphrasing, grammar checking, citations, summarization, research).
+
+### OpenAI API Configuration (for PowerPoint Generation)
+
+```env
+OPENAI_API_KEY=your_openai_api_key
+```
+
+**Where to get it:**
+1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Sign in or create an account
+3. Navigate to **API Keys** section
+4. Click **Create new secret key**
+5. Copy the key (it's only shown once!)
+
+**Note:** The application uses OpenAI's GPT-4o-mini model specifically for enhanced PowerPoint presentation generation. This provides higher quality presentations with speaker notes, visual suggestions, and better structure.
+
+### PowerPoint Generator API Configuration (for .pptx File Generation)
+
+```env
+PPTX_API_BEARER_TOKEN=your_powerpoint_api_bearer_token
+PPTX_API_USERNAME=your_powerpoint_api_username
+PPTX_API_PASSWORD=your_powerpoint_api_password
+PPTX_API_KEY=your_powerpoint_api_key
+```
+
+**Where to get them:**
+1. Go to [PowerPoint Generator API](https://powerpointgeneratorapi.com/)
+2. Sign up for an account
+3. Get your credentials from the dashboard
+4. Use the bearer token for authentication (recommended) or username/password/key
+
+**Note:** This API is used to create actual .pptx PowerPoint files. The bearer token is the simplest authentication method. If you have a pre-generated token, only `PPTX_API_BEARER_TOKEN` is required.
 
 ### App Configuration
 
@@ -119,6 +151,14 @@ After setting up environment variables, verify they're working:
 - Ensure key hasn't been revoked
 - Verify the API key has access to Gemini models
 
+### "OpenAI API error" (PowerPoint generation)
+
+- Verify `OPENAI_API_KEY` is correct
+- Check OpenAI account has available credits/quota
+- Ensure key hasn't been revoked or expired
+- Verify the API key has access to GPT-4o-mini model
+- Check billing information is set up in OpenAI account
+
 ### Authentication not working
 
 - Verify `NEXT_PUBLIC_APP_URL` matches your actual URL
@@ -132,7 +172,14 @@ After setting up environment variables, verify they're working:
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Client | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Client | Supabase anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server | Supabase service role key |
-| `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key |
+| `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key (for most AI features) |
+| `OPENAI_API_KEY` | ✅ | Server | OpenAI API key (for PowerPoint content generation) |
+| `PPTX_API_BEARER_TOKEN` | ⚠️ | Server | PowerPoint Generator API bearer token (for .pptx files) |
+| `PPTX_API_USERNAME` | ➖ | Server | PowerPoint API username (alternative to bearer token) |
+| `PPTX_API_PASSWORD` | ➖ | Server | PowerPoint API password (alternative to bearer token) |
+| `PPTX_API_KEY` | ➖ | Server | PowerPoint API key (alternative to bearer token) |
 | `NEXT_PUBLIC_APP_URL` | ✅ | Client | Application URL |
 | `ZENOPAY_API_KEY` | ✅ | Server | ZenoPay API key for mobile money payments (handles all providers) |
+
+**Legend:** ✅ = Required, ⚠️ = Optional but recommended, ➖ = Optional alternative
 

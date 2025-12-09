@@ -62,7 +62,8 @@ export async function getUserCredits(
 export async function deductCredits(
   userId: string,
   toolType: keyof typeof CREDIT_COSTS,
-  supabase?: SupabaseClient
+  supabase?: SupabaseClient,
+  customCost?: number
 ): Promise<{ success: boolean; remainingCredits: number }> {
   // If supabase client is provided, use it; otherwise create a new one
   let client = supabase;
@@ -71,7 +72,7 @@ export async function deductCredits(
     client = await createClient();
   }
 
-  const cost = CREDIT_COSTS[toolType];
+  const cost = customCost ?? CREDIT_COSTS[toolType];
   console.log(`[deductCredits] Attempting to deduct ${cost} credits for ${toolType} tool`);
 
   // Get current balance (pass the client to avoid creating another one)
