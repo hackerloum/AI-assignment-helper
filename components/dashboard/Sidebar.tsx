@@ -128,7 +128,7 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
                 <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-white text-lg">AI Helper</span>
+                <span className="font-bold text-white text-lg">Assignment Helper</span>
               </Link>
             ) : (
               <Link href="/dashboard" className="flex items-center justify-center w-full">

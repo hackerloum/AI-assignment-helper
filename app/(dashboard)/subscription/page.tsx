@@ -2,56 +2,168 @@
 
 import { motion } from 'framer-motion'
 import { CreditCard, Check, Zap, Crown, Infinity } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useUser } from '@/hooks/useUser'
+import { initiateSubscriptionPayment } from '@/app/actions/subscription-actions'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-react'
 
 const plans = [
   {
-    name: 'Free',
-    price: '$0',
+    id: 'free',
+    name: 'Free Trial',
+    price: '0',
+    currency: 'TZS',
     period: 'forever',
     icon: Zap,
     color: 'from-slate-500 to-slate-600',
     features: [
-      '3 credits per day',
-      'Basic AI tools',
-      'Email support',
-      'Community access',
+      '3 free actions per day',
+      'Access to all AI features',
+      'Basic support',
+      'No credit card required',
+      'No time limit',
     ],
     current: true,
+    href: '/dashboard',
   },
   {
-    name: 'Premium',
-    price: '$9.99',
-    period: 'per month',
+    id: 'daily',
+    name: 'Daily Pass',
+    price: '500',
+    currency: 'TZS',
+    period: 'per day',
     icon: Crown,
     color: 'from-amber-500 to-orange-500',
     features: [
-      'Unlimited credits',
-      'All AI tools',
+      'Unlimited tool access for 24 hours',
+      'All AI features included',
+      'No commitment required',
+      'Pay with mobile money',
+      'Instant activation',
       'Priority support',
-      'Advanced features',
-      'Export options',
+    ],
+    current: false,
+    popular: false,
+    href: '/purchase',
+  },
+  {
+    id: 'monthly',
+    name: 'Monthly Pass',
+    price: '5,000',
+    currency: 'TZS',
+    period: 'per month',
+    icon: Infinity,
+    color: 'from-blue-600 to-purple-600',
+    features: [
+      'Everything in Daily Pass',
+      'Unlimited access for 30 days',
+      'Priority support',
+      'Usage analytics',
+      'Save 67% vs daily',
+      'Cancel anytime',
+      'Early access to new features',
     ],
     current: false,
     popular: true,
-  },
-  {
-    name: 'Pro',
-    price: '$19.99',
-    period: 'per month',
-    icon: Infinity,
-    color: 'from-purple-500 to-pink-500',
-    features: [
-      'Everything in Premium',
-      'API access',
-      'Custom integrations',
-      'Dedicated support',
-      'Team collaboration',
-    ],
-    current: false,
+    href: '/purchase',
   },
 ]
 
 export default function SubscriptionPage() {
+  const { user } = useUser()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<'daily' | 'monthly' | null>(null)
+  const [loading, setLoading] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    email: '',
+    name: '',
+    phone: '',
+  })
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        email: user.email || '',
+        name: user.user_metadata?.full_name || user.user_metadata?.name || '',
+        phone: '',
+      })
+    }
+
+    // Show success message if payment was successful
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('success') === 'true') {
+        toast.success('Payment completed successfully! Your pass is now active.')
+        // Clean up URL
+        window.history.replaceState({}, '', '/subscription')
+      }
+    }
+  }, [user])
+
+  const handlePurchase = (planType: 'daily' | 'monthly') => {
+    setSelectedPlan(planType)
+    setDialogOpen(true)
+  }
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedPlan) return
+
+    setLoading(selectedPlan)
+
+    // Validate form data
+    if (!formData.email || !formData.name || !formData.phone) {
+      toast.error('Please fill in all required fields')
+      setLoading(null)
+      return
+    }
+
+    // Validate phone number format (Tanzanian: 07XXXXXXXX)
+    const phoneRegex = /^07\d{8}$/
+    const cleanedPhone = formData.phone.replace(/\s+/g, '')
+    if (!phoneRegex.test(cleanedPhone)) {
+      toast.error('Invalid phone number. Please use format: 07XXXXXXXX')
+      setLoading(null)
+      return
+    }
+
+    try {
+      const result = await initiateSubscriptionPayment({
+        planType: selectedPlan,
+        buyerEmail: formData.email,
+        buyerName: formData.name,
+        buyerPhone: cleanedPhone,
+      })
+
+      if (result.success) {
+        if (result.paymentUrl) {
+          toast.success('Payment initiated successfully!')
+          setDialogOpen(false)
+          window.location.href = result.paymentUrl
+        } else {
+          toast.success('Payment initiated successfully!')
+          setDialogOpen(false)
+        }
+      } else {
+        toast.error(result.error || 'Failed to initiate payment')
+      }
+    } catch (error) {
+      toast.error('An error occurred')
+    } finally {
+      setLoading(null)
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
@@ -98,8 +210,9 @@ export default function SubscriptionPage() {
                 <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
                 <div className="flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-bold text-white">{plan.price}</span>
-                  <span className="text-slate-400">/{plan.period}</span>
+                  <span className="text-xl text-slate-400">{plan.currency}</span>
                 </div>
+                <p className="text-sm text-slate-400 mt-1">{plan.period}</p>
               </div>
 
               <ul className="space-y-3 mb-6">
@@ -112,16 +225,28 @@ export default function SubscriptionPage() {
               </ul>
 
               <motion.button
-                className={`w-full py-3 rounded-xl font-semibold transition-all ${
+                onClick={() => !plan.current && handlePurchase(plan.id as 'daily' | 'monthly')}
+                disabled={plan.current || loading !== null}
+                className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center ${
                   plan.current
                     ? 'bg-white/10 text-white cursor-default'
-                    : `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg`
+                    : `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`
                 }`}
-                whileHover={plan.current ? {} : { scale: 1.02 }}
-                whileTap={plan.current ? {} : { scale: 0.98 }}
-                disabled={plan.current}
+                whileHover={plan.current || loading ? {} : { scale: 1.02 }}
+                whileTap={plan.current || loading ? {} : { scale: 0.98 }}
               >
-                {plan.current ? 'Current Plan' : 'Upgrade Now'}
+                {loading === plan.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : plan.current ? (
+                  'Current Plan'
+                ) : plan.name === 'Daily Pass' ? (
+                  'Get Daily Pass'
+                ) : (
+                  'Get Monthly Pass'
+                )}
               </motion.button>
             </motion.div>
           )
@@ -143,14 +268,97 @@ export default function SubscriptionPage() {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">What payment methods do you accept?</h3>
-            <p className="text-slate-400">We accept all major credit cards, PayPal, and cryptocurrency.</p>
+            <p className="text-slate-400">We accept mobile money payments via ZenoPay (M-Pesa, Airtel Money, TigoPesa, and HaloPesa).</p>
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white mb-2">Do you offer refunds?</h3>
-            <p className="text-slate-400">Yes, we offer a 30-day money-back guarantee if you&apos;re not satisfied.</p>
+            <p className="text-slate-400">Yes, we offer a 100% satisfaction guarantee. If you&apos;re not happy with the results, contact us within 24 hours for a full refund.</p>
           </div>
         </div>
       </motion.div>
+
+      {/* Payment Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Payment Details</DialogTitle>
+            <DialogDescription>
+              Please confirm your information to proceed with the payment via ZenoPay.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="your@email.com"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="John Doe"
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="phone">Phone Number *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="0744963858"
+                required
+              />
+              <p className="text-xs text-slate-500">
+                Format: 07XXXXXXXX (Tanzanian mobile number)
+              </p>
+            </div>
+            {selectedPlan && (
+              <div className="rounded-md bg-dashboard-bg p-3">
+                <p className="text-sm font-medium text-white">
+                  Plan: {plans.find(p => p.id === selectedPlan)?.name}
+                </p>
+                <p className="text-sm text-slate-400">
+                  Amount: {plans.find(p => p.id === selectedPlan)?.price} {plans.find(p => p.id === selectedPlan)?.currency}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setDialogOpen(false)}
+              disabled={loading !== null}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmPurchase}
+              disabled={loading !== null}
+              className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                'Confirm & Pay'
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

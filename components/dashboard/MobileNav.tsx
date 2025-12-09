@@ -54,7 +54,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="flex items-center justify-between p-4 border-b border-dashboard-border">
-                <h2 className="font-bold text-white text-lg">AI Helper</h2>
+                <h2 className="font-bold text-white text-lg">Assignment Helper</h2>
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-white/5 rounded-lg transition-colors"

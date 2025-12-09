@@ -2,34 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, Infinity as InfinityIcon, Clock, ArrowRight } from 'lucide-react'
+import { Zap, Infinity as InfinityIcon, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useCredits } from '@/hooks/useCredits'
 
 export function CreditCounter() {
   const { credits, loading, refresh } = useCredits()
-  const [timeUntilReset, setTimeUntilReset] = useState('')
 
   useEffect(() => {
     refresh()
-    
-    // Update countdown every minute
-    const updateCountdown = () => {
-      const now = new Date()
-      const tomorrow = new Date(now)
-      tomorrow.setHours(24, 0, 0, 0)
-      
-      const diff = tomorrow.getTime() - now.getTime()
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-      
-      setTimeUntilReset(`${hours}h ${minutes}m`)
-    }
-
-    updateCountdown()
-    const interval = setInterval(updateCountdown, 60000)
-
-    return () => clearInterval(interval)
   }, [refresh])
 
   if (loading) {
@@ -43,7 +24,9 @@ export function CreditCounter() {
   }
 
   const isUnlimited = credits >= 999
-  const percentage = isUnlimited ? 100 : (credits / 3) * 100
+  // Show percentage based on a reasonable max (e.g., 100 credits)
+  const maxCreditsForDisplay = 100
+  const percentage = isUnlimited ? 100 : Math.min((credits / maxCreditsForDisplay) * 100, 100)
 
   return (
     <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 relative overflow-hidden group">
@@ -62,16 +45,10 @@ export function CreditCounter() {
               )}
             </div>
             <h3 className="text-sm font-semibold text-slate-300">
-              {isUnlimited ? 'Unlimited Access' : 'Daily Credits'}
+              {isUnlimited ? 'Unlimited Access' : 'Credits Balance'}
             </h3>
           </div>
           
-          {!isUnlimited && (
-            <div className="flex items-center gap-1 text-xs text-slate-500">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{timeUntilReset}</span>
-            </div>
-          )}
         </div>
 
         {/* Credits Display */}
@@ -89,10 +66,10 @@ export function CreditCounter() {
           <div className="mb-4">
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-4xl font-bold text-white">{credits}</span>
-              <span className="text-lg text-slate-500">/ 3</span>
+              <span className="text-lg text-slate-500">credits</span>
             </div>
             <p className="text-xs text-slate-500">
-              {credits > 0 ? 'Credits remaining today' : 'No credits remaining'}
+              {credits > 0 ? 'Available for use' : 'No credits remaining'}
             </p>
           </div>
         )}
@@ -124,7 +101,7 @@ export function CreditCounter() {
 
         {/* CTA */}
         {!isUnlimited && (
-          <Link href="/subscription">
+          <Link href="/purchase">
             <motion.button
               className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2 group"
               whileHover={{ scale: 1.02 }}

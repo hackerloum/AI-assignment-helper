@@ -2,15 +2,47 @@
 
 import { motion } from 'framer-motion'
 import { Settings, User, Bell, Lock, Palette } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
+import { useUser } from '@/hooks/useUser'
+import { createClient } from '@/lib/supabase/client'
 
 export default function SettingsPage() {
+  const { user, loading: userLoading } = useUser()
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [darkMode, setDarkMode] = useState(true)
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [saving, setSaving] = useState(false)
+  const supabase = createClient()
 
-  const handleSave = () => {
-    toast.success('Settings saved successfully!')
+  useEffect(() => {
+    if (user) {
+      setFullName(user.user_metadata?.full_name || user.user_metadata?.name || '')
+      setEmail(user.email || '')
+    }
+  }, [user])
+
+  const handleSave = async () => {
+    if (!user) return
+
+    setSaving(true)
+    try {
+      // Update user metadata
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+        },
+      })
+
+      if (error) throw error
+
+      toast.success('Settings saved successfully!')
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -50,8 +82,11 @@ export default function SettingsPage() {
             </label>
             <input
               type="text"
-              defaultValue="John Doe"
-              className="w-full px-4 py-2 bg-dashboard-bg border border-dashboard-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              disabled={userLoading || saving}
+              className="w-full px-4 py-2 bg-dashboard-bg border border-dashboard-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder="Enter your full name"
             />
           </div>
           
@@ -61,9 +96,12 @@ export default function SettingsPage() {
             </label>
             <input
               type="email"
-              defaultValue="john@example.com"
-              className="w-full px-4 py-2 bg-dashboard-bg border border-dashboard-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              value={email}
+              disabled
+              className="w-full px-4 py-2 bg-dashboard-bg border border-dashboard-border rounded-lg text-white opacity-50 cursor-not-allowed"
+              placeholder="Email cannot be changed"
             />
+            <p className="text-xs text-slate-500 mt-1">Email cannot be changed for security reasons</p>
           </div>
         </div>
       </motion.div>
@@ -161,11 +199,12 @@ export default function SettingsPage() {
       {/* Save Button */}
       <motion.button
         onClick={handleSave}
-        className="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        disabled={saving || userLoading}
+        className="w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        whileHover={saving ? {} : { scale: 1.02 }}
+        whileTap={saving ? {} : { scale: 0.98 }}
       >
-        Save Changes
+        {saving ? 'Saving...' : 'Save Changes'}
       </motion.button>
     </div>
   )

@@ -18,6 +18,9 @@ import { UsageChart } from '@/components/dashboard/UsageChart'
 import { RecentActivity } from '@/components/dashboard/RecentActivity'
 import { QuickActions } from '@/components/dashboard/QuickActions'
 import { useUser } from '@/hooks/useUser'
+import { useUsageStats } from '@/hooks/useUsageStats'
+import { useAssignments } from '@/hooks/useAssignments'
+import { useCredits } from '@/hooks/useCredits'
 
 const tools = [
   {
@@ -28,7 +31,7 @@ const tools = [
     color: 'from-blue-500 to-cyan-500',
     textColor: 'text-blue-400',
     bgColor: 'bg-blue-500/10',
-    stats: { used: 12, total: 15 },
+    toolType: 'essay' as const,
   },
   {
     name: 'Grammar & Rewrite',
@@ -38,7 +41,7 @@ const tools = [
     color: 'from-purple-500 to-pink-500',
     textColor: 'text-purple-400',
     bgColor: 'bg-purple-500/10',
-    stats: { used: 8, total: 15 },
+    toolType: 'grammar' as const,
   },
   {
     name: 'Plagiarism Checker',
@@ -48,7 +51,7 @@ const tools = [
     color: 'from-emerald-500 to-teal-500',
     textColor: 'text-emerald-400',
     bgColor: 'bg-emerald-500/10',
-    stats: { used: 5, total: 15 },
+    toolType: 'paraphrase' as const,
   },
   {
     name: 'APA Referencing',
@@ -58,7 +61,7 @@ const tools = [
     color: 'from-amber-500 to-orange-500',
     textColor: 'text-amber-400',
     bgColor: 'bg-amber-500/10',
-    stats: { used: 15, total: 15 },
+    toolType: 'citation' as const,
   },
   {
     name: 'PowerPoint Maker',
@@ -68,36 +71,51 @@ const tools = [
     color: 'from-pink-500 to-rose-500',
     textColor: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
-    stats: { used: 3, total: 15 },
-  },
-]
-
-const stats = [
-  {
-    name: 'Tools Used Today',
-    value: '8',
-    change: '+12%',
-    trend: 'up',
-    icon: Zap,
-  },
-  {
-    name: 'Time Saved',
-    value: '4.5h',
-    change: '+23%',
-    trend: 'up',
-    icon: Clock,
-  },
-  {
-    name: 'Success Rate',
-    value: '98%',
-    change: '+2%',
-    trend: 'up',
-    icon: TrendingUp,
+    toolType: 'summarizer' as const,
   },
 ]
 
 export default function DashboardPage() {
   const { user } = useUser()
+  const { stats: usageStats, loading: statsLoading } = useUsageStats()
+  const { assignments, loading: assignmentsLoading } = useAssignments()
+  const { credits } = useCredits()
+
+  // Calculate tool usage stats
+  const toolStats = tools.map(tool => {
+    const used = assignments.filter(a => a.tool_type === tool.toolType).length
+    return {
+      ...tool,
+      stats: { used, total: credits || 50 },
+    }
+  })
+
+  // Calculate time saved (estimate: 30 minutes per assignment)
+  const timeSavedHours = (usageStats.totalAssignments * 0.5).toFixed(1)
+
+  const dashboardStats = [
+    {
+      name: 'Tools Used Today',
+      value: usageStats.toolsUsedToday.toString(),
+      change: '',
+      trend: 'up' as const,
+      icon: Zap,
+    },
+    {
+      name: 'Time Saved',
+      value: `${timeSavedHours}h`,
+      change: '',
+      trend: 'up' as const,
+      icon: Clock,
+    },
+    {
+      name: 'Total Assignments',
+      value: usageStats.totalAssignments.toString(),
+      change: '',
+      trend: 'up' as const,
+      icon: TrendingUp,
+    },
+  ]
 
   return (
     <div className="space-y-8">
@@ -116,7 +134,7 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-        {stats.map((stat, index) => (
+        {dashboardStats.map((stat, index) => (
           <motion.div
             key={stat.name}
             initial={{ opacity: 0, y: 20 }}
@@ -165,7 +183,7 @@ export default function DashboardPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {tools.map((tool, index) => (
+              {toolStats.map((tool, index) => (
                 <motion.div
                   key={tool.name}
                   initial={{ opacity: 0, scale: 0.95 }}
