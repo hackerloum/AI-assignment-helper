@@ -351,10 +351,10 @@ function TemplatePreviewModal({
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-sm text-slate-400 mb-1">Margins</p>
                   <p className="text-white font-medium">
-                    Top: {template.content_format.margins?.top}", 
-                    Bottom: {template.content_format.margins?.bottom}", 
-                    Left: {template.content_format.margins?.left}", 
-                    Right: {template.content_format.margins?.right}"
+                    Top: {template.content_format.margins?.top}&quot;, 
+                    Bottom: {template.content_format.margins?.bottom}&quot;, 
+                    Left: {template.content_format.margins?.left}&quot;, 
+                    Right: {template.content_format.margins?.right}&quot;
                   </p>
                 </div>
               </div>
