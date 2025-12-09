@@ -97,7 +97,7 @@ export function CreditCounter() {
 
         {/* CTA */}
         {!isUnlimited && (
-          <Link href="/purchase">
+          <Link href="/subscription">
             <motion.button
               className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold rounded-xl transition-all flex items-center justify-center gap-2 group"
               whileHover={{ scale: 1.02 }}
