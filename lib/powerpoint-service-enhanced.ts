@@ -38,7 +38,24 @@ async function generatePresentationContent(
     throw new Error("GEMINI_API_KEY is not configured");
   }
 
-  const systemInstruction = `You are an expert presentation designer. Create engaging, well-structured presentation slides.
+  // Style-specific instructions
+  const styleInstructions = {
+    academic: "Use academic language but keep it simple and accessible for students. Use clear definitions, simple examples, and avoid complex jargon. If you must use technical terms, explain them in simple language. Focus on understanding over complexity.",
+    professional: "Use professional business language but keep it clear and straightforward. Use practical examples and real-world applications.",
+    creative: "Use engaging, visual language. Be creative but still clear and easy to understand. Use vivid examples and analogies.",
+  };
+
+  const systemInstruction = `You are an expert academic presentation designer specializing in creating student-friendly educational content. Your goal is to make complex topics accessible and understandable.
+
+CRITICAL REQUIREMENTS:
+- Use simple, clear language that students can easily understand
+- Avoid complex jargon - if technical terms are needed, explain them simply
+- Include practical examples and analogies to help understanding
+- Focus on clarity and comprehension over complexity
+- Make content engaging but educational
+- Presentation style: ${style}
+- Style guidance: ${styleInstructions[style as keyof typeof styleInstructions] || styleInstructions.academic}
+
 Return ONLY a valid JSON object with this structure:
 {
   "title": "Presentation Title",
@@ -48,7 +65,7 @@ Return ONLY a valid JSON object with this structure:
   "slides": [
     {
       "title": "Slide Title",
-      "content": "Main content",
+      "content": "Main content in simple terms",
       "bulletPoints": ["Point 1", "Point 2", "Point 3"],
       "speakerNotes": "Notes for presenter",
       "visualSuggestions": ["Suggestion 1", "Suggestion 2"],
@@ -58,13 +75,25 @@ Return ONLY a valid JSON object with this structure:
 }`;
 
   const prompt = `Create EXACTLY ${slideCount} slides for a presentation on: "${topic}"
-Style: ${style}
-IMPORTANT: Create EXACTLY ${slideCount} slides total - no more, no less.
+
+PRESENTATION STYLE: ${style}
+${styleInstructions[style as keyof typeof styleInstructions] || styleInstructions.academic}
+
+CRITICAL: Create EXACTLY ${slideCount} slides total - no more, no less. Count carefully.
+
 Structure:
 - Slide 1: Title slide with title and subtitle
-- Slides 2-${slideCount - 1}: Content slides with key points
-- Slide ${slideCount}: Conclusion/summary slide
-Each slide should have 3-5 bullet points and speaker notes.
+${slideCount > 1 ? `- Slides 2-${slideCount - 1}: Content slides with key points explained simply` : ''}
+${slideCount > 1 ? `- Slide ${slideCount}: Conclusion/summary slide` : ''}
+
+Content Requirements:
+- Use simple, student-friendly language
+- Explain concepts clearly with examples
+- Avoid complex terminology unless necessary (and explain if used)
+- Make content accessible and understandable
+- Each slide should have 3-5 bullet points
+- Include speaker notes that help explain the content simply
+
 Return ONLY valid JSON with exactly ${slideCount} slides in the slides array.`;
 
   try {
@@ -190,7 +219,8 @@ function createFallbackPresentation(
  */
 function createSlidesGPTPrompt(
   presentation: Presentation,
-  requestedSlideCount: number
+  requestedSlideCount: number,
+  style: string
 ): string {
   // Create a precise prompt for SlidesGPT with exact slide count
   const actualSlideCount = presentation.slides.length;
@@ -199,29 +229,43 @@ function createSlidesGPTPrompt(
   // Limit slides to exactly what user requested
   const slidesToInclude = presentation.slides.slice(0, slideCountToUse);
   
-  let prompt = `Create a presentation with EXACTLY ${slideCountToUse} slides on: ${presentation.title}\n\n`;
+  // Style-specific instructions for SlidesGPT
+  const styleGuidance = {
+    academic: "Use an academic, scholarly style with clear structure. Keep language simple and accessible for students.",
+    professional: "Use a professional, business-oriented style. Focus on practical applications and clear communication.",
+    creative: "Use a creative, engaging style with visual elements. Make it colorful and dynamic while maintaining clarity.",
+  };
+  
+  let prompt = `Create a PowerPoint presentation with EXACTLY ${slideCountToUse} slides (NO MORE, NO LESS).\n\n`;
+  prompt += `Topic: ${presentation.title}\n`;
   
   if (presentation.subtitle) {
-    prompt += `Subtitle: ${presentation.subtitle}\n\n`;
+    prompt += `Subtitle: ${presentation.subtitle}\n`;
   }
 
-  prompt += `Style: ${presentation.theme || 'professional'}\n\n`;
-  prompt += `IMPORTANT: Create EXACTLY ${slideCountToUse} slides, no more, no less.\n\n`;
-  prompt += "Slides:\n\n";
+  prompt += `\nPRESENTATION STYLE: ${style}\n`;
+  prompt += `${styleGuidance[style as keyof typeof styleGuidance] || styleGuidance.academic}\n\n`;
+  
+  prompt += `⚠️ CRITICAL REQUIREMENT: You MUST create EXACTLY ${slideCountToUse} slides. Count them carefully. Do not add extra slides.\n\n`;
+  
+  prompt += `Here are the ${slideCountToUse} slides to create:\n\n`;
   
   slidesToInclude.forEach((slide, index) => {
-    prompt += `Slide ${index + 1}: ${slide.title}\n`;
+    prompt += `SLIDE ${index + 1} of ${slideCountToUse}:\n`;
+    prompt += `Title: ${slide.title}\n`;
     if (slide.bulletPoints && slide.bulletPoints.length > 0) {
+      prompt += `Content:\n`;
       slide.bulletPoints.forEach(point => {
         prompt += `  • ${point}\n`;
       });
     } else if (slide.content) {
-      prompt += `  ${slide.content}\n`;
+      prompt += `Content: ${slide.content}\n`;
     }
     prompt += "\n";
   });
 
-  prompt += `\nRemember: Create EXACTLY ${slideCountToUse} slides total.`;
+  prompt += `\n⚠️ FINAL REMINDER: Create EXACTLY ${slideCountToUse} slides total. Count: ${slideCountToUse}. Do not create ${slideCountToUse + 1} or more slides.`;
+  prompt += `\n\nFollow the ${style} presentation style throughout.`;
 
   return prompt;
 }
@@ -247,8 +291,8 @@ export async function generatePresentation(
   // Step 2: If file creation is requested, create .pptx file using SlidesGPT
   if (createFile) {
     try {
-      // Create a precise prompt for SlidesGPT with exact slide count
-      const slidesGPTPrompt = createSlidesGPTPrompt(presentation, slideCount);
+      // Create a precise prompt for SlidesGPT with exact slide count and style
+      const slidesGPTPrompt = createSlidesGPTPrompt(presentation, slideCount, style);
       
       // Generate presentation with SlidesGPT
       const slidesGPTResponse = await generateSlidesGPTPresentation(slidesGPTPrompt);
