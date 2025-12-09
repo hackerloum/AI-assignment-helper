@@ -13,7 +13,8 @@ import {
   Settings,
   CreditCard,
   History,
-  Command
+  Command,
+  type LucideIcon
 } from 'lucide-react'
 
 interface CommandPaletteProps {
@@ -21,7 +22,19 @@ interface CommandPaletteProps {
   onClose: () => void
 }
 
-const commands = [
+interface CommandItem {
+  name: string
+  href: string
+  icon: LucideIcon
+  shortcut?: string
+}
+
+interface CommandCategory {
+  category: string
+  items: CommandItem[]
+}
+
+const commands: CommandCategory[] = [
   {
     category: 'AI Tools',
     items: [
