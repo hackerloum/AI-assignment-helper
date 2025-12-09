@@ -1,10 +1,10 @@
 /**
  * Enhanced PowerPoint Generation Service
- * Uses OpenAI API for high-quality presentation generation
+ * Uses Gemini API for high-quality presentation generation
  */
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 interface Slide {
   title: string;
@@ -23,81 +23,69 @@ export interface Presentation {
   estimatedDuration?: number;
 }
 
-interface OpenAIRequest {
-  model: string;
-  messages: Array<{
-    role: "system" | "user" | "assistant";
-    content: string;
-  }>;
-  temperature?: number;
-  max_tokens?: number;
-  response_format?: { type: "json_object" };
-}
 
 /**
- * Call OpenAI API for presentation generation
+ * Call Gemini API for presentation generation
  */
-async function callOpenAI(
+async function callGemini(
   prompt: string,
   systemInstruction: string,
   temperature: number = 0.7,
   maxTokens?: number
 ): Promise<string> {
-  if (!OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not set in environment variables");
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set in environment variables");
   }
 
-  const requestBody: OpenAIRequest = {
-    model: "gpt-4o-mini", // Using GPT-4o-mini for cost-effectiveness and quality
-    messages: [
-      {
-        role: "system",
-        content: systemInstruction,
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-    temperature,
-    ...(maxTokens && { max_tokens: maxTokens }),
-    response_format: { type: "json_object" },
-  };
+  const fullPrompt = `${systemInstruction}\n\n${prompt}`;
 
   try {
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: fullPrompt,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature,
+          ...(maxTokens && { maxOutputTokens: maxTokens }),
+        },
+      }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         errorData.error?.message ||
-          `OpenAI API error: ${response.status} ${response.statusText}`
+          `Gemini API error: ${response.status} ${response.statusText}`
       );
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
-      throw new Error("No response from OpenAI API");
+      throw new Error("No response from Gemini API");
     }
 
     return content;
   } catch (error: any) {
-    console.error("OpenAI API call failed:", error);
-    throw new Error(error.message || "Failed to call OpenAI API");
+    console.error("Gemini API call failed:", error);
+    throw new Error(error.message || "Failed to call Gemini API");
   }
 }
 
 /**
- * Generate a high-quality presentation using OpenAI
+ * Generate a high-quality presentation using Gemini
  */
 export async function generatePresentation(
   topic: string,
@@ -151,10 +139,12 @@ Requirements:
 - Use professional language appropriate for ${style} style`;
 
   try {
-    const response = await callOpenAI(prompt, systemInstruction, 0.7, 4000);
+    const response = await callGemini(prompt, systemInstruction, 0.7, 4000);
     
-    // Parse JSON response
-    const parsed = JSON.parse(response);
+    // Extract JSON from response (Gemini might add extra text)
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonText = jsonMatch ? jsonMatch[0] : response;
+    const parsed = JSON.parse(jsonText);
     
     // Validate and enhance the structure
     if (!parsed.slides || !Array.isArray(parsed.slides)) {

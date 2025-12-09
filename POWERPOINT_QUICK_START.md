@@ -4,7 +4,7 @@ This guide will help you set up and use the enhanced PowerPoint generation featu
 
 ## Prerequisites
 
-1. OpenAI API account with credits
+1. Gemini API key (same as used for other AI features)
 2. PowerPoint Generator API account (optional for .pptx file generation)
 
 ## Setup Steps
@@ -19,8 +19,8 @@ cp .env.local.example .env.local
 
 **Required for PowerPoint:**
 ```env
-# For AI content generation
-OPENAI_API_KEY=sk-your-openai-key-here
+# For AI content generation (same key as other features)
+GEMINI_API_KEY=your-gemini-key-here
 
 # For .pptx file generation (optional)
 PPTX_API_BEARER_TOKEN=your-bearer-token-here
@@ -197,8 +197,8 @@ Result: Engaging presentation with:
 
 ## Troubleshooting
 
-### "OPENAI_API_KEY is not configured"
-**Solution**: Add OpenAI API key to `.env.local`
+### "GEMINI_API_KEY is not configured"
+**Solution**: Add Gemini API key to `.env.local` (same key used for other AI features)
 
 ### "PowerPoint API token not configured"
 **Solution**: 
@@ -212,7 +212,7 @@ Result: Engaging presentation with:
 
 ### Presentation Generation is Slow
 **Reasons**:
-- OpenAI API response time (10-30 seconds)
+- Gemini API response time (10-30 seconds)
 - Large slide count (15+ slides)
 - Network connection
 
@@ -256,8 +256,8 @@ PowerPoint Generator API (File Creation)
 .pptx File Download
 ```
 
-### Content Generation (OpenAI)
-- Model: GPT-4o-mini
+### Content Generation (Gemini)
+- Model: Gemini 2.5 Flash
 - Temperature: 0.7
 - Max tokens: 4000
 - Response format: JSON
@@ -277,7 +277,7 @@ PowerPoint Generator API (File Creation)
 
 ## Resources
 
-- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Google Gemini API Documentation](https://ai.google.dev/docs)
 - [PowerPoint Generator API](https://powerpointgeneratorapi.com/)
 - [Full Documentation](./POWERPOINT_README.md)
 

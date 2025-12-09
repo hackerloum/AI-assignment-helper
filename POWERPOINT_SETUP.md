@@ -5,8 +5,8 @@
 Add these to your `.env.local` file:
 
 ```env
-# OpenAI API - For content generation
-OPENAI_API_KEY=your_openai_api_key
+# Gemini API - For content generation (same key as other AI features)
+GEMINI_API_KEY=your_gemini_api_key
 
 # PowerPoint Generator API - For .pptx file generation
 PPTX_API_BEARER_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiaGFja2VybG91bUBnbWFpbC5jb20iLCJuYmYiOiIxNzY1Mjk2Nzg3IiwiZXhwIjoiMTc5NjgzMjc4NyJ9.nAZtXXQLu59D6fNjX5gVIIi0iqqulmUC4VMO2zaN-Jo
@@ -40,7 +40,7 @@ Bearer Token: [added to env above]
 
 ## Features
 
-✅ AI-generated content with OpenAI GPT-4o-mini
+✅ AI-generated content with Google Gemini 2.5 Flash
 ✅ Speaker notes for each slide
 ✅ Visual suggestions
 ✅ Multiple export formats (Text, JSON, PowerPoint)
@@ -50,7 +50,7 @@ Bearer Token: [added to env above]
 
 ## Files Changed
 
-1. `lib/powerpoint-service-enhanced.ts` - Main service with OpenAI + PowerPoint API
+1. `lib/powerpoint-service-enhanced.ts` - Main service with Gemini + PowerPoint API
 2. `lib/powerpoint-generator-api.ts` - PowerPoint Generator API integration
 3. `app/api/ai/powerpoint/route.ts` - API endpoint
 4. `app/(dashboard)/powerpoint/page.tsx` - Enhanced UI

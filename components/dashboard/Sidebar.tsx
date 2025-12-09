@@ -15,7 +15,8 @@ import {
   Settings,
   ChevronLeft,
   Sparkles,
-  LogOut
+  LogOut,
+  BookOpen
 } from 'lucide-react'
 import { CreditCounter } from './CreditCounter'
 import { createClient } from '@/lib/supabase/client'
@@ -37,6 +38,13 @@ const navigation = [
   {
     name: 'AI Tools',
     items: [
+      {
+        name: 'Assignment Writer',
+        href: '/assignment',
+        icon: BookOpen,
+        color: 'text-indigo-400',
+        badge: 'NEW',
+      },
       {
         name: 'Research Assistant',
         href: '/research',
@@ -227,11 +235,11 @@ function NavItem({ item, isActive, collapsed }: NavItemProps) {
   return (
     <Link href={item.href}>
       <motion.div
-        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative group ${
+        className={`flex items-center gap-3 py-2 rounded-lg transition-colors relative group ${
           isActive
-            ? 'bg-sidebar-item-active text-amber-400'
-            : 'text-slate-400 hover:bg-sidebar-item-hover hover:text-white'
-        } ${collapsed && 'justify-center'}`}
+            ? 'bg-sidebar-item-active text-amber-400 pl-4 pr-3'
+            : 'text-slate-400 hover:bg-sidebar-item-hover hover:text-white px-3'
+        } ${collapsed && 'justify-center px-3'}`}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
@@ -242,13 +250,15 @@ function NavItem({ item, isActive, collapsed }: NavItemProps) {
             layoutId="activeIndicator"
           />
         )}
-        <Icon className={`w-5 h-5 flex-shrink-0 ${item.color}`} />
+        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-amber-400' : item.color}`} />
         
         {!collapsed && (
           <>
-            <span className="text-sm font-medium flex-1">{item.name}</span>
+            <span className={`text-sm font-medium flex-1 ${isActive ? 'text-amber-400' : ''}`}>
+              {item.name}
+            </span>
             {item.badge && (
-              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded">
+              <span className="px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-semibold rounded flex-shrink-0">
                 {item.badge}
               </span>
             )}
@@ -257,7 +267,7 @@ function NavItem({ item, isActive, collapsed }: NavItemProps) {
 
         {/* Tooltip for collapsed state */}
         {collapsed && (
-          <div className="absolute left-full ml-2 px-3 py-2 bg-dashboard-elevated border border-dashboard-border rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap">
+          <div className="absolute left-full ml-2 px-3 py-2 bg-dashboard-elevated border border-dashboard-border rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
             <span className="text-sm text-white">{item.name}</span>
           </div>
         )}

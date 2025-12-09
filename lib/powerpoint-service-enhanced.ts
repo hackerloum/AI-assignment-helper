@@ -1,11 +1,11 @@
 /**
  * Enhanced PowerPoint Service
- * Combines OpenAI content generation with PowerPoint Generator API
+ * Uses Gemini API for content generation and PowerPoint Generator API
  * to create actual .pptx files
  */
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 const PPTX_API_GEN_URL = "https://gen.powerpointgeneratorapi.com/v1.0/generator/create";
 const PPTX_API_BEARER_TOKEN = process.env.PPTX_API_BEARER_TOKEN;
@@ -28,15 +28,15 @@ export interface Presentation {
 }
 
 /**
- * Generate presentation content using OpenAI
+ * Generate presentation content using Gemini API
  */
 async function generatePresentationContent(
   topic: string,
   slideCount: number,
   style: string
 ): Promise<Presentation> {
-  if (!OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY is not configured");
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not configured");
   }
 
   const systemInstruction = `You are an expert presentation designer. Create engaging, well-structured presentation slides.
@@ -61,34 +61,49 @@ Return ONLY a valid JSON object with this structure:
   const prompt = `Create a ${slideCount}-slide presentation on: "${topic}"
 Style: ${style}
 Include title slide, content slides, and conclusion.
-Each slide should have 3-5 bullet points and speaker notes.`;
+Each slide should have 3-5 bullet points and speaker notes.
+Return ONLY valid JSON, no additional text.`;
 
   try {
-    const response = await fetch(OPENAI_API_URL, {
+    const fullPrompt = `${systemInstruction}\n\n${prompt}`;
+    
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemInstruction },
-          { role: "user", content: prompt },
+        contents: [
+          {
+            parts: [
+              {
+                text: fullPrompt,
+              },
+            ],
+          },
         ],
-        temperature: 0.7,
-        max_tokens: 4000,
-        response_format: { type: "json_object" },
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4000,
+        },
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
+      throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    const parsed = JSON.parse(content);
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!content) {
+      throw new Error("No response from Gemini API");
+    }
+
+    // Extract JSON from response (Gemini might add extra text)
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const jsonText = jsonMatch ? jsonMatch[0] : content;
+    const parsed = JSON.parse(jsonText);
 
     return {
       title: parsed.title || topic,

@@ -35,20 +35,7 @@ GEMINI_API_KEY=your_gemini_api_key
 
 **Note:** The application uses Google's Gemini 2.5 Flash model for most AI features (essay writing, paraphrasing, grammar checking, citations, summarization, research).
 
-### OpenAI API Configuration (for PowerPoint Generation)
-
-```env
-OPENAI_API_KEY=your_openai_api_key
-```
-
-**Where to get it:**
-1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
-2. Sign in or create an account
-3. Navigate to **API Keys** section
-4. Click **Create new secret key**
-5. Copy the key (it's only shown once!)
-
-**Note:** The application uses OpenAI's GPT-4o-mini model specifically for enhanced PowerPoint presentation generation. This provides higher quality presentations with speaker notes, visual suggestions, and better structure.
+**Note:** The application uses Google's Gemini 2.5 Flash model for PowerPoint presentation generation, providing high-quality presentations with speaker notes, visual suggestions, and better structure.
 
 ### PowerPoint Generator API Configuration (for .pptx File Generation)
 
@@ -151,13 +138,6 @@ After setting up environment variables, verify they're working:
 - Ensure key hasn't been revoked
 - Verify the API key has access to Gemini models
 
-### "OpenAI API error" (PowerPoint generation)
-
-- Verify `OPENAI_API_KEY` is correct
-- Check OpenAI account has available credits/quota
-- Ensure key hasn't been revoked or expired
-- Verify the API key has access to GPT-4o-mini model
-- Check billing information is set up in OpenAI account
 
 ### Authentication not working
 
@@ -172,8 +152,7 @@ After setting up environment variables, verify they're working:
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Client | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Client | Supabase anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server | Supabase service role key |
-| `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key (for most AI features) |
-| `OPENAI_API_KEY` | ✅ | Server | OpenAI API key (for PowerPoint content generation) |
+| `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key (for all AI features including PowerPoint) |
 | `PPTX_API_BEARER_TOKEN` | ⚠️ | Server | PowerPoint Generator API bearer token (for .pptx files) |
 | `PPTX_API_USERNAME` | ➖ | Server | PowerPoint API username (alternative to bearer token) |
 | `PPTX_API_PASSWORD` | ➖ | Server | PowerPoint API password (alternative to bearer token) |

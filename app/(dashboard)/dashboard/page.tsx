@@ -10,7 +10,8 @@ import {
   TrendingUp,
   Zap,
   Clock,
-  ArrowRight
+  ArrowRight,
+  BookOpen
 } from 'lucide-react'
 import Link from 'next/link'
 import { CreditCounter } from '@/components/dashboard/CreditCounter'
@@ -23,6 +24,16 @@ import { useAssignments } from '@/hooks/useAssignments'
 import { useCredits } from '@/hooks/useCredits'
 
 const tools = [
+  {
+    name: 'Assignment Writer',
+    description: 'Create properly formatted academic assignments with templates',
+    href: '/assignment',
+    icon: BookOpen,
+    color: 'from-indigo-500 to-purple-500',
+    textColor: 'text-indigo-400',
+    bgColor: 'bg-indigo-500/10',
+    toolType: 'essay' as const,
+  },
   {
     name: 'AI Research Assistant',
     description: 'Get comprehensive answers to any research question',

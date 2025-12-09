@@ -5,12 +5,12 @@ This document explains the enhanced PowerPoint generation feature that creates a
 ## Overview
 
 The PowerPoint tool uses a two-step process:
-1. **Content Generation**: OpenAI GPT-4o-mini generates high-quality presentation content with speaker notes, visual suggestions, and structured layouts
+1. **Content Generation**: Google Gemini 2.5 Flash generates high-quality presentation content with speaker notes, visual suggestions, and structured layouts
 2. **File Creation**: PowerPoint Generator API converts the content into downloadable .pptx files
 
 ## Features
 
-### Content Generation (OpenAI)
+### Content Generation (Gemini)
 - Professional presentation structure
 - Speaker notes for each slide
 - Visual suggestions (images, charts, graphics)
@@ -26,11 +26,13 @@ The PowerPoint tool uses a two-step process:
 
 ## Setup
 
-### 1. OpenAI API Key
+### 1. Gemini API Key
 ```env
-OPENAI_API_KEY=sk-your-key-here
+GEMINI_API_KEY=your-gemini-key-here
 ```
-Get it from: https://platform.openai.com/api-keys
+Get it from: https://makersuite.google.com/app/apikey
+
+**Note:** The same Gemini API key used for other AI features works for PowerPoint generation.
 
 ### 2. PowerPoint Generator API
 ```env
@@ -156,7 +158,7 @@ Example template structure:
 ## Credits
 
 PowerPoint generation costs **6 credits** per presentation due to:
-- AI content generation (OpenAI API)
+- AI content generation (Gemini API)
 - Enhanced features (speaker notes, visual suggestions)
 - Premium file creation (.pptx generation)
 
@@ -194,7 +196,7 @@ PowerPoint generation costs **6 credits** per presentation due to:
 ## Resources
 
 - [PowerPoint Generator API Documentation](https://powerpointgeneratorapi.com/docs)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Google Gemini API Documentation](https://ai.google.dev/docs)
 - [PowerPoint Template Creation Guide](https://support.microsoft.com/en-us/office/create-a-powerpoint-template)
 
 ## Support
