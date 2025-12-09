@@ -111,19 +111,53 @@ export async function POST(request: NextRequest) {
       
       // For one-time payments, mark user as paid
       if (payment.payment_type === "one_time") {
-        // Update user_credits to mark payment as completed
-        const { error: updateError } = await supabase
+        // First, check if user_credits record exists
+        const { data: existingCredits, error: fetchError } = await supabase
           .from("user_credits")
-          .update({ 
-            has_paid_one_time_fee: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq("user_id", payment.user_id);
-        
-        if (updateError) {
-          console.error("[ZenoPay Callback] Failed to update payment status:", updateError);
+          .select("has_paid_one_time_fee")
+          .eq("user_id", payment.user_id)
+          .single();
+
+        if (fetchError && fetchError.code === 'PGRST116') {
+          // Record doesn't exist, create it
+          console.log("[ZenoPay Callback] Creating user_credits record for user:", payment.user_id);
+          const { error: insertError } = await supabase
+            .from("user_credits")
+            .insert({
+              user_id: payment.user_id,
+              balance: 0,
+              has_paid_one_time_fee: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) {
+            console.error("[ZenoPay Callback] Failed to create user_credits:", insertError);
+          } else {
+            console.log("[ZenoPay Callback] ✅ Created user_credits with has_paid_one_time_fee=true");
+          }
+        } else if (fetchError) {
+          console.error("[ZenoPay Callback] Error fetching user_credits:", fetchError);
         } else {
-          console.log("[ZenoPay Callback] ✅ One-time payment marked as paid for user:", payment.user_id);
+          // Record exists, update it
+          const { error: updateError } = await supabase
+            .from("user_credits")
+            .update({ 
+              has_paid_one_time_fee: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq("user_id", payment.user_id);
+          
+          if (updateError) {
+            console.error("[ZenoPay Callback] Failed to update payment status:", updateError);
+          } else {
+            const wasAlreadyPaid = existingCredits?.has_paid_one_time_fee;
+            if (!wasAlreadyPaid) {
+              console.log("[ZenoPay Callback] ✅ One-time payment marked as paid for user:", payment.user_id);
+            } else {
+              console.log("[ZenoPay Callback] ✅ User already marked as paid (verified)");
+            }
+          }
         }
       }
     }

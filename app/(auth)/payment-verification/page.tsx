@@ -68,12 +68,24 @@ export default function PaymentVerificationPage() {
       verifyPaymentStatus().then((isPaid) => {
         if (isPaid) {
           toast.success('Payment verified! Redirecting to dashboard...')
-          router.push('/dashboard')
+          // Use window.location for hard redirect to ensure fresh state
+          window.location.href = '/dashboard'
         } else {
-          toast.error('Payment verification failed. Please try again.')
+          toast.error('Payment verification failed. Please wait a moment and try again.')
           setRedirecting(false)
-          setCountdown(5)
+          // Don't reset countdown, just wait and check again
+          setTimeout(() => {
+            checkPaymentStatus()
+            verifyPaymentStatus()
+          }, 2000)
         }
+      }).catch((error) => {
+        console.error('Error verifying payment:', error)
+        toast.error('Error verifying payment. Redirecting anyway...')
+        // Redirect anyway after a delay
+        setTimeout(() => {
+          window.location.href = '/dashboard'
+        }, 1000)
       })
     }
   }, [status, countdown, router, redirecting])
@@ -131,46 +143,56 @@ export default function PaymentVerificationPage() {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
-        toast.error('Session expired. Please refresh the page.')
+        console.error('No session token available')
         return false
       }
 
-      // Check payment status
-      const paymentResponse = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
-      const paymentData = await paymentResponse.json()
+      // First, trigger a status check to ensure database is updated
+      const statusResponse = await fetch(`/api/payments/check-zenopay-status?order_id=${orderId}`)
+      if (!statusResponse.ok) {
+        console.error('Failed to check payment status')
+        return false
+      }
 
-      if (paymentData.status === 'completed') {
-        // Check if user has been marked as paid
-        const { data: userCredits, error } = await supabase
+      const statusData = await statusResponse.json()
+      if (statusData.status !== 'completed') {
+        console.log('Payment status is not completed yet:', statusData.status)
+        return false
+      }
+
+      // Wait a moment for database to update
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Check if user has been marked as paid
+      const { data: userCredits, error } = await supabase
+        .from('user_credits')
+        .select('has_paid_one_time_fee')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking user_credits:', error)
+        // If record doesn't exist, it might be created by the status check
+        // Wait and check again
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        
+        const { data: userCreditsRetry, error: retryError } = await supabase
           .from('user_credits')
           .select('has_paid_one_time_fee')
           .eq('user_id', user.id)
           .single()
 
-        if (error) {
-          console.error('Error checking payment status:', error)
+        if (retryError) {
+          console.error('Error on retry:', retryError)
           return false
         }
 
-        if (userCredits?.has_paid_one_time_fee) {
-          return true
-        } else {
-          // Payment is completed but user not marked as paid yet
-          // This might happen if callback hasn't processed yet
-          // Wait a bit and check again
-          await new Promise(resolve => setTimeout(resolve, 2000))
-          
-          const { data: userCreditsRetry } = await supabase
-            .from('user_credits')
-            .select('has_paid_one_time_fee')
-            .eq('user_id', user.id)
-            .single()
-
-          return userCreditsRetry?.has_paid_one_time_fee || false
-        }
+        return userCreditsRetry?.has_paid_one_time_fee || false
       }
 
-      return false
+      const hasPaid = userCredits?.has_paid_one_time_fee || false
+      console.log('[Verify Payment] User payment status:', hasPaid)
+      return hasPaid
     } catch (error: any) {
       console.error('Error verifying payment:', error)
       return false

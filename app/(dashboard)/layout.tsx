@@ -80,9 +80,12 @@ export default function DashboardLayout({
   // Redirect if not paid
   useEffect(() => {
     if (!checkingPayment && user && hasPaid === false) {
-      router.push('/one-time-payment')
+      // Only redirect if we're not already on the payment page
+      if (pathname !== '/one-time-payment' && pathname !== '/payment-verification') {
+        router.push('/one-time-payment')
+      }
     }
-  }, [hasPaid, checkingPayment, user, router])
+  }, [hasPaid, checkingPayment, user, router, pathname])
 
   // Command palette keyboard shortcut
   useEffect(() => {
