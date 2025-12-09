@@ -64,31 +64,23 @@ export default function PaymentVerificationPage() {
     
     if (status === 'completed' && countdown === 0 && !redirecting) {
       setRedirecting(true)
-      // Verify payment status one more time before redirecting
-      verifyPaymentStatus().then((isPaid) => {
-        if (isPaid) {
-          toast.success('Payment verified! Redirecting to dashboard...')
-          // Use window.location for hard redirect to ensure fresh state
-          window.location.href = '/dashboard'
-        } else {
-          toast.error('Payment verification failed. Please wait a moment and try again.')
-          setRedirecting(false)
-          // Don't reset countdown, just wait and check again
-          setTimeout(() => {
-            checkPaymentStatus()
-            verifyPaymentStatus()
-          }, 2000)
-        }
-      }).catch((error) => {
-        console.error('Error verifying payment:', error)
-        toast.error('Error verifying payment. Redirecting anyway...')
-        // Redirect anyway after a delay
-        setTimeout(() => {
-          window.location.href = '/dashboard'
-        }, 1000)
-      })
+      console.log('[Payment Verification] Payment completed, redirecting to dashboard...')
+      
+      // Force trigger database update one more time
+      fetch(`/api/payments/check-zenopay-status?order_id=${orderId}`)
+        .then(() => {
+          console.log('[Payment Verification] Status check triggered')
+        })
+        .catch(err => console.error('Status check error:', err))
+      
+      // Redirect immediately - don't wait for verification
+      // The dashboard will check payment status and allow access if payment is completed
+      toast.success('Redirecting to dashboard...')
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1000)
     }
-  }, [status, countdown, router, redirecting])
+  }, [status, countdown, redirecting, orderId])
 
   const checkPaymentStatus = async () => {
     try {
@@ -102,9 +94,12 @@ export default function PaymentVerificationPage() {
         setStatus(paymentStatus)
         
         if (paymentStatus === 'completed') {
-          toast.success('Payment completed successfully!')
-          // Verify payment status in database
-          await verifyPaymentStatus()
+          // Only show toast once and start countdown
+          if (status !== 'completed') {
+            toast.success('Payment completed successfully!')
+            // Reset countdown to start the redirect timer
+            setCountdown(5)
+          }
         } else if (paymentStatus === 'failed') {
           toast.error('Payment failed. Please try again.')
         }

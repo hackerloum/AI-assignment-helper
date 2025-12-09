@@ -65,8 +65,36 @@ export async function GET(request: NextRequest) {
       if (payment) {
         const oldStatus = payment.payment_status;
         
-        // Update payment record if status changed
-        if (payment.payment_status !== status) {
+        // Always handle completed payments, regardless of status change
+        if (status === "completed") {
+          // Update payment record first
+          if (payment.payment_status !== status) {
+            const { error: updateError } = await supabase
+              .from("payments")
+              .update({
+                payment_status: status,
+                transaction_id: paymentData.transid || payment.transaction_id,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", orderId);
+
+            if (updateError) {
+              console.error("[Check ZenoPay Status] Failed to update payment:", updateError);
+            } else {
+              console.log(`[Check ZenoPay Status] Payment status updated: ${oldStatus} -> ${status}`);
+            }
+          }
+          
+          // Always try to update user_credits when payment is completed
+          console.log("[Check ZenoPay Status] Processing completed payment for user:", payment.user_id);
+          try {
+            await handleCompletedPayment(payment, paymentData.transid || null, supabase);
+          } catch (error) {
+            console.error("[Check ZenoPay Status] Error in handleCompletedPayment:", error);
+            // Continue anyway - payment is completed
+          }
+        } else if (payment.payment_status !== status) {
+          // Update payment record for non-completed status changes
           const { error: updateError } = await supabase
             .from("payments")
             .update({
@@ -78,19 +106,7 @@ export async function GET(request: NextRequest) {
 
           if (updateError) {
             console.error("[Check ZenoPay Status] Failed to update payment:", updateError);
-          } else {
-            console.log(`[Check ZenoPay Status] Payment status updated: ${oldStatus} -> ${status}`);
           }
-
-          // If payment completed, handle it (check OLD status before update)
-          if (status === "completed" && oldStatus !== "completed") {
-            console.log("[Check ZenoPay Status] Processing completed payment for user:", payment.user_id);
-            await handleCompletedPayment(payment, paymentData.transid || null, supabase);
-          }
-        } else if (status === "completed" && oldStatus === "completed") {
-          // Payment already marked as completed, but verify user_credits is updated
-          console.log("[Check ZenoPay Status] Payment already completed, verifying user_credits...");
-          await handleCompletedPayment(payment, paymentData.transid || null, supabase);
         }
       }
 
@@ -169,6 +185,12 @@ async function handleCompletedPayment(
   transactionId: string | null,
   supabase: any
 ) {
+  console.log("[Check ZenoPay Status] handleCompletedPayment called for payment:", {
+    payment_id: payment.id,
+    user_id: payment.user_id,
+    payment_type: payment.payment_type
+  });
+
   try {
     // For subscription payments, add credits
     if (payment.payment_type === "subscription" || !payment.payment_type) {
@@ -184,6 +206,8 @@ async function handleCompletedPayment(
     
     // For one-time payments, mark user as paid
     if (payment.payment_type === "one_time") {
+      console.log("[Check ZenoPay Status] Processing one-time payment for user:", payment.user_id);
+      
       // First, check if user_credits record exists
       const { data: existingCredits, error: fetchError } = await supabase
         .from("user_credits")
@@ -191,10 +215,16 @@ async function handleCompletedPayment(
         .eq("user_id", payment.user_id)
         .single();
 
+      console.log("[Check ZenoPay Status] Existing credits check:", {
+        exists: !!existingCredits,
+        error: fetchError?.code,
+        has_paid: existingCredits?.has_paid_one_time_fee
+      });
+
       if (fetchError && fetchError.code === 'PGRST116') {
         // Record doesn't exist, create it
         console.log("[Check ZenoPay Status] Creating user_credits record for user:", payment.user_id);
-        const { error: insertError } = await supabase
+        const { data: newCredits, error: insertError } = await supabase
           .from("user_credits")
           .insert({
             user_id: payment.user_id,
@@ -202,32 +232,91 @@ async function handleCompletedPayment(
             has_paid_one_time_fee: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-          });
+          })
+          .select()
+          .single();
 
         if (insertError) {
           console.error("[Check ZenoPay Status] Failed to create user_credits:", insertError);
-          throw insertError;
+          // Try upsert instead
+          const { error: upsertError } = await supabase
+            .from("user_credits")
+            .upsert({
+              user_id: payment.user_id,
+              balance: 0,
+              has_paid_one_time_fee: true,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            });
+          
+          if (upsertError) {
+            console.error("[Check ZenoPay Status] Upsert also failed:", upsertError);
+            throw upsertError;
+          } else {
+            console.log("[Check ZenoPay Status] ✅ Upserted user_credits with has_paid_one_time_fee=true");
+          }
         } else {
-          console.log("[Check ZenoPay Status] ✅ Created user_credits with has_paid_one_time_fee=true");
+          console.log("[Check ZenoPay Status] ✅ Created user_credits with has_paid_one_time_fee=true:", newCredits);
         }
       } else if (fetchError) {
         console.error("[Check ZenoPay Status] Error fetching user_credits:", fetchError);
-        throw fetchError;
+        // Try to create anyway
+        const { error: insertError } = await supabase
+          .from("user_credits")
+          .upsert({
+            user_id: payment.user_id,
+            balance: 0,
+            has_paid_one_time_fee: true,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id'
+          });
+        
+        if (insertError) {
+          console.error("[Check ZenoPay Status] Failed to upsert user_credits:", insertError);
+          throw insertError;
+        } else {
+          console.log("[Check ZenoPay Status] ✅ Upserted user_credits after fetch error");
+        }
       } else {
         // Record exists, update it
-        const { error: updateError } = await supabase
+        console.log("[Check ZenoPay Status] Updating existing user_credits record");
+        const { data: updatedCredits, error: updateError } = await supabase
           .from("user_credits")
           .update({ 
             has_paid_one_time_fee: true,
             updated_at: new Date().toISOString()
           })
-          .eq("user_id", payment.user_id);
+          .eq("user_id", payment.user_id)
+          .select()
+          .single();
         
         if (updateError) {
           console.error("[Check ZenoPay Status] Failed to update payment status:", updateError);
-          throw updateError;
+          // Try upsert as fallback
+          const { error: upsertError } = await supabase
+            .from("user_credits")
+            .upsert({
+              user_id: payment.user_id,
+              has_paid_one_time_fee: true,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            });
+          
+          if (upsertError) {
+            console.error("[Check ZenoPay Status] Upsert fallback also failed:", upsertError);
+            throw upsertError;
+          } else {
+            console.log("[Check ZenoPay Status] ✅ Upserted user_credits after update error");
+          }
         } else {
           const wasAlreadyPaid = existingCredits?.has_paid_one_time_fee;
+          console.log("[Check ZenoPay Status] Update result:", {
+            wasAlreadyPaid,
+            updated: updatedCredits?.has_paid_one_time_fee
+          });
           if (!wasAlreadyPaid) {
             console.log("[Check ZenoPay Status] ✅ One-time payment marked as paid for user:", payment.user_id);
           } else {
@@ -238,7 +327,8 @@ async function handleCompletedPayment(
     }
   } catch (error: any) {
     console.error("[Check ZenoPay Status] Error in handleCompletedPayment:", error);
-    throw error;
+    // Don't throw - log and continue
+    console.error("[Check ZenoPay Status] Error details:", JSON.stringify(error, null, 2));
   }
 }
 
