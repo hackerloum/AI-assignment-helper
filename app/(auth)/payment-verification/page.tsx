@@ -34,24 +34,70 @@ export default function PaymentVerificationPage() {
     // Check payment status immediately
     checkPaymentStatus()
 
-    // Poll every 3 seconds for status updates (max 20 times = 60 seconds)
+    // Poll every 2 seconds for status updates (max 30 times = 60 seconds)
+    // More frequent polling for faster detection
     let pollCount = 0
-    const maxPolls = 20
-    const pollInterval = setInterval(() => {
+    const maxPolls = 30
+    let isPolling = true
+    
+    const pollInterval = setInterval(async () => {
+      if (!isPolling) {
+        clearInterval(pollInterval)
+        return
+      }
+      
       pollCount++
       if (pollCount >= maxPolls) {
         clearInterval(pollInterval)
-        if (status === 'pending') {
-          toast.info('Payment is taking longer than expected. You can verify manually below.')
-        }
+        isPolling = false
+        setStatus((prevStatus) => {
+          if (prevStatus === 'pending') {
+            toast.info('Payment is taking longer than expected. You can verify manually below.')
+          }
+          return prevStatus
+        })
         return
       }
-      checkPaymentStatus()
-    }, 3000)
+      
+      // Check status directly from ZenoPay API
+      try {
+        const response = await fetch(`/api/payments/check-zenopay-status?order_id=${orderId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const currentStatus = data.status as PaymentStatus
+          
+          // Update state
+          setStatus(currentStatus)
+          setPaymentDetails(data)
+          
+          // Stop polling if completed or failed
+          if (currentStatus === 'completed' || currentStatus === 'failed') {
+            isPolling = false
+            clearInterval(pollInterval)
+            
+            if (currentStatus === 'completed') {
+              toast.success('Payment completed successfully!')
+              // Verify payment status in database
+              if (user && supabase) {
+                await verifyPaymentStatus()
+              }
+            } else {
+              toast.error('Payment failed. Please try again.')
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error polling payment status:', error)
+        // Continue polling on error
+      }
+    }, 2000)
 
-    return () => clearInterval(pollInterval)
+    return () => {
+      isPolling = false
+      clearInterval(pollInterval)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderId])
+  }, [orderId, user, supabase])
 
   // Auto-redirect when payment is completed
   useEffect(() => {
@@ -80,7 +126,8 @@ export default function PaymentVerificationPage() {
 
   const checkPaymentStatus = async () => {
     try {
-      const response = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+      // Use the new endpoint that checks ZenoPay directly
+      const response = await fetch(`/api/payments/check-zenopay-status?order_id=${orderId}`)
       const data = await response.json()
 
       if (response.ok) {
@@ -95,9 +142,30 @@ export default function PaymentVerificationPage() {
         } else if (paymentStatus === 'failed') {
           toast.error('Payment failed. Please try again.')
         }
+      } else {
+        // If endpoint fails, fallback to checking our database
+        const fallbackResponse = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+        const fallbackData = await fallbackResponse.json()
+        
+        if (fallbackResponse.ok) {
+          setPaymentDetails(fallbackData)
+          setStatus(fallbackData.status as PaymentStatus)
+        }
       }
     } catch (error) {
       console.error('Error checking payment status:', error)
+      // Try fallback
+      try {
+        const fallbackResponse = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+        const fallbackData = await fallbackResponse.json()
+        
+        if (fallbackResponse.ok) {
+          setPaymentDetails(fallbackData)
+          setStatus(fallbackData.status as PaymentStatus)
+        }
+      } catch (fallbackError) {
+        console.error('Fallback check also failed:', fallbackError)
+      }
     }
   }
 
@@ -115,8 +183,8 @@ export default function PaymentVerificationPage() {
         return false
       }
 
-      // Check payment status
-      const paymentResponse = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+      // Check payment status from ZenoPay directly
+      const paymentResponse = await fetch(`/api/payments/check-zenopay-status?order_id=${orderId}`)
       const paymentData = await paymentResponse.json()
 
       if (paymentData.status === 'completed') {

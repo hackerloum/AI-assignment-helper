@@ -85,3 +85,70 @@ export function formatTanzanianPhone(phone: string): string {
   return cleaned;
 }
 
+/**
+ * Check ZenoPay order status
+ * This function queries ZenoPay API directly to get real-time payment status
+ */
+export async function checkZenoPayOrderStatus(
+  orderId: string,
+  apiKey: string
+): Promise<{ status: string; data?: any; error?: string }> {
+  try {
+    const response = await fetch(
+      `https://zenoapi.com/api/payments/order-status?order_id=${orderId}`,
+      {
+        method: "GET",
+        headers: {
+          "x-api-key": apiKey,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        status: "error",
+        error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+
+    const data = await response.json();
+    
+    // ZenoPay returns data in a data array
+    const orderData = data.data?.[0];
+    
+    if (!orderData) {
+      return {
+        status: "pending",
+        error: "Order not found in ZenoPay system",
+      };
+    }
+
+    // Map ZenoPay payment_status to our status
+    const zenopayStatus = orderData.payment_status?.toUpperCase() || "PENDING";
+    let mappedStatus = "pending";
+    
+    if (zenopayStatus === "SUCCESS" || zenopayStatus === "COMPLETED" || zenopayStatus === "PAID") {
+      mappedStatus = "completed";
+    } else if (zenopayStatus === "FAILED" || zenopayStatus === "ERROR" || zenopayStatus === "CANCELLED") {
+      mappedStatus = "failed";
+    }
+
+    return {
+      status: mappedStatus,
+      data: {
+        payment_status: mappedStatus,
+        transaction_id: orderData.transaction_id,
+        amount: orderData.amount,
+        ...orderData,
+      },
+    };
+  } catch (error: any) {
+    console.error("ZenoPay order status check error:", error);
+    return {
+      status: "error",
+      error: error.message || "Failed to check order status",
+    };
+  }
+}
+
