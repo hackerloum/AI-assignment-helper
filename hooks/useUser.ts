@@ -10,8 +10,17 @@ export function useUser() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Get initial user
+    // Get initial user - try getSession first as it's more reliable
     const getUser = async () => {
+      // Try getSession first (more reliable for just-logged-in users)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        setUser(session.user)
+        setLoading(false)
+        return
+      }
+      
+      // Fallback to getUser
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
       setLoading(false)

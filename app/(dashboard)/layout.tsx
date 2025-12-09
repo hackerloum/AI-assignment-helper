@@ -22,11 +22,16 @@ export default function DashboardLayout({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const pathname = usePathname()
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated - but wait a bit for session to load
   useEffect(() => {
-    if (!loading && !user) {
-      redirect('/login')
-    }
+    // Give it time for session to load after login
+    const timer = setTimeout(() => {
+      if (!loading && !user) {
+        redirect('/login')
+      }
+    }, 2000) // Wait 2 seconds before redirecting
+    
+    return () => clearTimeout(timer)
   }, [user, loading])
 
   // Command palette keyboard shortcut
