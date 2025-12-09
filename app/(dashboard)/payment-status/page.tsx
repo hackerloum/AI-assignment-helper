@@ -7,13 +7,15 @@ import { CheckCircle, XCircle, Clock, Loader2, ArrowRight, RefreshCw } from 'luc
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { useUser } from '@/hooks/useUser'
+import { createClient } from '@/lib/supabase/client'
 
 type PaymentStatus = 'pending' | 'completed' | 'failed' | 'checking'
 
 export default function PaymentStatusPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { user, supabase } = useUser()
+  const { user } = useUser()
+  const supabase = createClient()
   const orderId = searchParams.get('order_id')
   const planType = searchParams.get('plan')
   
