@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
+import { handleLoginRedirect } from '@/app/actions/auth-actions'
 
 interface FormErrors {
   email?: string
@@ -86,10 +87,16 @@ export function LoginForm() {
       // Success animation
       setSuccess(true)
       
-      // Wait for animation then redirect
-      setTimeout(() => {
-        window.location.href = '/dashboard'
-      }, 1000)
+      // Use server action to properly handle redirect with session
+      setTimeout(async () => {
+        try {
+          await handleLoginRedirect()
+        } catch (error) {
+          // If server action fails, fallback to client-side redirect
+          router.refresh()
+          router.push('/dashboard')
+        }
+      }, 800)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
     } finally {
