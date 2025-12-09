@@ -96,40 +96,13 @@ export function LoginForm() {
       // Success animation
       setSuccess(true)
       
-      // Wait for cookies to be set, then redirect
-      // The key is to ensure cookies are available to middleware
-      setTimeout(async () => {
-        // Verify session before redirecting
-        const { data: { session } } = await supabase.auth.getSession()
-        console.log('Session check:', session ? 'Found ✅' : 'Not found ❌')
-        
-        if (session) {
-          console.log('Session confirmed, waiting for cookies to propagate...')
-          
-          // Wait additional time for cookies to be available to middleware
-          // Then use router.push which works better with Next.js middleware
-          setTimeout(() => {
-            console.log('Redirecting to dashboard via router...')
-            router.refresh() // Refresh to sync server state
-            router.push('/dashboard')
-            
-            // Fallback: if router.push doesn't work, use window.location after a delay
-            setTimeout(() => {
-              if (window.location.pathname === '/login') {
-                console.log('Router push failed, using window.location...')
-                window.location.href = '/dashboard'
-              }
-            }, 1000)
-          }, 2000)
-        } else {
-          console.log('Session not ready, waiting longer...')
-          // Wait more and try again
-          setTimeout(() => {
-            console.log('Force redirecting to dashboard...')
-            window.location.href = '/dashboard'
-          }, 3000)
-        }
-      }, 2000)
+      // Wait for cookies to be set, then do a simple hard redirect
+      // No router, no checks - just wait and redirect
+      setTimeout(() => {
+        console.log('Redirecting to dashboard...')
+        // Use window.location.replace for hard redirect that includes cookies
+        window.location.replace('/dashboard')
+      }, 4000)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
     } finally {

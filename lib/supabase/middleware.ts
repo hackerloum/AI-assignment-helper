@@ -56,16 +56,26 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Check if there are auth cookies present (even if getUser() didn't find user yet)
+  // This handles the case where cookies are set but not yet readable
+  const hasAuthCookies = request.cookies.getAll().some(
+    cookie => cookie.name.includes('sb-') && cookie.name.includes('auth-token')
+  );
+
   // Only protect dashboard routes, let auth pages work freely
   if (
     !user &&
+    !hasAuthCookies &&
     request.nextUrl.pathname.startsWith("/dashboard")
   ) {
-    // no user trying to access dashboard, redirect to login
+    // no user and no auth cookies - redirect to login
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
+  
+  // If user exists OR auth cookies exist, allow access to dashboard
+  // This gives time for session to sync
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
   // creating a new response object with NextResponse.next() make sure to:
