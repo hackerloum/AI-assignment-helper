@@ -99,13 +99,13 @@ export default function TermsPage() {
                 isActive={activeSection === 'acceptance'}
               >
                 <p className="text-slate-300 leading-relaxed mb-4">
-                  By creating an account and using AI Assignment Helper ("the Service"), you acknowledge 
+                  By creating an account and using AI Assignment Helper (&quot;the Service&quot;), you acknowledge 
                   that you have read, understood, and agree to be bound by these Terms of Service and our 
                   Privacy Policy.
                 </p>
                 <p className="text-slate-300 leading-relaxed mb-4">
-                  These terms constitute a legally binding agreement between you ("User" or "you") and 
-                  AI Assignment Helper ("Company," "we," or "us") regarding your use of our web-based 
+                  These terms constitute a legally binding agreement between you (&quot;User&quot; or &quot;you&quot;) and 
+                  AI Assignment Helper (&quot;Company,&quot; &quot;we,&quot; or &quot;us&quot;) regarding your use of our web-based 
                   platform and services.
                 </p>
                 <div className="bg-amber-500/5 border-l-4 border-amber-500 rounded-r-lg p-4">
@@ -250,7 +250,7 @@ export default function TermsPage() {
                 </p>
                 <h4 className="text-lg font-semibold text-white mb-3 mt-6">4.5 Price Changes</h4>
                 <p className="text-slate-300 leading-relaxed">
-                  We reserve the right to change subscription prices with 30 days' notice. Current 
+                  We reserve the right to change subscription prices with 30 days&apos; notice. Current 
                   subscribers will be notified via email and in-app notifications. Price changes do not 
                   affect active subscriptions until renewal.
                 </p>
@@ -281,7 +281,7 @@ export default function TermsPage() {
                   <ul className="space-y-2 ml-4 text-sm text-red-300">
                     <li>• Submitting AI-generated content as your own original work</li>
                     <li>• Using the service to complete exams or assessments</li>
-                    <li>• Violating your institution's academic integrity policies</li>
+                    <li>• Violating your institution&apos;s academic integrity policies</li>
                     <li>• Reverse engineering or attempting to extract our AI models</li>
                     <li>• Automated scraping or data mining of the platform</li>
                     <li>• Sharing your subscription access with others</li>
@@ -296,7 +296,7 @@ export default function TermsPage() {
                   <p className="text-sm text-amber-300 leading-relaxed">
                     <strong>Important Notice:</strong> AI Assignment Helper is designed as a learning aid, 
                     not a replacement for your own work. You are responsible for ensuring your use of the 
-                    Service complies with your institution's academic integrity policies. We encourage 
+                    Service complies with your institution&apos;s academic integrity policies. We encourage 
                     transparent use and proper attribution of AI assistance where required by your institution.
                   </p>
                 </div>
@@ -348,7 +348,7 @@ export default function TermsPage() {
                 </ul>
                 <h4 className="text-lg font-semibold text-white mb-3 mt-6">6.4 Trademarks</h4>
                 <p className="text-slate-300 leading-relaxed">
-                  "AI Assignment Helper" and related logos are trademarks of our company. You may not use 
+                  &quot;AI Assignment Helper&quot; and related logos are trademarks of our company. You may not use 
                   these trademarks without our prior written consent.
                 </p>
               </LegalSection>
@@ -402,7 +402,7 @@ export default function TermsPage() {
                 </p>
                 <ul className="space-y-2 ml-6 mb-4">
                   <li className="text-slate-300">• Logging into your account settings</li>
-                  <li className="text-slate-300">• Clicking "Delete Account"</li>
+                  <li className="text-slate-300">• Clicking &quot;Delete Account&quot;</li>
                   <li className="text-slate-300">• Or emailing{' '}
                     <a href="mailto:support@aiassignmenthelper.com" className="text-amber-400 hover:text-amber-300 underline">
                       support@aiassignmenthelper.com
@@ -446,7 +446,7 @@ export default function TermsPage() {
                     IMPORTANT LEGAL NOTICE
                   </p>
                   <p className="text-sm text-red-300 leading-relaxed">
-                    THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, 
+                    THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, 
                     EITHER EXPRESS OR IMPLIED.
                   </p>
                 </div>
@@ -563,7 +563,7 @@ export default function TermsPage() {
                   We reserve the right to modify these Terms at any time. When we make changes:
                 </p>
                 <ul className="space-y-2 ml-6 mb-4">
-                  <li className="text-slate-300">• We will update the "Last Updated" date at the top of this page</li>
+                  <li className="text-slate-300">• We will update the &quot;Last Updated&quot; date at the top of this page</li>
                   <li className="text-slate-300">• We will notify you via email and/or in-app notification</li>
                   <li className="text-slate-300">• Material changes will be announced 30 days before taking effect</li>
                   <li className="text-slate-300">• Continued use after changes constitutes acceptance</li>

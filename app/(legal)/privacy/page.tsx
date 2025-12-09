@@ -99,7 +99,7 @@ export default function PrivacyPage() {
                 isActive={activeSection === 'introduction'}
               >
                 <p className="text-slate-300 leading-relaxed mb-4">
-                  AI Assignment Helper ("we," "us," or "our") operates an AI-powered academic assistance platform 
+                  AI Assignment Helper (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates an AI-powered academic assistance platform 
                   accessible at our website. This Privacy Policy describes our practices regarding the collection, 
                   use, and disclosure of information when you use our Service.
                 </p>
@@ -502,7 +502,7 @@ export default function PrivacyPage() {
                   We may update this Privacy Policy from time to time. When we make changes:
                 </p>
                 <ul className="space-y-2 ml-6 mb-4">
-                  <li className="text-slate-300">• We will update the "Last Updated" date at the top of this page</li>
+                  <li className="text-slate-300">• We will update the &quot;Last Updated&quot; date at the top of this page</li>
                   <li className="text-slate-300">• We will notify you via email and/or in-app notification</li>
                   <li className="text-slate-300">• Material changes will be announced 30 days before taking effect</li>
                   <li className="text-slate-300">• Continued use after changes constitutes acceptance</li>
@@ -578,7 +578,7 @@ export default function PrivacyPage() {
                 </h3>
                 <p className="text-slate-300 leading-relaxed max-w-2xl mx-auto">
                   We are committed to protecting your privacy and being transparent about our data practices. 
-                  If you have any questions or concerns, please don't hesitate to contact us.
+                  If you have any questions or concerns, please don&apos;t hesitate to contact us.
                 </p>
                 <div className="flex items-center justify-center gap-4 mt-6">
                   <Link href="/terms">
