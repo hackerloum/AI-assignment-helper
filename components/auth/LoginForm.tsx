@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
+import { handleLoginRedirect } from '@/app/actions/auth-actions'
 
 interface FormErrors {
   email?: string
@@ -87,29 +88,33 @@ export function LoginForm() {
       setSuccess(true)
       
       // Wait for cookies to be set, then redirect
-      // In production on Vercel, cookies need time to propagate
+      // Use server action which verifies session server-side before redirecting
       setTimeout(async () => {
         try {
-          // Verify session is set before redirecting
+          // First verify session exists client-side
           const { data: { session } } = await supabase.auth.getSession()
           
           if (session && session.user) {
-            // Session confirmed - redirect with full page reload
-            // This ensures middleware picks up the session in production
-            window.location.href = '/dashboard'
+            // Session confirmed - use server action for redirect
+            // Server action will verify session server-side and redirect
+            // redirect() throws, so this will navigate
+            await handleLoginRedirect()
           } else {
-            // Session not set yet, wait a bit more then force redirect
-            // Sometimes cookies take longer in production
+            // Session not found yet - wait and retry with client redirect
             setTimeout(() => {
               window.location.href = '/dashboard'
-            }, 1000)
+            }, 2000)
           }
         } catch (error) {
-          // Fallback: redirect anyway after delay
-          // In production, sometimes we need to trust the redirect
-          setTimeout(() => {
-            window.location.href = '/dashboard'
-          }, 1000)
+          // redirect() throws NEXT_REDIRECT error which is expected
+          // If it's a different error, fallback to client redirect
+          if (error && typeof error === 'object' && 'digest' in error && error.digest?.includes('NEXT_REDIRECT')) {
+            // This is the expected redirect - do nothing, navigation will happen
+            return
+          }
+          // Other error - fallback to client redirect
+          console.error('Redirect error:', error)
+          window.location.href = '/dashboard'
         }
       }, 2000)
     } catch (error: any) {

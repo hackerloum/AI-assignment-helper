@@ -5,18 +5,17 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export async function handleLoginRedirect() {
-  try {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (user) {
-      revalidatePath('/', 'layout')
-      redirect('/dashboard')
-    }
-  } catch (error) {
-    // If redirect fails, return error (will be caught by client)
-    throw error
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (user) {
+    revalidatePath('/', 'layout')
+    revalidatePath('/dashboard', 'page')
+    // redirect() throws and doesn't return - this is expected
+    redirect('/dashboard')
   }
+  // If no user, redirect() won't be called and function returns undefined
+  // Client will handle fallback
 }
 
