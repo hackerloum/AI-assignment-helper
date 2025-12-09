@@ -229,10 +229,7 @@ export default function PaymentStatusPage() {
         {/* Help Text */}
         <div className="mt-6 text-center">
           <p className="text-sm text-slate-500">
-            Need help?{' '}
-            <Link href="/support" className="text-blue-400 hover:text-blue-300">
-              Contact Support
-            </Link>
+            Need help? Contact us via email or WhatsApp
           </p>
         </div>
       </motion.div>
