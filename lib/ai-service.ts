@@ -199,3 +199,54 @@ export async function generateResearch(query: string): Promise<string> {
   );
 }
 
+export async function generatePresentation(
+  topic: string,
+  slideCount: number = 5,
+  style: string = "professional"
+): Promise<{ title: string; slides: Array<{ title: string; content: string }> }> {
+  const systemInstruction = `You are an expert presentation designer. Create engaging, well-structured presentation slides with clear titles and concise content. Style: ${style}. Return ONLY a JSON object with this exact structure: {"title": "Presentation Title", "slides": [{"title": "Slide Title", "content": "Slide content in bullet points"}]}`;
+  
+  const prompt = `Create a ${slideCount}-slide presentation on: "${topic}". Make it ${style} in tone. Each slide should have a clear title and 3-5 bullet points of content. Format as JSON only.`;
+
+  try {
+    const response = await callGemini(prompt, systemInstruction, 0.7, 2000);
+    
+    // Try to extract JSON from response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return parsed;
+    }
+    
+    // Fallback: create simple structure
+    const slides = [];
+    for (let i = 1; i <= slideCount; i++) {
+      slides.push({
+        title: `Slide ${i}`,
+        content: `• Key point 1\n• Key point 2\n• Key point 3`
+      });
+    }
+    
+    return {
+      title: topic,
+      slides
+    };
+  } catch (error) {
+    console.error("Error parsing presentation JSON:", error);
+    
+    // Fallback structure
+    const slides = [];
+    for (let i = 1; i <= slideCount; i++) {
+      slides.push({
+        title: `Slide ${i}: ${topic}`,
+        content: `• Key point about ${topic}\n• Supporting detail\n• Conclusion`
+      });
+    }
+    
+    return {
+      title: topic,
+      slides
+    };
+  }
+}
+
