@@ -97,9 +97,24 @@ export default function NewAssignmentPage() {
   const handleGenerate = async () => {
     setIsGenerating(true)
     try {
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Session expired. Please refresh the page.')
+        setIsGenerating(false)
+        return
+      }
+
       const response = await fetch('/api/assignment/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
         body: JSON.stringify(assignmentData),
       })
 
