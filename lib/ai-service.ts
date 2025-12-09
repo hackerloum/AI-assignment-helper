@@ -73,16 +73,41 @@ export async function callGemini(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error?.message ||
-          `Gemini API error: ${response.status} ${response.statusText}`
-      );
+      const errorMessage = errorData.error?.message || `Gemini API error: ${response.status} ${response.statusText}`;
+      
+      // Check for quota/rate limit errors
+      if (errorMessage.includes("quota") || errorMessage.includes("Quota exceeded") || errorMessage.includes("rate limit")) {
+        // Extract retry time from error message if available
+        const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i);
+        const retrySeconds = retryMatch ? parseFloat(retryMatch[1]) : null;
+        
+        const quotaError: any = new Error(errorMessage);
+        quotaError.isQuotaError = true;
+        quotaError.retryAfter = retrySeconds;
+        quotaError.statusCode = response.status;
+        throw quotaError;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data: GeminiResponse = await response.json();
 
     if (data.error) {
-      throw new Error(data.error.message || "Gemini API error");
+      const errorMessage = data.error.message || "Gemini API error";
+      
+      // Check for quota/rate limit errors in response
+      if (errorMessage.includes("quota") || errorMessage.includes("Quota exceeded") || errorMessage.includes("rate limit")) {
+        const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i);
+        const retrySeconds = retryMatch ? parseFloat(retryMatch[1]) : null;
+        
+        const quotaError: any = new Error(errorMessage);
+        quotaError.isQuotaError = true;
+        quotaError.retryAfter = retrySeconds;
+        throw quotaError;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const text =
@@ -92,6 +117,12 @@ export async function callGemini(
     return text;
   } catch (error: any) {
     console.error("Gemini API call failed:", error);
+    
+    // Re-throw quota errors with their special properties
+    if (error.isQuotaError) {
+      throw error;
+    }
+    
     throw new Error(error.message || "Failed to call Gemini API");
   }
 }

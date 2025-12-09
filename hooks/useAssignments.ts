@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 
 export interface Assignment {
   id: string
-  tool_type: 'essay' | 'paraphrase' | 'grammar' | 'citation' | 'summarizer'
+  tool_type: 'essay' | 'paraphrase' | 'grammar' | 'citation' | 'summarizer' | 'powerpoint' | 'plagiarism' | 'research' | 'rewrite'
   input_text: string
   output_text: string
   credits_used: number

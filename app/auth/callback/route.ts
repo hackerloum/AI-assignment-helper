@@ -10,11 +10,24 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient()
     
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
     
-    if (!error) {
-      // Redirect to dashboard on successful verification
-      return NextResponse.redirect(`${origin}/dashboard`)
+    if (!error && user) {
+      // Check if user has paid the one-time fee
+      const { data: userCredits } = await supabase
+        .from('user_credits')
+        .select('has_paid_one_time_fee')
+        .eq('user_id', user.id)
+        .single()
+
+      const hasPaid = userCredits?.has_paid_one_time_fee || false
+
+      // Redirect to payment page if not paid, otherwise to dashboard
+      if (!hasPaid) {
+        return NextResponse.redirect(`${origin}/one-time-payment`)
+      } else {
+        return NextResponse.redirect(`${origin}/dashboard`)
+      }
     }
   }
 

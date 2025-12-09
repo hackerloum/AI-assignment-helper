@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS credit_transactions (
 CREATE TABLE IF NOT EXISTS assignments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  tool_type TEXT NOT NULL CHECK (tool_type IN ('essay', 'paraphrase', 'grammar', 'citation', 'summarizer')),
+  tool_type TEXT NOT NULL CHECK (tool_type IN ('essay', 'paraphrase', 'grammar', 'citation', 'summarizer', 'powerpoint', 'plagiarism', 'research', 'rewrite')),
   input_text TEXT NOT NULL,
   output_text TEXT NOT NULL,
   credits_used INTEGER NOT NULL,

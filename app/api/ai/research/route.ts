@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { deductCredits } from "@/lib/credits";
+import { deductCredits, addCredits } from "@/lib/credits";
 import { generateResearch, ResearchOptions } from "@/lib/ai-service";
 
 export async function POST(request: NextRequest) {
@@ -74,12 +74,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate research answer with options
-    const answer = await generateResearch(query, options || {});
+    let answer: string;
+    try {
+      answer = await generateResearch(query, options || {});
+    } catch (error: any) {
+      // If it's a quota error, refund credits and return specific error
+      if (error.isQuotaError) {
+        // Refund the credits that were deducted
+        await addCredits(
+          user.id,
+          4,
+          "Refunded due to API quota limit",
+          supabase
+        );
+        
+        return NextResponse.json(
+          {
+            error: "API quota limit reached",
+            quotaError: true,
+            retryAfter: error.retryAfter,
+            message: error.message || "The AI service has reached its rate limit. Please try again in a few moments.",
+          },
+          { status: 429 }
+        );
+      }
+      // Re-throw other errors
+      throw error;
+    }
 
     // Save assignment
     await supabase.from("assignments").insert({
       user_id: user.id,
-      tool_type: "summarizer", // Using summarizer as research type
+      tool_type: "research",
       input_text: query,
       output_text: answer,
       credits_used: 4,
@@ -88,6 +114,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ answer });
   } catch (error: any) {
     console.error("Error in research API:", error);
+    
+    // Check if it's a quota error that wasn't caught earlier
+    if (error.isQuotaError) {
+      return NextResponse.json(
+        {
+          error: "API quota limit reached",
+          quotaError: true,
+          retryAfter: error.retryAfter,
+          message: error.message || "The AI service has reached its rate limit. Please try again in a few moments.",
+        },
+        { status: 429 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || "Failed to generate research answer" },
       { status: 500 }

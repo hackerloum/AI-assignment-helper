@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { MobileNav } from '@/components/dashboard/MobileNav'
@@ -9,7 +9,7 @@ import { TopBar } from '@/components/dashboard/TopBar'
 import { CommandPalette } from '@/components/dashboard/CommandPalette'
 import { Toaster } from 'sonner'
 import { useUser } from '@/hooks/useUser'
-import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 export default function DashboardLayout({
   children,
@@ -17,22 +17,72 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const { user, loading } = useUser()
+  const router = useRouter()
+  const supabase = createClient()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [checkingPayment, setCheckingPayment] = useState(true)
+  const [hasPaid, setHasPaid] = useState<boolean | null>(null)
   const pathname = usePathname()
 
-  // Redirect if not authenticated - but wait a bit for session to load
+  // Check payment status
   useEffect(() => {
-    // Give it time for session to load after login
-    const timer = setTimeout(() => {
-      if (!loading && !user) {
-        redirect('/login')
+    const checkPaymentStatus = async () => {
+      if (!user) {
+        setCheckingPayment(false)
+        return
       }
-    }, 2000) // Wait 2 seconds before redirecting
-    
-    return () => clearTimeout(timer)
-  }, [user, loading])
+
+      try {
+        // Get session token
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.access_token) {
+          setCheckingPayment(false)
+          return
+        }
+
+        const response = await fetch('/api/payments/check-status', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setHasPaid(data.hasPaid || false)
+        } else {
+          setHasPaid(false)
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error)
+        setHasPaid(false)
+      } finally {
+        setCheckingPayment(false)
+      }
+    }
+
+    if (!loading && user) {
+      checkPaymentStatus()
+    } else if (!loading && !user) {
+      setCheckingPayment(false)
+    }
+  }, [user, loading, supabase])
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !user && !checkingPayment) {
+      router.push('/login')
+    }
+  }, [user, loading, checkingPayment, router])
+
+  // Redirect if not paid
+  useEffect(() => {
+    if (!checkingPayment && user && hasPaid === false) {
+      router.push('/one-time-payment')
+    }
+  }, [hasPaid, checkingPayment, user, router])
 
   // Command palette keyboard shortcut
   useEffect(() => {
@@ -52,15 +102,22 @@ export default function DashboardLayout({
     setMobileMenuOpen(false)
   }, [pathname])
 
-  if (loading) {
+  if (loading || checkingPayment) {
     return (
       <div className="min-h-screen bg-dashboard-bg flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-          <p className="text-slate-400">Loading dashboard...</p>
+          <p className="text-slate-400">
+            {checkingPayment ? 'Verifying payment status...' : 'Loading dashboard...'}
+          </p>
         </div>
       </div>
     )
+  }
+
+  // Don't render dashboard if user hasn't paid
+  if (user && hasPaid === false) {
+    return null // Will redirect in useEffect
   }
 
   return (

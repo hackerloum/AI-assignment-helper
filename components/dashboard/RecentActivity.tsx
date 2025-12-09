@@ -12,6 +12,10 @@ const toolIcons: Record<string, { icon: typeof FileText; color: string; bgColor:
   grammar: { icon: RefreshCw, color: 'text-purple-400', bgColor: 'bg-purple-500/10', name: 'Grammar Check' },
   citation: { icon: FileCode, color: 'text-amber-400', bgColor: 'bg-amber-500/10', name: 'Citation Generator' },
   summarizer: { icon: FileText, color: 'text-blue-400', bgColor: 'bg-blue-500/10', name: 'Text Summarizer' },
+  powerpoint: { icon: Presentation, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10', name: 'PowerPoint Generator' },
+  plagiarism: { icon: Shield, color: 'text-red-400', bgColor: 'bg-red-500/10', name: 'Plagiarism Check' },
+  research: { icon: FileText, color: 'text-green-400', bgColor: 'bg-green-500/10', name: 'Research Assistant' },
+  rewrite: { icon: RefreshCw, color: 'text-orange-400', bgColor: 'bg-orange-500/10', name: 'Text Rewriter' },
 }
 
 export function RecentActivity() {

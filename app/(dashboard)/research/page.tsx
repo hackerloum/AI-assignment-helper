@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   FileText, 
@@ -45,6 +45,8 @@ export default function ResearchPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showConfig, setShowConfig] = useState(false)
+  const [quotaError, setQuotaError] = useState<{ retryAfter: number | null; message: string } | null>(null)
+  const [retryCountdown, setRetryCountdown] = useState<number | null>(null)
   const [researchOptions, setResearchOptions] = useState<ResearchOptions>({
     depth: 'intermediate',
     format: 'comprehensive',
@@ -97,8 +99,41 @@ export default function ResearchPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        // Handle quota errors specially
+        if (response.status === 429 && data.quotaError) {
+          setQuotaError({
+            retryAfter: data.retryAfter,
+            message: data.message || 'API quota limit reached. Please try again in a moment.'
+          })
+          
+          // Start countdown if retry time is provided
+          if (data.retryAfter) {
+            setRetryCountdown(Math.ceil(data.retryAfter))
+            const countdownInterval = setInterval(() => {
+              setRetryCountdown(prev => {
+                if (prev === null || prev <= 1) {
+                  clearInterval(countdownInterval)
+                  setQuotaError(null)
+                  return null
+                }
+                return prev - 1
+              })
+            }, 1000)
+          }
+          
+          toast.error(data.message || 'API quota limit reached. Credits have been refunded.')
+          // Remove user message on error
+          setMessages(prev => prev.slice(0, -1))
+          setIsLoading(false)
+          return
+        }
+        
         throw new Error(data.error || 'Failed to generate answer')
       }
+
+      // Clear any quota errors on success
+      setQuotaError(null)
+      setRetryCountdown(null)
 
       // Add assistant message
       const assistantMessage: Message = {
@@ -142,8 +177,17 @@ export default function ResearchPage() {
   const handleNewChat = () => {
     setMessages([])
     setQuery('')
+    setQuotaError(null)
+    setRetryCountdown(null)
     toast.success('Started new research session')
   }
+
+  // Cleanup countdown on unmount
+  useEffect(() => {
+    return () => {
+      setRetryCountdown(null)
+    }
+  }, [])
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -556,6 +600,63 @@ export default function ResearchPage() {
                 <div className="flex items-center gap-2 text-slate-400">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm">Researching your question...</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Quota Error State */}
+          {quotaError && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex gap-4"
+            >
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                <RefreshCw className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex-1 bg-dashboard-bg border border-amber-500/50 rounded-2xl p-5">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <RefreshCw className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-white font-semibold mb-1">API Rate Limit Reached</h3>
+                      <p className="text-slate-300 text-sm mb-3">
+                        {quotaError.message}
+                      </p>
+                      {retryCountdown !== null && retryCountdown > 0 && (
+                        <div className="flex items-center gap-2 text-amber-400 text-sm">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>You can retry in {retryCountdown} second{retryCountdown !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                      {retryCountdown === 0 && (
+                        <button
+                          onClick={() => {
+                            setQuotaError(null)
+                            setRetryCountdown(null)
+                            if (messages.length > 0) {
+                              const lastUserMessage = messages[messages.length - 1]
+                              if (lastUserMessage.role === 'user') {
+                                handleSubmit(lastUserMessage.content)
+                              }
+                            }
+                          }}
+                          className="mt-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium rounded-lg transition-all text-sm"
+                        >
+                          Retry Now
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-dashboard-border">
+                    <p className="text-xs text-slate-500">
+                      💡 Your credits have been refunded. The free tier has a limit of 20 requests per minute. 
+                      Consider upgrading your API plan for higher limits.
+                    </p>
+                  </div>
                 </div>
               </div>
             </motion.div>

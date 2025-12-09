@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     // Save assignment
     await supabase.from("assignments").insert({
       user_id: user.id,
-      tool_type: "grammar", // Using grammar as closest match
+      tool_type: "plagiarism",
       input_text: text,
       output_text: `Plagiarism check completed. Similarity score: ${similarityScore}%`,
       credits_used: 3,

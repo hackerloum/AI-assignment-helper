@@ -62,7 +62,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
-          tool_type: "essay" | "paraphrase" | "grammar" | "citation" | "summarizer";
+          tool_type: "essay" | "paraphrase" | "grammar" | "citation" | "summarizer" | "powerpoint" | "plagiarism" | "research" | "rewrite";
           input_text: string;
           output_text: string;
           credits_used: number;
@@ -71,7 +71,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
-          tool_type: "essay" | "paraphrase" | "grammar" | "citation" | "summarizer";
+          tool_type: "essay" | "paraphrase" | "grammar" | "citation" | "summarizer" | "powerpoint" | "plagiarism" | "research" | "rewrite";
           input_text: string;
           output_text: string;
           credits_used: number;
@@ -80,7 +80,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
-          tool_type?: "essay" | "paraphrase" | "grammar" | "citation" | "summarizer";
+          tool_type?: "essay" | "paraphrase" | "grammar" | "citation" | "summarizer" | "powerpoint" | "plagiarism" | "research" | "rewrite";
           input_text?: string;
           output_text?: string;
           credits_used?: number;

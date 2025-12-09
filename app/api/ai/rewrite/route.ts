@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     // Save assignment
     await supabase.from("assignments").insert({
       user_id: user.id,
-      tool_type: "paraphrase",
+      tool_type: "rewrite",
       input_text: text,
       output_text: rewrittenText,
       credits_used: 5,

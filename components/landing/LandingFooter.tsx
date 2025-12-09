@@ -22,12 +22,14 @@ export function LandingFooter() {
       { label: 'Text Summarizer', href: '/tools/summarize' },
     ],
     company: [
+      { label: 'Company', href: '/company' },
       { label: 'About Us', href: '/about' },
       { label: 'Contact', href: '/contact' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
     ],
     support: [
+      { label: 'Support', href: '/support' },
       { label: 'Help Center', href: '/help' },
       { label: 'Student Guide', href: '/guide' },
       { label: 'Payment Methods', href: '/payments' },

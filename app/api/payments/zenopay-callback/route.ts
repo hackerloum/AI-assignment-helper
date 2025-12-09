@@ -79,16 +79,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If payment is completed, add credits to user
+    // If payment is completed, handle based on payment type
     if (paymentStatus === "completed" && payment.payment_status !== "completed") {
-      await addCredits(
-        payment.user_id,
-        payment.credits_purchased,
-        `Payment confirmed - Order ${order_id}`,
-        supabase
-      );
+      // For subscription payments, add credits
+      if (payment.payment_type === "subscription" || !payment.payment_type) {
+        await addCredits(
+          payment.user_id,
+          payment.credits_purchased,
+          `Payment confirmed - Order ${order_id}`,
+          supabase
+        );
+        
+        console.log("[ZenoPay Callback] ✅ Credits added for user:", payment.user_id);
+      }
       
-      console.log("[ZenoPay Callback] ✅ Credits added for user:", payment.user_id);
+      // For one-time payments, mark user as paid
+      if (payment.payment_type === "one_time") {
+        // Update user_credits to mark payment as completed
+        const { error: updateError } = await supabase
+          .from("user_credits")
+          .update({ 
+            has_paid_one_time_fee: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq("user_id", payment.user_id);
+        
+        if (updateError) {
+          console.error("[ZenoPay Callback] Failed to update payment status:", updateError);
+        } else {
+          console.log("[ZenoPay Callback] ✅ One-time payment marked as paid for user:", payment.user_id);
+        }
+      }
     }
 
     return NextResponse.json({
