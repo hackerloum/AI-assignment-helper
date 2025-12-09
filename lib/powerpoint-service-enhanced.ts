@@ -57,11 +57,15 @@ Return ONLY a valid JSON object with this structure:
   ]
 }`;
 
-  const prompt = `Create a ${slideCount}-slide presentation on: "${topic}"
+  const prompt = `Create EXACTLY ${slideCount} slides for a presentation on: "${topic}"
 Style: ${style}
-Include title slide, content slides, and conclusion.
+IMPORTANT: Create EXACTLY ${slideCount} slides total - no more, no less.
+Structure:
+- Slide 1: Title slide with title and subtitle
+- Slides 2-${slideCount - 1}: Content slides with key points
+- Slide ${slideCount}: Conclusion/summary slide
 Each slide should have 3-5 bullet points and speaker notes.
-Return ONLY valid JSON, no additional text.`;
+Return ONLY valid JSON with exactly ${slideCount} slides in the slides array.`;
 
   try {
     const fullPrompt = `${systemInstruction}\n\n${prompt}`;
@@ -104,12 +108,29 @@ Return ONLY valid JSON, no additional text.`;
     const jsonText = jsonMatch ? jsonMatch[0] : content;
     const parsed = JSON.parse(jsonText);
 
+    // Ensure we have exactly the requested number of slides
+    let slides = parsed.slides || [];
+    if (slides.length > slideCount) {
+      // Trim to exact count
+      slides = slides.slice(0, slideCount);
+    } else if (slides.length < slideCount) {
+      // Add placeholder slides if needed
+      while (slides.length < slideCount) {
+        slides.push({
+          title: `Slide ${slides.length + 1}`,
+          content: `Content for slide ${slides.length + 1}`,
+          bulletPoints: [`Key point ${slides.length + 1}`],
+          layout: "content",
+        });
+      }
+    }
+
     return {
       title: parsed.title || topic,
       subtitle: parsed.subtitle,
       theme: parsed.theme || style,
       estimatedDuration: parsed.estimatedDuration || Math.ceil(slideCount * 2),
-      slides: parsed.slides || [],
+      slides: slides.slice(0, slideCount), // Ensure exact count
     };
   } catch (error: any) {
     console.error("Error generating content:", error);
@@ -165,28 +186,42 @@ function createFallbackPresentation(
 
 /**
  * Create a prompt for SlidesGPT from presentation data
+ * This ensures exact slide count and content matching user requirements
  */
-function createSlidesGPTPrompt(presentation: Presentation): string {
-  // Create a comprehensive prompt for SlidesGPT
-  let prompt = `${presentation.title}\n\n`;
+function createSlidesGPTPrompt(
+  presentation: Presentation,
+  requestedSlideCount: number
+): string {
+  // Create a precise prompt for SlidesGPT with exact slide count
+  const actualSlideCount = presentation.slides.length;
+  const slideCountToUse = Math.min(actualSlideCount, requestedSlideCount);
+  
+  // Limit slides to exactly what user requested
+  const slidesToInclude = presentation.slides.slice(0, slideCountToUse);
+  
+  let prompt = `Create a presentation with EXACTLY ${slideCountToUse} slides on: ${presentation.title}\n\n`;
   
   if (presentation.subtitle) {
-    prompt += `${presentation.subtitle}\n\n`;
+    prompt += `Subtitle: ${presentation.subtitle}\n\n`;
   }
 
-  prompt += "Create a presentation with the following slides:\n\n";
+  prompt += `Style: ${presentation.theme || 'professional'}\n\n`;
+  prompt += `IMPORTANT: Create EXACTLY ${slideCountToUse} slides, no more, no less.\n\n`;
+  prompt += "Slides:\n\n";
   
-  presentation.slides.forEach((slide, index) => {
+  slidesToInclude.forEach((slide, index) => {
     prompt += `Slide ${index + 1}: ${slide.title}\n`;
     if (slide.bulletPoints && slide.bulletPoints.length > 0) {
       slide.bulletPoints.forEach(point => {
-        prompt += `- ${point}\n`;
+        prompt += `  • ${point}\n`;
       });
     } else if (slide.content) {
-      prompt += `${slide.content}\n`;
+      prompt += `  ${slide.content}\n`;
     }
     prompt += "\n";
   });
+
+  prompt += `\nRemember: Create EXACTLY ${slideCountToUse} slides total.`;
 
   return prompt;
 }
@@ -201,14 +236,19 @@ export async function generatePresentation(
   style: string = "professional",
   createFile: boolean = false
 ): Promise<Presentation & { fileBlob?: Blob; slidesGPTId?: string }> {
-  // Step 1: Generate content using AI
+  // Step 1: Generate content using AI (limit to requested slide count)
   const presentation = await generatePresentationContent(topic, slideCount, style);
+  
+  // Ensure we only have the requested number of slides
+  if (presentation.slides.length > slideCount) {
+    presentation.slides = presentation.slides.slice(0, slideCount);
+  }
 
   // Step 2: If file creation is requested, create .pptx file using SlidesGPT
   if (createFile) {
     try {
-      // Create a prompt for SlidesGPT
-      const slidesGPTPrompt = createSlidesGPTPrompt(presentation);
+      // Create a precise prompt for SlidesGPT with exact slide count
+      const slidesGPTPrompt = createSlidesGPTPrompt(presentation, slideCount);
       
       // Generate presentation with SlidesGPT
       const slidesGPTResponse = await generateSlidesGPTPresentation(slidesGPTPrompt);

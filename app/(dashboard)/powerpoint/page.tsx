@@ -109,7 +109,9 @@ export default function PowerPointPage() {
     if (!presentation) return
 
     setIsLoading(true)
-    toast.loading('Generating PowerPoint file...')
+    const loadingToast = toast.loading('Generating PowerPoint file... This may take 30-60 seconds', {
+      duration: Infinity,
+    })
 
     try {
       const { createClient } = await import('@/lib/supabase/client')
@@ -117,10 +119,14 @@ export default function PowerPointPage() {
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
+        toast.dismiss(loadingToast)
         toast.error('Session expired. Please refresh the page.')
         setIsLoading(false)
         return
       }
+
+      // Update loading message
+      toast.loading('Creating presentation with SlidesGPT...', { id: loadingToast })
 
       const response = await fetch('/api/ai/powerpoint', {
         method: 'POST',
@@ -136,6 +142,9 @@ export default function PowerPointPage() {
           downloadFile: true 
         }),
       })
+
+      // Update loading message while processing
+      toast.loading('Downloading PowerPoint file...', { id: loadingToast })
 
       // Check if response is OK
       if (!response.ok) {
@@ -192,10 +201,10 @@ export default function PowerPointPage() {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
       
-      toast.dismiss()
-      toast.success('PowerPoint file downloaded successfully!')
+      toast.dismiss(loadingToast)
+      toast.success(`PowerPoint file downloaded successfully! (${slides} slides)`)
     } catch (error: any) {
-      toast.dismiss()
+      toast.dismiss(loadingToast)
       toast.error(error.message || 'Failed to generate PowerPoint file')
     } finally {
       setIsLoading(false)

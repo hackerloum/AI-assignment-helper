@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Deduct credits - pass authenticated supabase client
-    // PowerPoint generation costs more due to enhanced features
-    const creditCost = 6; // Higher cost for premium PowerPoint generation
+    // PowerPoint generation costs more due to enhanced features and file generation
+    const creditCost = 20; // Premium cost for PowerPoint generation with file creation
     const creditResult = await deductCredits(user.id, "powerpoint", supabase, creditCost);
     if (!creditResult.success) {
       return NextResponse.json(

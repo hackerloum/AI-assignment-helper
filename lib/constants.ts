@@ -4,7 +4,7 @@ export const CREDIT_COSTS = {
   grammar: 3,
   citation: 2,
   summarizer: 4,
-  powerpoint: 6,
+  powerpoint: 20,
 } as const;
 
 export const FREE_CREDITS_ON_SIGNUP = 50;
