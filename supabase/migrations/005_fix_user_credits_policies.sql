@@ -1,9 +1,15 @@
 -- Migration: Fix user_credits RLS policies to allow server-side updates
 -- This ensures payment callbacks can update user_credits properly
 
--- Drop existing restrictive policies
+-- Drop ALL existing policies first
+DROP POLICY IF EXISTS "Users can view own credits" ON user_credits;
 DROP POLICY IF EXISTS "Users can insert own credits" ON user_credits;
 DROP POLICY IF EXISTS "Users can update own credits" ON user_credits;
+DROP POLICY IF EXISTS "Service role can insert credits" ON user_credits;
+DROP POLICY IF EXISTS "Service role can update credits" ON user_credits;
+DROP POLICY IF EXISTS "user_credits_select_policy" ON user_credits;
+DROP POLICY IF EXISTS "user_credits_insert_policy" ON user_credits;
+DROP POLICY IF EXISTS "user_credits_update_policy" ON user_credits;
 
 -- Re-create policies with proper permissions
 -- Allow authenticated users to view their own credits
