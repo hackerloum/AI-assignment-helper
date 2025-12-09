@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     // Define plan details
     const plans = {
       daily: {
-        amount: 1000,
+        amount: 3000,
         credits: 999,
         name: 'Daily Pass',
       },

@@ -39,7 +39,7 @@ const plans = [
   {
     id: 'daily',
     name: 'Daily Pass',
-    price: '1,000',
+    price: '3,000',
     currency: 'TZS',
     period: 'per day',
     icon: Crown,
