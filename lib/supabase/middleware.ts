@@ -56,20 +56,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Only protect dashboard routes, let auth pages work freely
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/register") &&
-    !request.nextUrl.pathname.startsWith("/forgot-password") &&
-    !request.nextUrl.pathname.startsWith("/reset-password") &&
-    !request.nextUrl.pathname.startsWith("/api") &&
-    request.nextUrl.pathname !== "/" &&
-    request.nextUrl.pathname !== "/setup"
+    request.nextUrl.pathname.startsWith("/dashboard")
   ) {
-    // no user, redirect to signup page
+    // no user trying to access dashboard, redirect to login
     const url = request.nextUrl.clone();
-    url.pathname = "/register";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 

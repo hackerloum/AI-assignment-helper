@@ -86,58 +86,10 @@ export function LoginForm() {
       // Success animation
       setSuccess(true)
       
-      // Wait for cookies, verify session, then redirect
-      setTimeout(async () => {
-        // Verify session is set
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        // Save logs to localStorage so they persist after redirect
-        const logs: string[] = []
-        logs.push(`Session check: ${session ? 'Found ✅' : 'Not found ❌'}`)
-        
-        if (session && session.user) {
-          logs.push(`User: ${session.user.email}`)
-          logs.push(`Access Token: ${session.access_token ? 'Present' : 'Missing'}`)
-          logs.push('Redirecting to dashboard...')
-          
-          localStorage.setItem('login_debug', JSON.stringify({
-            logs,
-            timestamp: new Date().toISOString(),
-            hasSession: true,
-            userEmail: session.user.email
-          }))
-          
-          // Session confirmed - use router.push with refresh to ensure session is synced
-          router.refresh()
-          await new Promise(resolve => setTimeout(resolve, 500))
-          router.push('/dashboard')
-        } else {
-          logs.push('Session not ready, waiting longer...')
-          localStorage.setItem('login_debug', JSON.stringify({
-            logs,
-            timestamp: new Date().toISOString(),
-            hasSession: false
-          }))
-          
-          // No session yet - wait longer
-          setTimeout(async () => {
-            const { data: { session: retrySession } } = await supabase.auth.getSession()
-            logs.push(`Retry check: ${retrySession ? 'Found ✅' : 'Still not found ❌'}`)
-            logs.push('Force redirecting to dashboard...')
-            
-            localStorage.setItem('login_debug', JSON.stringify({
-              logs,
-              timestamp: new Date().toISOString(),
-              hasSession: !!retrySession,
-              retried: true
-            }))
-            
-            router.refresh()
-            await new Promise(resolve => setTimeout(resolve, 500))
-            router.push('/dashboard')
-          }, 2000)
-        }
-      }, 2500)
+      // Simple redirect - no checks, no middleware complications
+      setTimeout(() => {
+        window.location.href = '/dashboard'
+      }, 1000)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
     } finally {
