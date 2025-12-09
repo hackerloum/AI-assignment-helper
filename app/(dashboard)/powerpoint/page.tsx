@@ -141,21 +141,32 @@ export default function PowerPointPage() {
       if (!response.ok) {
         // Try to get error message
         let errorMessage = 'Failed to generate PowerPoint file'
+        let suggestion = ''
         try {
           const data = await response.json()
           errorMessage = data.error || data.details || errorMessage
+          suggestion = data.suggestion || ''
         } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`
         }
-        throw new Error(errorMessage)
+        const fullError = suggestion ? `${errorMessage}\n\n${suggestion}` : errorMessage
+        throw new Error(fullError)
       }
 
       // Check content type to ensure it's a PowerPoint file
       const contentType = response.headers.get('content-type')
+      if (contentType && contentType.includes('application/json')) {
+        // API returned JSON instead of file - likely an error
+        const data = await response.json()
+        const errorMsg = data.error || 'Invalid response from server'
+        const suggestion = data.suggestion || ''
+        throw new Error(suggestion ? `${errorMsg}\n\n${suggestion}` : errorMsg)
+      }
+
       if (contentType && !contentType.includes('application/vnd.openxmlformats') && !contentType.includes('application/octet-stream')) {
         // Might be an error response
         const text = await response.text()
-        throw new Error(`Invalid response from server: ${text.substring(0, 200)}`)
+        throw new Error(`Invalid response from server. Expected PowerPoint file but got: ${contentType}\n\nResponse: ${text.substring(0, 200)}`)
       }
 
       // Download the file

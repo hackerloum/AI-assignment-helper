@@ -78,7 +78,23 @@ export async function POST(request: NextRequest) {
 
     // Generate presentation using enhanced service
     // If downloadFile is true, also create the .pptx file
-    const presentation = await generatePresentation(topic, slides, style, downloadFile);
+    let presentation;
+    try {
+      presentation = await generatePresentation(topic, slides, style, downloadFile);
+    } catch (error: any) {
+      // If file generation fails, return error
+      if (downloadFile) {
+        return NextResponse.json(
+          { 
+            error: error.message || "Failed to generate PowerPoint file",
+            suggestion: "The PowerPoint Generator API may require a template file. Please check your API configuration or try downloading as Text/JSON format instead."
+          },
+          { status: 500 }
+        );
+      }
+      // Re-throw for non-file requests
+      throw error;
+    }
 
     // Save assignment
     await supabase.from("assignments").insert({
@@ -94,8 +110,20 @@ export async function POST(request: NextRequest) {
       credits_used: creditCost,
     });
 
-    // If file blob is present and download requested, return file
-    if (downloadFile && presentation.fileBlob) {
+    // If file download is requested, we must return a file or an error
+    if (downloadFile) {
+      // Check if file blob was created
+      if (!presentation.fileBlob) {
+        console.error("PowerPoint file generation failed - no fileBlob returned");
+        return NextResponse.json(
+          { 
+            error: "Failed to generate PowerPoint file. The PowerPoint Generator API may require a template file or returned an error. Please check the server logs for details.",
+            suggestion: "Try downloading as Text or JSON format instead, or ensure PPTX_API_BEARER_TOKEN is configured correctly."
+          },
+          { status: 500 }
+        );
+      }
+
       try {
         // Validate the blob is actually a PowerPoint file
         const arrayBuffer = await presentation.fileBlob.arrayBuffer();
@@ -108,8 +136,9 @@ export async function POST(request: NextRequest) {
           console.error("Invalid PowerPoint file received:", text);
           return NextResponse.json(
             { 
-              error: "Invalid PowerPoint file received from API. The file may be corrupted or the API returned an error.",
-              details: text.substring(0, 200)
+              error: "Invalid PowerPoint file received from API. The API may have returned an error instead of a file.",
+              details: text.substring(0, 200),
+              suggestion: "The PowerPoint Generator API may require a template file. Please check your API configuration."
             },
             { status: 500 }
           );
@@ -126,7 +155,10 @@ export async function POST(request: NextRequest) {
       } catch (error: any) {
         console.error("Error processing PowerPoint file:", error);
         return NextResponse.json(
-          { error: "Failed to process PowerPoint file: " + error.message },
+          { 
+            error: "Failed to process PowerPoint file: " + error.message,
+            suggestion: "The PowerPoint Generator API may require a template file or additional configuration."
+          },
           { status: 500 }
         );
       }

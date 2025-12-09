@@ -345,7 +345,12 @@ export async function generatePresentation(
   const presentation = await generatePresentationContent(topic, slideCount, style);
 
   // Step 2: If file creation is requested, create .pptx file
-  if (createFile && PPTX_API_BEARER_TOKEN) {
+  if (createFile) {
+    if (!PPTX_API_BEARER_TOKEN) {
+      console.error("PowerPoint Generator API token not configured");
+      throw new Error("PowerPoint Generator API token (PPTX_API_BEARER_TOKEN) is not configured. Please add it to your environment variables.");
+    }
+
     try {
       const apiData = formatForPowerPointAPI(presentation);
       const fileBlob = await createPowerPointFile(apiData);
@@ -353,10 +358,10 @@ export async function generatePresentation(
         ...presentation,
         fileBlob,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating PowerPoint file:", error);
-      // Return presentation data without file if API fails
-      return presentation;
+      // Re-throw the error so the API route can handle it properly
+      throw new Error(`Failed to create PowerPoint file: ${error.message}`);
     }
   }
 
