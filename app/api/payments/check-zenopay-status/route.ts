@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { checkZenoPayOrderStatus } from "@/lib/zenopay";
 
 /**
  * Check payment status directly from ZenoPay API
  * This endpoint queries ZenoPay's order-status API to get real-time payment status
+ * Uses admin client to bypass RLS for payment processing
  */
 export async function GET(request: NextRequest) {
   try {
@@ -54,8 +55,8 @@ export async function GET(request: NextRequest) {
         status = "pending";
       }
 
-      // Update our database with the latest status
-      const supabase = await createClient();
+      // Use ADMIN client to bypass RLS for payment processing
+      const supabase = createAdminClient();
       const { data: payment } = await supabase
         .from("payments")
         .select("*")
@@ -146,7 +147,7 @@ export async function GET(request: NextRequest) {
  */
 async function checkDatabaseStatus(orderId: string) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     
     const { data: payment, error } = await supabase
       .from("payments")

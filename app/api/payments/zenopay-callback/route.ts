@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { addCredits } from "@/lib/credits";
 
 /**
  * ZenoPay Webhook/Callback Endpoint
  * This endpoint receives notifications from ZenoPay when payment status changes
+ * Uses admin client to bypass RLS for payment processing
  */
 export async function POST(request: NextRequest) {
   try {
@@ -46,8 +47,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create Supabase admin client (no user auth needed for callbacks)
-    const supabase = await createClient();
+    // Use ADMIN client to bypass RLS for payment processing
+    const supabase = createAdminClient();
 
     // Find the payment record
     const { data: payment, error: fetchError } = await supabase
@@ -188,7 +189,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     
     const { data: payment, error } = await supabase
       .from("payments")

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 /**
  * EMERGENCY ADMIN ENDPOINT
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Find user
     let targetUserId = userId;
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     let targetUserId = userId;
 
