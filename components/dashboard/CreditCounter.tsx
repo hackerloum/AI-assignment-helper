@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Zap, Infinity, Clock, ArrowRight } from 'lucide-react'
+import { Zap, Infinity as InfinityIcon, Clock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useCredits } from '@/hooks/useCredits'
 
@@ -56,7 +56,7 @@ export function CreditCounter() {
           <div className="flex items-center gap-2">
             <div className="p-2 bg-amber-500/10 rounded-lg">
               {isUnlimited ? (
-                <Infinity className="w-5 h-5 text-amber-400" />
+                <InfinityIcon className="w-5 h-5 text-amber-400" />
               ) : (
                 <Zap className="w-5 h-5 text-amber-400" />
               )}
@@ -78,7 +78,7 @@ export function CreditCounter() {
         {isUnlimited ? (
           <div className="mb-4">
             <div className="flex items-baseline gap-2 mb-2">
-              <Infinity className="w-8 h-8 text-amber-400" />
+              <InfinityIcon className="w-8 h-8 text-amber-400" />
               <span className="text-sm text-slate-400">Unlimited uses</span>
             </div>
             <p className="text-xs text-slate-500">
