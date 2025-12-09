@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
-import { handleLoginRedirect } from '@/app/actions/auth-actions'
 
 interface FormErrors {
   email?: string
@@ -87,16 +86,32 @@ export function LoginForm() {
       // Success animation
       setSuccess(true)
       
-      // Use server action to properly handle redirect with session
+      // Wait for cookies to be set, then redirect
+      // In production on Vercel, cookies need time to propagate
       setTimeout(async () => {
         try {
-          await handleLoginRedirect()
+          // Verify session is set before redirecting
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (session && session.user) {
+            // Session confirmed - redirect with full page reload
+            // This ensures middleware picks up the session in production
+            window.location.href = '/dashboard'
+          } else {
+            // Session not set yet, wait a bit more then force redirect
+            // Sometimes cookies take longer in production
+            setTimeout(() => {
+              window.location.href = '/dashboard'
+            }, 1000)
+          }
         } catch (error) {
-          // If server action fails, fallback to client-side redirect
-          router.refresh()
-          router.push('/dashboard')
+          // Fallback: redirect anyway after delay
+          // In production, sometimes we need to trust the redirect
+          setTimeout(() => {
+            window.location.href = '/dashboard'
+          }, 1000)
         }
-      }, 800)
+      }, 2000)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
     } finally {
