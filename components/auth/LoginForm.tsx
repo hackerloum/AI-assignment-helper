@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
-import { handleLoginRedirect } from '@/app/actions/auth-actions'
 
 interface FormErrors {
   email?: string
@@ -87,37 +86,27 @@ export function LoginForm() {
       // Success animation
       setSuccess(true)
       
-      // Wait for cookies to be set, then redirect
-      // Use server action which verifies session server-side before redirecting
+      // Simple approach: Wait for cookies, verify session, then redirect
       setTimeout(async () => {
-        try {
-          // First verify session exists client-side
-          const { data: { session } } = await supabase.auth.getSession()
-          
-          if (session && session.user) {
-            // Session confirmed - use server action for redirect
-            // Server action will verify session server-side and redirect
-            // redirect() throws, so this will navigate
-            await handleLoginRedirect()
-          } else {
-            // Session not found yet - wait and retry with client redirect
-            setTimeout(() => {
-              window.location.href = '/dashboard'
-            }, 2000)
-          }
-        } catch (error) {
-          // redirect() throws NEXT_REDIRECT error which is expected
-          // If it's a different error, fallback to client redirect
-          const errorWithDigest = error as { digest?: string } | null
-          if (errorWithDigest && typeof errorWithDigest.digest === 'string' && errorWithDigest.digest.includes('NEXT_REDIRECT')) {
-            // This is the expected redirect - do nothing, navigation will happen
-            return
-          }
-          // Other error - fallback to client redirect
-          console.error('Redirect error:', error)
+        // Verify session is set
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        console.log('Session check:', session ? 'Found ✅' : 'Not found ❌')
+        
+        if (session && session.user) {
+          console.log('User:', session.user.email)
+          console.log('Redirecting to dashboard...')
+          // Session confirmed - do a hard redirect
           window.location.href = '/dashboard'
+        } else {
+          // No session yet - wait longer and redirect anyway
+          console.log('Session not ready, waiting longer...')
+          setTimeout(() => {
+            console.log('Force redirecting to dashboard...')
+            window.location.href = '/dashboard'
+          }, 2000)
         }
-      }, 2000)
+      }, 2500)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })
     } finally {
