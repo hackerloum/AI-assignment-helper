@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import { CreditCard, Check, Zap, Crown, Infinity } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useUser } from '@/hooks/useUser'
-import { initiateSubscriptionPayment } from '@/app/actions/subscription-actions'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -148,13 +147,19 @@ export default function SubscriptionPage() {
     try {
       console.log('Initiating payment for user:', user.email)
       
-      const result = await initiateSubscriptionPayment({
-        planType: selectedPlan,
-        buyerEmail: formData.email,
-        buyerName: formData.name,
-        buyerPhone: cleanedPhone,
+      // Use API route instead of server action for better cookie handling in production
+      const response = await fetch('/api/subscription/initiate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planType: selectedPlan,
+          buyerEmail: formData.email,
+          buyerName: formData.name,
+          buyerPhone: cleanedPhone,
+        }),
       })
 
+      const result = await response.json()
       console.log('Payment result:', result)
 
       if (result.success) {
