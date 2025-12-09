@@ -121,7 +121,7 @@ export function LoginForm() {
           
           // No session yet - wait longer
           setTimeout(async () => {
-            const { data: { retrySession } } = await supabase.auth.getSession()
+            const { data: { session: retrySession } } = await supabase.auth.getSession()
             logs.push(`Retry check: ${retrySession ? 'Found ✅' : 'Still not found ❌'}`)
             logs.push('Force redirecting to dashboard...')
             
