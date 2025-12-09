@@ -82,7 +82,7 @@ export default function SupportPage() {
             </h1>
           </div>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            We're here to help! Find answers to common questions or get in touch with our support team.
+            We&apos;re here to help! Find answers to common questions or get in touch with our support team.
           </p>
         </motion.div>
 
@@ -191,7 +191,7 @@ export default function SupportPage() {
             Still Need Help?
           </h3>
           <p className="text-slate-300 mb-6">
-            Can't find what you're looking for? Our support team is ready to assist you.
+            Can&apos;t find what you&apos;re looking for? Our support team is ready to assist you.
           </p>
           <Link href="/contact">
             <motion.button

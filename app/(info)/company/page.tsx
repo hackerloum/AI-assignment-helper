@@ -50,7 +50,7 @@ export default function CompanyPage() {
             </h1>
           </div>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            We're a Tanzanian-based technology company dedicated to helping college students 
+            We&apos;re a Tanzanian-based technology company dedicated to helping college students 
             succeed in their academic journey through innovative AI-powered tools.
           </p>
         </motion.div>
@@ -104,7 +104,7 @@ export default function CompanyPage() {
               <p>
                 Today, we serve thousands of students across Tanzania and East Africa, helping 
                 them complete assignments faster, improve their writing, and achieve better 
-                academic results. We're proud to be part of their success stories.
+                academic results. We&apos;re proud to be part of their success stories.
               </p>
             </div>
           </div>
@@ -143,12 +143,12 @@ export default function CompanyPage() {
           <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-8">
             <h2 className="text-3xl font-bold text-white mb-6">Our Team</h2>
             <p className="text-slate-300 leading-relaxed mb-6">
-              We're a diverse team of developers, educators, and AI specialists who are passionate 
+              We&apos;re a diverse team of developers, educators, and AI specialists who are passionate 
               about education and technology. Our team combines deep technical expertise with a 
               genuine understanding of the challenges students face.
             </p>
             <p className="text-slate-300 leading-relaxed">
-              We're constantly working to improve our platform, add new features, and ensure that 
+              We&apos;re constantly working to improve our platform, add new features, and ensure that 
               every student who uses AI Assignment Helper has the best possible experience. Your 
               success is our success.
             </p>

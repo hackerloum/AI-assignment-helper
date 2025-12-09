@@ -301,7 +301,7 @@ export default function RefundPolicyPage() {
                   Questions About Refunds?
                 </h3>
                 <p className="text-slate-300 leading-relaxed max-w-2xl mx-auto mb-6">
-                  If you have any questions or concerns about our refund policy, please don't hesitate to contact us.
+                  If you have any questions or concerns about our refund policy, please don&apos;t hesitate to contact us.
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <Link href="/contact">

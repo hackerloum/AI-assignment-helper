@@ -212,10 +212,10 @@ export default function HelpCenterPage() {
           className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 rounded-2xl p-8 text-center mt-12"
         >
           <h3 className="text-2xl font-bold text-white mb-4">
-            Can't Find What You're Looking For?
+            Can&apos;t Find What You&apos;re Looking For?
           </h3>
           <p className="text-slate-300 mb-6">
-            Our support team is here to help. Get in touch and we'll assist you personally.
+            Our support team is here to help. Get in touch and we&apos;ll assist you personally.
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/contact">

@@ -346,7 +346,7 @@ export default function PaymentVerificationPage() {
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4" />
-                          I've Completed Payment - Verify Now
+                          I&apos;ve Completed Payment - Verify Now
                         </>
                       )}
                     </button>

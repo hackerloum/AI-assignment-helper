@@ -74,7 +74,7 @@ export default function ContactPage() {
             </h1>
           </div>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            Have a question? We're here to help! Get in touch with our support team and we'll respond as soon as possible.
+            Have a question? We&apos;re here to help! Get in touch with our support team and we&apos;ll respond as soon as possible.
           </p>
         </motion.div>
 

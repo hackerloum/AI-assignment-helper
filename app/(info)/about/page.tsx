@@ -62,7 +62,7 @@ export default function AboutPage() {
             </h1>
           </div>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-            AI Assignment Helper is your trusted partner in academic success. We're here to help 
+            AI Assignment Helper is your trusted partner in academic success. We&apos;re here to help 
             you excel in your studies with powerful, easy-to-use AI tools.
           </p>
         </motion.div>
@@ -80,7 +80,7 @@ export default function AboutPage() {
               <p>
                 AI Assignment Helper provides a comprehensive suite of AI-powered tools designed 
                 specifically for college students. Whether you need help with research, writing, 
-                citations, grammar checking, or creating presentations, we've got you covered.
+                citations, grammar checking, or creating presentations, we&apos;ve got you covered.
               </p>
               <p>
                 Our platform combines the power of advanced AI models with an intuitive interface, 
@@ -88,7 +88,7 @@ export default function AboutPage() {
                 complexity or high costs of traditional services.
               </p>
               <p>
-                We understand that every student's needs are different. That's why we offer flexible 
+                We understand that every student&apos;s needs are different. That&apos;s why we offer flexible 
                 credit-based pricing, allowing you to pay only for what you use. No subscriptions, 
                 no hidden fees—just straightforward, affordable academic assistance.
               </p>
@@ -160,8 +160,8 @@ export default function AboutPage() {
               <div>
                 <h3 className="text-xl font-semibold text-white mb-3">🌍 Made in Tanzania</h3>
                 <p className="text-slate-300 leading-relaxed">
-                  We're a local company that understands the Tanzanian academic system and the 
-                  unique challenges you face. We're here to support you.
+                  We&apos;re a local company that understands the Tanzanian academic system and the 
+                  unique challenges you face. We&apos;re here to support you.
                 </p>
               </div>
             </div>
