@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     // Query ZenoPay order status API using library function
     const zenopayData = await checkZenoPayOrderStatus(zenopayApiKey, orderId);
 
-    if (zenopayData.status === "error") {
+    // Check if it's an error response
+    if ('status' in zenopayData && zenopayData.status === "error") {
       console.error("[Check ZenoPay Status] ZenoPay API error:", zenopayData.message);
       // Fallback to database check
       return await checkDatabaseStatus(orderId);
