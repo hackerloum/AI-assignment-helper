@@ -4,11 +4,58 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { RegisterForm } from '@/components/auth/RegisterForm'
 import { AuthBrandPanel } from '@/components/auth/AuthBrandPanel'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export default function RegisterPage() {
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+  
+  useEffect(() => {
+    // Check if we have debug logs from login redirect
+    const loginDebug = localStorage.getItem('login_debug')
+    if (loginDebug) {
+      try {
+        const parsed = JSON.parse(loginDebug)
+        setDebugInfo(parsed)
+        // Clear after reading
+        localStorage.removeItem('login_debug')
+      } catch (e) {
+        console.error('Failed to parse debug info:', e)
+      }
+    }
+  }, [])
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
+    <div className="min-h-screen grid lg:grid-cols-2 relative">
+      {/* Debug Info Banner */}
+      {debugInfo && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-red-500/20 border-b border-red-500/50 backdrop-blur-xl p-4">
+          <div className="container mx-auto">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-white font-bold mb-2">🐛 Login Debug Info - Redirected to Register</h3>
+                <div className="bg-black/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  {debugInfo.logs?.map((log: string, i: number) => (
+                    <div key={i} className="text-emerald-400">{log}</div>
+                  ))}
+                  <div className="text-slate-500 mt-2">
+                    Time: {new Date(debugInfo.timestamp).toLocaleTimeString()}
+                  </div>
+                  <div className="text-amber-400 mt-2">
+                    ⚠️ Middleware redirected to /register (session not found by middleware)
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDebugInfo(null)}
+                  className="mt-2 text-sm text-slate-400 hover:text-white"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Left Panel - Brand Experience */}
       <AuthBrandPanel 
         title="Start your academic success journey"

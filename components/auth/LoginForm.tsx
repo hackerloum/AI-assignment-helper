@@ -86,24 +86,55 @@ export function LoginForm() {
       // Success animation
       setSuccess(true)
       
-      // Simple approach: Wait for cookies, verify session, then redirect
+      // Wait for cookies, verify session, then redirect
       setTimeout(async () => {
         // Verify session is set
         const { data: { session } } = await supabase.auth.getSession()
         
-        console.log('Session check:', session ? 'Found ✅' : 'Not found ❌')
+        // Save logs to localStorage so they persist after redirect
+        const logs: string[] = []
+        logs.push(`Session check: ${session ? 'Found ✅' : 'Not found ❌'}`)
         
         if (session && session.user) {
-          console.log('User:', session.user.email)
-          console.log('Redirecting to dashboard...')
-          // Session confirmed - do a hard redirect
-          window.location.href = '/dashboard'
+          logs.push(`User: ${session.user.email}`)
+          logs.push(`Access Token: ${session.access_token ? 'Present' : 'Missing'}`)
+          logs.push('Redirecting to dashboard...')
+          
+          localStorage.setItem('login_debug', JSON.stringify({
+            logs,
+            timestamp: new Date().toISOString(),
+            hasSession: true,
+            userEmail: session.user.email
+          }))
+          
+          // Session confirmed - use router.push with refresh to ensure session is synced
+          router.refresh()
+          await new Promise(resolve => setTimeout(resolve, 500))
+          router.push('/dashboard')
         } else {
-          // No session yet - wait longer and redirect anyway
-          console.log('Session not ready, waiting longer...')
-          setTimeout(() => {
-            console.log('Force redirecting to dashboard...')
-            window.location.href = '/dashboard'
+          logs.push('Session not ready, waiting longer...')
+          localStorage.setItem('login_debug', JSON.stringify({
+            logs,
+            timestamp: new Date().toISOString(),
+            hasSession: false
+          }))
+          
+          // No session yet - wait longer
+          setTimeout(async () => {
+            const { data: { retrySession } } = await supabase.auth.getSession()
+            logs.push(`Retry check: ${retrySession ? 'Found ✅' : 'Still not found ❌'}`)
+            logs.push('Force redirecting to dashboard...')
+            
+            localStorage.setItem('login_debug', JSON.stringify({
+              logs,
+              timestamp: new Date().toISOString(),
+              hasSession: !!retrySession,
+              retried: true
+            }))
+            
+            router.refresh()
+            await new Promise(resolve => setTimeout(resolve, 500))
+            router.push('/dashboard')
           }, 2000)
         }
       }, 2500)
