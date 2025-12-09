@@ -82,6 +82,13 @@ export function useUsageStats() {
         })
       } catch (error) {
         console.error('Error fetching usage stats:', error)
+        // Set default weekly data on error to ensure graph still renders
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        const defaultWeeklyData = dayNames.map(day => ({ day, value: 0 }))
+        setStats(prev => ({
+          ...prev,
+          weeklyUsage: defaultWeeklyData,
+        }))
       } finally {
         setLoading(false)
       }
