@@ -17,18 +17,13 @@ export async function initiateSubscriptionPayment(data: {
   try {
     const supabase = await createClient();
     
-    // Try getSession first (more reliable for server actions)
-    const { data: { session } } = await supabase.auth.getSession();
-    let user = session?.user ?? null;
-    
-    // Fallback to getUser if session didn't work
-    if (!user) {
-      const { data: { user: userFromGetUser } } = await supabase.auth.getUser();
-      user = userFromGetUser;
-    }
+    // Use getUser() directly as it's more reliable in server actions
+    // It reads from cookies which are properly handled by the middleware
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
-      return { success: false, error: "Not authenticated" };
+    if (authError || !user) {
+      console.error("Authentication error:", authError);
+      return { success: false, error: "Not authenticated. Please log in again." };
     }
 
     // Validate required fields

@@ -186,3 +186,16 @@ export async function summarizeText(
   );
 }
 
+export async function generateResearch(query: string): Promise<string> {
+  const systemInstruction =
+    "You are an expert research assistant. Provide comprehensive, well-researched answers to research questions. Structure your response with clear sections, use evidence-based information, and cite key points when relevant. Be thorough but concise, and ensure accuracy.";
+  const prompt = `Answer the following research question comprehensively:\n\n${query}\n\nProvide a detailed, well-structured answer that covers the main aspects of the topic.`;
+
+  return await callGemini(
+    prompt,
+    systemInstruction,
+    0.7,
+    2000 // Allow for longer research responses
+  );
+}
+
