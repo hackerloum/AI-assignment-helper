@@ -69,7 +69,8 @@ export default function PaymentStatusPage() {
 
   const checkPaymentStatus = async () => {
     try {
-      const response = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+      // Use the new endpoint that checks ZenoPay directly
+      const response = await fetch(`/api/payments/check-zenopay-status?order_id=${orderId}`)
       const data = await response.json()
 
       if (response.ok) {
@@ -81,9 +82,28 @@ export default function PaymentStatusPage() {
         } else if (data.status === 'failed') {
           toast.error('Payment failed. Please try again.')
         }
+      } else {
+        // Fallback to database check
+        const fallbackResponse = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json()
+          setPaymentDetails(fallbackData)
+          setStatus(fallbackData.status as PaymentStatus)
+        }
       }
     } catch (error) {
       console.error('Error checking payment status:', error)
+      // Fallback to database check on error
+      try {
+        const fallbackResponse = await fetch(`/api/payments/zenopay-callback?order_id=${orderId}`)
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json()
+          setPaymentDetails(fallbackData)
+          setStatus(fallbackData.status as PaymentStatus)
+        }
+      } catch (fallbackError) {
+        console.error('Fallback check also failed:', fallbackError)
+      }
     }
   }
 

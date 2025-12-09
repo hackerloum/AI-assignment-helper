@@ -134,13 +134,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initiate ZenoPay payment
+    // Get webhook URL (use environment variable or construct from request)
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                   (request.headers.get('origin') || 
+                    `https://${request.headers.get('host') || 'localhost:3000'}`);
+    const webhookUrl = `${baseUrl}/api/payments/zenopay-callback`;
+
+    // Initiate ZenoPay payment with webhook URL
     const zenopayResponse = await initiateZenoPayPayment(zenopayApiKey, {
       order_id: payment.id,
       buyer_email: buyerEmail,
       buyer_name: buyerName,
       buyer_phone: formattedPhone,
       amount: ONE_TIME_PAYMENT_AMOUNT,
+      webhook_url: webhookUrl,
     });
 
     if (zenopayResponse.status === "error") {

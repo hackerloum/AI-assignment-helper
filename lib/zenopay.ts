@@ -4,6 +4,7 @@
  */
 
 const ZENOPAY_API_URL = "https://zenoapi.com/api/payments/mobile_money_tanzania";
+const ZENOPAY_ORDER_STATUS_URL = "https://zenoapi.com/api/payments/order-status";
 
 export interface ZenoPayRequest {
   order_id: string;
@@ -11,6 +12,7 @@ export interface ZenoPayRequest {
   buyer_name: string;
   buyer_phone: string;
   amount: number;
+  webhook_url?: string;
 }
 
 export interface ZenoPayResponse {
@@ -23,6 +25,23 @@ export interface ZenoPayError {
   status: "error";
   message: string;
   error?: string;
+}
+
+export interface ZenoPayOrderStatusResponse {
+  reference: string;
+  resultcode: string;
+  result: string;
+  message: string;
+  data?: Array<{
+    order_id: string;
+    creation_date: string;
+    amount: string;
+    payment_status: "COMPLETED" | "PENDING" | "FAILED" | "CANCELLED";
+    transid?: string;
+    channel?: string;
+    reference?: string;
+    msisdn?: string;
+  }>;
 }
 
 /**
@@ -86,16 +105,15 @@ export function formatTanzanianPhone(phone: string): string {
 }
 
 /**
- * Check ZenoPay order status
- * This function queries ZenoPay API directly to get real-time payment status
+ * Check order status from ZenoPay
  */
 export async function checkZenoPayOrderStatus(
-  orderId: string,
-  apiKey: string
-): Promise<{ status: string; data?: any; error?: string }> {
+  apiKey: string,
+  orderId: string
+): Promise<ZenoPayOrderStatusResponse | ZenoPayError> {
   try {
     const response = await fetch(
-      `https://zenoapi.com/api/payments/order-status?order_id=${orderId}`,
+      `${ZENOPAY_ORDER_STATUS_URL}?order_id=${orderId}`,
       {
         method: "GET",
         headers: {
@@ -104,50 +122,22 @@ export async function checkZenoPayOrderStatus(
       }
     );
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
       return {
         status: "error",
-        error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+        message: data.message || "Failed to check order status",
+        error: data.error,
       };
     }
 
-    const data = await response.json();
-    
-    // ZenoPay returns data in a data array
-    const orderData = data.data?.[0];
-    
-    if (!orderData) {
-      return {
-        status: "pending",
-        error: "Order not found in ZenoPay system",
-      };
-    }
-
-    // Map ZenoPay payment_status to our status
-    const zenopayStatus = orderData.payment_status?.toUpperCase() || "PENDING";
-    let mappedStatus = "pending";
-    
-    if (zenopayStatus === "SUCCESS" || zenopayStatus === "COMPLETED" || zenopayStatus === "PAID") {
-      mappedStatus = "completed";
-    } else if (zenopayStatus === "FAILED" || zenopayStatus === "ERROR" || zenopayStatus === "CANCELLED") {
-      mappedStatus = "failed";
-    }
-
-    return {
-      status: mappedStatus,
-      data: {
-        payment_status: mappedStatus,
-        transaction_id: orderData.transaction_id,
-        amount: orderData.amount,
-        ...orderData,
-      },
-    };
+    return data as ZenoPayOrderStatusResponse;
   } catch (error: any) {
-    console.error("ZenoPay order status check error:", error);
+    console.error("ZenoPay Order Status API error:", error);
     return {
       status: "error",
-      error: error.message || "Failed to check order status",
+      message: error.message || "Failed to connect to payment service",
     };
   }
 }

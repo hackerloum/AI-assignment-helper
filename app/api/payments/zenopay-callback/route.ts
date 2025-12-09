@@ -22,14 +22,29 @@ export async function POST(request: NextRequest) {
 
     // Parse the callback payload
     const body = await request.json();
-    const { order_id, transaction_id, status, amount } = body;
+    
+    // ZenoPay webhook format: { order_id, payment_status, reference, metadata }
+    // Also supports: { order_id, payment_status, reference, transid }
+    const order_id = body.order_id || body.orderId;
+    const payment_status = body.payment_status || body.status;
+    const reference = body.reference;
+    const transid = body.transid || body.transaction_id || body.transId;
 
-    console.log("[ZenoPay Callback] Payment notification:", {
+    console.log("[ZenoPay Callback] Full webhook payload:", JSON.stringify(body, null, 2));
+    console.log("[ZenoPay Callback] Parsed notification:", {
       order_id,
-      transaction_id,
-      status,
-      amount
+      payment_status,
+      reference,
+      transid
     });
+
+    if (!order_id) {
+      console.error("[ZenoPay Callback] Missing order_id in webhook payload");
+      return NextResponse.json(
+        { error: "Missing order_id" },
+        { status: 400 }
+      );
+    }
 
     // Create Supabase admin client (no user auth needed for callbacks)
     const supabase = await createClient();
@@ -50,22 +65,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Map ZenoPay status to our status
+    // ZenoPay sends: "COMPLETED", "PENDING", "FAILED", etc.
     let paymentStatus: string;
-    if (status === "success" || status === "completed") {
+    if (payment_status === "COMPLETED" || payment_status === "completed" || payment_status === "success") {
       paymentStatus = "completed";
-    } else if (status === "failed" || status === "error") {
+    } else if (payment_status === "FAILED" || payment_status === "failed" || payment_status === "error" || payment_status === "CANCELLED") {
       paymentStatus = "failed";
-    } else if (status === "pending") {
+    } else if (payment_status === "PENDING" || payment_status === "pending") {
       paymentStatus = "pending";
     } else {
-      paymentStatus = "failed"; // Default to failed for unknown statuses
+      paymentStatus = "pending"; // Default to pending for unknown statuses
     }
 
     // Update payment record
     const { error: updateError } = await supabase
       .from("payments")
       .update({
-        transaction_id: transaction_id || payment.transaction_id,
+        transaction_id: transid || payment.transaction_id,
         payment_status: paymentStatus,
         updated_at: new Date().toISOString(),
       })

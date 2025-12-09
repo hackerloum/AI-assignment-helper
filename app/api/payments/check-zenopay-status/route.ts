@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
-import { checkZenoPayOrderStatus } from "@/lib/zenopay";
-import { addCredits } from "@/lib/credits";
 import { createClient } from "@/lib/supabase/server";
+import { checkZenoPayOrderStatus } from "@/lib/zenopay";
 
 /**
- * Check payment status directly from ZenoPay API and update our database
- * This endpoint provides real-time payment status checking
+ * Check payment status directly from ZenoPay API
+ * This endpoint queries ZenoPay's order-status API to get real-time payment status
  */
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +18,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get ZenoPay API key
     const zenopayApiKey = process.env.ZENOPAY_API_KEY;
     if (!zenopayApiKey) {
       return NextResponse.json(
@@ -30,117 +26,159 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check status from ZenoPay API directly
-    const zenopayStatus = await checkZenoPayOrderStatus(orderId, zenopayApiKey);
+    // Query ZenoPay order status API using library function
+    const zenopayData = await checkZenoPayOrderStatus(zenopayApiKey, orderId);
 
-    if (zenopayStatus.status === "error") {
-      return NextResponse.json(
-        { 
-          error: zenopayStatus.error || "Failed to check payment status",
-          status: "error"
-        },
-        { status: 500 }
-      );
+    if (zenopayData.status === "error") {
+      console.error("[Check ZenoPay Status] ZenoPay API error:", zenopayData.message);
+      // Fallback to database check
+      return await checkDatabaseStatus(orderId);
     }
 
-    // Get Supabase client
-    const supabase = await createClient();
+    // Parse ZenoPay response
+    if (zenopayData.resultcode === "000" && zenopayData.data && zenopayData.data.length > 0) {
+      const paymentData = zenopayData.data[0];
+      const paymentStatus = paymentData.payment_status;
 
-    // Find the payment record in our database
-    const { data: payment, error: fetchError } = await supabase
+      // Map ZenoPay status to our status
+      let status: string;
+      if (paymentStatus === "COMPLETED") {
+        status = "completed";
+      } else if (paymentStatus === "FAILED" || paymentStatus === "CANCELLED") {
+        status = "failed";
+      } else {
+        status = "pending";
+      }
+
+      // Update our database with the latest status
+      const supabase = await createClient();
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+
+      if (payment) {
+        // Update payment record if status changed
+        if (payment.payment_status !== status) {
+          await supabase
+            .from("payments")
+            .update({
+              payment_status: status,
+              transaction_id: paymentData.transid || payment.transaction_id,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", orderId);
+
+          // If payment completed, handle it
+          if (status === "completed" && payment.payment_status !== "completed") {
+            await handleCompletedPayment(payment, paymentData.transid, supabase);
+          }
+        }
+      }
+
+      return NextResponse.json({
+        order_id: orderId,
+        status: status,
+        transaction_id: paymentData.transid,
+        amount: parseInt(paymentData.amount) || payment?.amount,
+        channel: paymentData.channel,
+        reference: paymentData.reference,
+        msisdn: paymentData.msisdn,
+        created_at: payment?.created_at,
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      // ZenoPay returned error or no data
+      console.error("[Check ZenoPay Status] ZenoPay response:", zenopayData);
+      return await checkDatabaseStatus(orderId);
+    }
+  } catch (error: any) {
+    console.error("[Check ZenoPay Status] Error:", error);
+    // Fallback to database check
+    const searchParams = request.nextUrl.searchParams;
+    const orderId = searchParams.get('order_id');
+    if (orderId) {
+      return await checkDatabaseStatus(orderId);
+    }
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Fallback: Check payment status from database
+ */
+async function checkDatabaseStatus(orderId: string) {
+  try {
+    const supabase = await createClient();
+    
+    const { data: payment, error } = await supabase
       .from("payments")
       .select("*")
       .eq("id", orderId)
       .single();
 
-    if (fetchError || !payment) {
+    if (error || !payment) {
       return NextResponse.json(
-        { 
-          error: "Payment not found in database",
-          zenopayStatus: zenopayStatus.status,
-          zenopayData: zenopayStatus.data
-        },
+        { error: "Payment not found" },
         { status: 404 }
       );
     }
 
-    const paymentStatus = zenopayStatus.status; // 'pending', 'completed', or 'failed'
-    const zenopayData = zenopayStatus.data;
-
-    // Update payment record if status changed
-    if (payment.payment_status !== paymentStatus) {
-      const updateData: any = {
-        payment_status: paymentStatus,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Update transaction ID if available from ZenoPay
-      if (zenopayData?.transaction_id) {
-        updateData.transaction_id = zenopayData.transaction_id;
-      }
-
-      const { error: updateError } = await supabase
-        .from("payments")
-        .update(updateData)
-        .eq("id", orderId);
-
-      if (updateError) {
-        console.error("[Check ZenoPay Status] Failed to update payment:", updateError);
-      } else {
-        console.log(`[Check ZenoPay Status] ✅ Updated payment ${orderId} to status: ${paymentStatus}`);
-      }
-
-      // If payment is completed, handle based on payment type
-      if (paymentStatus === "completed" && payment.payment_status !== "completed") {
-        // For subscription payments, add credits
-        if (payment.payment_type === "subscription" || !payment.payment_type) {
-          await addCredits(
-            payment.user_id,
-            payment.credits_purchased,
-            `Payment confirmed - Order ${orderId}`,
-            supabase
-          );
-          
-          console.log("[Check ZenoPay Status] ✅ Credits added for user:", payment.user_id);
-        }
-        
-        // For one-time payments, mark user as paid
-        if (payment.payment_type === "one_time") {
-          // Update user_credits to mark payment as completed
-          const { error: updateError } = await supabase
-            .from("user_credits")
-            .update({ 
-              has_paid_one_time_fee: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq("user_id", payment.user_id);
-          
-          if (updateError) {
-            console.error("[Check ZenoPay Status] Failed to update payment status:", updateError);
-          } else {
-            console.log("[Check ZenoPay Status] ✅ One-time payment marked as paid for user:", payment.user_id);
-          }
-        }
-      }
-    }
-
-    // Return current status
     return NextResponse.json({
       order_id: payment.id,
-      status: paymentStatus,
-      transaction_id: zenopayData?.transaction_id || payment.transaction_id,
+      status: payment.payment_status,
+      transaction_id: payment.transaction_id,
       amount: payment.amount,
-      payment_type: payment.payment_type,
       created_at: payment.created_at,
-      updated_at: new Date().toISOString(),
-      zenopayData: zenopayData, // Include raw ZenoPay data for debugging
+      updated_at: payment.updated_at
     });
   } catch (error: any) {
-    console.error("[Check ZenoPay Status] Error:", error);
     return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Handle completed payment - add credits or mark as paid
+ */
+async function handleCompletedPayment(
+  payment: any,
+  transactionId: string | null,
+  supabase: any
+) {
+  // For subscription payments, add credits
+  if (payment.payment_type === "subscription" || !payment.payment_type) {
+    const { addCredits } = await import("@/lib/credits");
+    await addCredits(
+      payment.user_id,
+      payment.credits_purchased,
+      `Payment confirmed - Order ${payment.id}`,
+      supabase
+    );
+    console.log("[Check ZenoPay Status] ✅ Credits added for user:", payment.user_id);
+  }
+  
+  // For one-time payments, mark user as paid
+  if (payment.payment_type === "one_time") {
+    const { error: updateError } = await supabase
+      .from("user_credits")
+      .update({ 
+        has_paid_one_time_fee: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq("user_id", payment.user_id);
+    
+    if (updateError) {
+      console.error("[Check ZenoPay Status] Failed to update payment status:", updateError);
+    } else {
+      console.log("[Check ZenoPay Status] ✅ One-time payment marked as paid for user:", payment.user_id);
+    }
   }
 }
 

@@ -119,13 +119,18 @@ export async function initiateSubscriptionPayment(data: {
       return { success: false, error: "ZenoPay API key not configured" };
     }
 
-    // Initiate ZenoPay payment
+    // Get base URL for webhook
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const webhookUrl = `${baseUrl}/api/payments/zenopay-callback`;
+
+    // Initiate ZenoPay payment with webhook URL
     const zenopayResponse = await initiateZenoPayPayment(zenopayApiKey, {
       order_id: payment.id,
       buyer_email: data.buyerEmail,
       buyer_name: data.buyerName,
       buyer_phone: formattedPhone,
       amount: plan.amount,
+      webhook_url: webhookUrl,
     });
 
     if (zenopayResponse.status === "error") {
