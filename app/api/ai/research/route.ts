@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { deductCredits } from "@/lib/credits";
-import { generateResearch } from "@/lib/ai-service";
+import { generateResearch, ResearchOptions } from "@/lib/ai-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { query } = body;
+    const { query, options } = body;
 
     if (!query || typeof query !== "string" || !query.trim()) {
       return NextResponse.json(
@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate research answer
-    const answer = await generateResearch(query);
+    // Generate research answer with options
+    const answer = await generateResearch(query, options || {});
 
     // Save assignment
     await supabase.from("assignments").insert({

@@ -11,29 +11,47 @@ import {
   Download,
   BookOpen,
   Lightbulb,
-  RefreshCw
+  RefreshCw,
+  Settings,
+  X,
+  GraduationCap,
+  Layers,
+  Palette,
+  BookMarked
 } from 'lucide-react'
 import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import type { ResearchOptions } from '@/lib/ai-service'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  options?: ResearchOptions
 }
 
 const suggestedPrompts = [
-  "Explain quantum computing in simple terms",
-  "What are the effects of climate change on agriculture?",
-  "Summarize the main theories of democracy",
-  "Discuss the impact of social media on mental health"
+  "Explain photosynthesis step by step for biology class",
+  "What is the difference between correlation and causation?",
+  "How does the water cycle work? Include examples",
+  "Explain the causes and effects of World War I",
+  "What are the main principles of democracy?",
+  "How do supply and demand affect prices in economics?"
 ]
 
 export default function ResearchPage() {
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
+  const [researchOptions, setResearchOptions] = useState<ResearchOptions>({
+    depth: 'intermediate',
+    format: 'comprehensive',
+    includeExamples: true,
+    includeVisualSuggestions: true,
+    studentLevel: 'undergraduate'
+  })
 
   const handleSubmit = async (promptText?: string) => {
     const queryToSend = promptText || query
@@ -43,7 +61,8 @@ export default function ResearchPage() {
     const userMessage: Message = {
       role: 'user',
       content: queryToSend,
-      timestamp: new Date()
+      timestamp: new Date(),
+      options: { ...researchOptions }
     }
     setMessages(prev => [...prev, userMessage])
     setQuery('')
@@ -69,7 +88,10 @@ export default function ResearchPage() {
           'Authorization': `Bearer ${session.access_token}`
         },
         credentials: 'include',
-        body: JSON.stringify({ query: queryToSend }),
+        body: JSON.stringify({ 
+          query: queryToSend,
+          options: researchOptions
+        }),
       })
 
       const data = await response.json()
@@ -137,37 +159,225 @@ export default function ResearchPage() {
               <div>
                 <h1 className="text-3xl font-bold text-white">AI Research Assistant</h1>
                 <p className="text-slate-400 mt-1">
-                  Get comprehensive answers to any research question
+                  Get comprehensive, student-friendly answers to any research question
                 </p>
               </div>
             </div>
           </div>
 
-          {messages.length > 0 && (
-            <div className="flex items-center gap-2">
-              <motion.button
-                onClick={handleExport}
-                className="px-4 py-2 bg-dashboard-elevated hover:bg-dashboard-surface border border-dashboard-border rounded-lg text-slate-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Download className="w-4 h-4" />
-                Export
-              </motion.button>
+          <div className="flex items-center gap-2">
+            <motion.button
+              onClick={() => setShowConfig(true)}
+              className="px-4 py-2 bg-dashboard-elevated hover:bg-dashboard-surface border border-dashboard-border rounded-lg text-slate-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-2"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              title="Configure research settings"
+            >
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </motion.button>
 
-              <motion.button
-                onClick={handleNewChat}
-                className="px-4 py-2 bg-dashboard-elevated hover:bg-dashboard-surface border border-dashboard-border rounded-lg text-slate-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-2"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <RefreshCw className="w-4 h-4" />
-                New Chat
-              </motion.button>
-            </div>
-          )}
+            {messages.length > 0 && (
+              <>
+                <motion.button
+                  onClick={handleExport}
+                  className="px-4 py-2 bg-dashboard-elevated hover:bg-dashboard-surface border border-dashboard-border rounded-lg text-slate-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={handleNewChat}
+                  className="px-4 py-2 bg-dashboard-elevated hover:bg-dashboard-surface border border-dashboard-border rounded-lg text-slate-300 hover:text-white text-sm font-medium transition-colors flex items-center gap-2"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span className="hidden sm:inline">New Chat</span>
+                </motion.button>
+              </>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Configuration Modal */}
+      <AnimatePresence>
+        {showConfig && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConfig(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl bg-dashboard-elevated border border-dashboard-border rounded-2xl shadow-2xl overflow-hidden"
+              >
+                <div className="flex items-center justify-between p-6 border-b border-dashboard-border">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                      <Settings className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Research Settings</h2>
+                      <p className="text-sm text-slate-400">Customize how your research is generated</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowConfig(false)}
+                    className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5 text-slate-400" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                  {/* Student Level */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-white mb-3">
+                      <GraduationCap className="w-4 h-4 text-blue-400" />
+                      Student Level
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['high-school', 'undergraduate', 'graduate'] as const).map((level) => (
+                        <button
+                          key={level}
+                          onClick={() => setResearchOptions(prev => ({ ...prev, studentLevel: level }))}
+                          className={`p-3 rounded-xl border transition-all text-sm ${
+                            researchOptions.studentLevel === level
+                              ? 'bg-blue-500/20 border-blue-500 text-white'
+                              : 'bg-dashboard-bg border-dashboard-border text-slate-300 hover:border-blue-500/50'
+                          }`}
+                        >
+                          {level === 'high-school' ? 'High School' : level === 'undergraduate' ? 'Undergraduate' : 'Graduate'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Research Depth */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-white mb-3">
+                      <Layers className="w-4 h-4 text-blue-400" />
+                      Research Depth
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['basic', 'intermediate', 'advanced'] as const).map((depth) => (
+                        <button
+                          key={depth}
+                          onClick={() => setResearchOptions(prev => ({ ...prev, depth }))}
+                          className={`p-3 rounded-xl border transition-all text-sm capitalize ${
+                            researchOptions.depth === depth
+                              ? 'bg-blue-500/20 border-blue-500 text-white'
+                              : 'bg-dashboard-bg border-dashboard-border text-slate-300 hover:border-blue-500/50'
+                          }`}
+                        >
+                          {depth}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                      {researchOptions.depth === 'basic' && 'Quick overview with essential points'}
+                      {researchOptions.depth === 'intermediate' && 'Thorough explanation with multiple perspectives'}
+                      {researchOptions.depth === 'advanced' && 'In-depth analysis with comprehensive coverage'}
+                    </p>
+                  </div>
+
+                  {/* Output Format */}
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-white mb-3">
+                      <BookMarked className="w-4 h-4 text-blue-400" />
+                      Output Format
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['summary', 'comprehensive', 'detailed'] as const).map((format) => (
+                        <button
+                          key={format}
+                          onClick={() => setResearchOptions(prev => ({ ...prev, format }))}
+                          className={`p-3 rounded-xl border transition-all text-sm capitalize ${
+                            researchOptions.format === format
+                              ? 'bg-blue-500/20 border-blue-500 text-white'
+                              : 'bg-dashboard-bg border-dashboard-border text-slate-300 hover:border-blue-500/50'
+                          }`}
+                        >
+                          {format}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Additional Options */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-white">Additional Features</label>
+                    
+                    <label className="flex items-center justify-between p-4 bg-dashboard-bg border border-dashboard-border rounded-xl cursor-pointer hover:border-blue-500/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Lightbulb className="w-5 h-5 text-amber-400" />
+                        <div>
+                          <div className="text-sm font-medium text-white">Include Examples</div>
+                          <div className="text-xs text-slate-400">Add real-world examples and case studies</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={researchOptions.includeExamples}
+                        onChange={(e) => setResearchOptions(prev => ({ ...prev, includeExamples: e.target.checked }))}
+                        className="w-5 h-5 rounded border-dashboard-border bg-dashboard-bg text-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between p-4 bg-dashboard-bg border border-dashboard-border rounded-xl cursor-pointer hover:border-blue-500/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <Palette className="w-5 h-5 text-purple-400" />
+                        <div>
+                          <div className="text-sm font-medium text-white">Visual Suggestions</div>
+                          <div className="text-xs text-slate-400">Suggest diagrams and visual aids</div>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={researchOptions.includeVisualSuggestions}
+                        onChange={(e) => setResearchOptions(prev => ({ ...prev, includeVisualSuggestions: e.target.checked }))}
+                        className="w-5 h-5 rounded border-dashboard-border bg-dashboard-bg text-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-dashboard-border bg-dashboard-bg/50">
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      onClick={() => setShowConfig(false)}
+                      className="px-4 py-2 bg-dashboard-elevated hover:bg-dashboard-surface border border-dashboard-border rounded-lg text-slate-300 hover:text-white text-sm font-medium transition-colors"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowConfig(false)
+                        toast.success('Settings saved!')
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-medium rounded-lg transition-all"
+                    >
+                      Save Settings
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl overflow-hidden">
@@ -188,8 +398,11 @@ export default function ResearchPage() {
               <h2 className="text-2xl font-bold text-white mb-2">
                 Start Your Research
               </h2>
-              <p className="text-slate-400 mb-8 max-w-md">
-                Ask any academic question and get comprehensive, well-researched answers powered by AI
+              <p className="text-slate-400 mb-2 max-w-md">
+                Ask any academic question and get comprehensive, student-friendly answers
+              </p>
+              <p className="text-xs text-slate-500 mb-8 max-w-md">
+                Configure settings to customize depth, format, and learning style
               </p>
 
               {/* Suggested Prompts */}
@@ -248,12 +461,62 @@ export default function ResearchPage() {
                       message.role === 'user' 
                         ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white' 
                         : 'bg-dashboard-bg border border-dashboard-border text-slate-200'
-                    } rounded-2xl p-4`}>
+                    } rounded-2xl p-5`}>
                       {message.role === 'user' ? (
                         <p className="text-sm leading-relaxed">{message.content}</p>
                       ) : (
-                        <div className="prose prose-invert prose-sm max-w-none">
-                          <ReactMarkdown>{message.content}</ReactMarkdown>
+                        <div className="prose prose-invert prose-sm max-w-none 
+                          prose-headings:text-white prose-headings:font-bold
+                          prose-h2:text-xl prose-h2:mt-6 prose-h2:mb-4 prose-h2:flex prose-h2:items-center prose-h2:gap-2
+                          prose-h3:text-lg prose-h3:mt-4 prose-h3:mb-3
+                          prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-4
+                          prose-strong:text-white prose-strong:font-semibold
+                          prose-ul:text-slate-300 prose-ul:my-4
+                          prose-li:my-2 prose-li:ml-4
+                          prose-code:text-cyan-400 prose-code:bg-white/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+                          prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-slate-400
+                          prose-table:text-slate-300 prose-th:border prose-th:border-dashboard-border prose-th:p-2 prose-td:border prose-td:border-dashboard-border prose-td:p-2">
+                          <ReactMarkdown
+                            components={{
+                              h2: ({ children }) => (
+                                <h2 className="flex items-center gap-2 text-xl font-bold text-white mt-6 mb-4">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className="text-lg font-semibold text-white mt-4 mb-3">
+                                  {children}
+                                </h3>
+                              ),
+                              p: ({ children }) => (
+                                <p className="text-slate-300 leading-relaxed mb-4">
+                                  {children}
+                                </p>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc list-inside text-slate-300 my-4 space-y-2">
+                                  {children}
+                                </ul>
+                              ),
+                              li: ({ children }) => (
+                                <li className="text-slate-300 my-1">
+                                  {children}
+                                </li>
+                              ),
+                              strong: ({ children }) => (
+                                <strong className="text-white font-semibold">
+                                  {children}
+                                </strong>
+                              ),
+                              code: ({ children }) => (
+                                <code className="text-cyan-400 bg-white/5 px-1.5 py-0.5 rounded text-sm">
+                                  {children}
+                                </code>
+                              ),
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
                         </div>
                       )}
                     </div>
@@ -346,12 +609,20 @@ export default function ResearchPage() {
             </motion.button>
           </form>
 
-          <p className="text-xs text-slate-600 mt-3 text-center">
-            AI can make mistakes. Verify important information independently.
-          </p>
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-xs text-slate-600">
+              AI can make mistakes. Verify important information independently.
+            </p>
+            {researchOptions.depth && (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span>Settings:</span>
+                <span className="px-2 py-0.5 bg-white/5 rounded capitalize">{researchOptions.depth}</span>
+                <span className="px-2 py-0.5 bg-white/5 rounded capitalize">{researchOptions.studentLevel}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
 }
-

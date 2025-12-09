@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   Sparkles,
   LogOut,
-  BookOpen
+  BookOpen,
+  Receipt
 } from 'lucide-react'
 import { CreditCounter } from './CreditCounter'
 import { createClient } from '@/lib/supabase/client'
@@ -89,6 +90,12 @@ const navigation = [
         name: 'Usage History',
         href: '/history',
         icon: History,
+        color: 'text-slate-400',
+      },
+      {
+        name: 'Payment History',
+        href: '/payment-history',
+        icon: Receipt,
         color: 'text-slate-400',
       },
       {

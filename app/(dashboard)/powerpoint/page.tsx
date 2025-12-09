@@ -222,7 +222,16 @@ export default function PowerPointPage() {
       URL.revokeObjectURL(url)
       
       toast.dismiss(loadingToast)
-      toast.success(`PowerPoint file downloaded successfully! (${slides} slides)`)
+      
+      // Note about slide count (SlidesGPT may add extra slides)
+      const slideNote = slides <= 5 
+        ? `PowerPoint file downloaded! Note: SlidesGPT may generate slightly more slides than requested.`
+        : `PowerPoint file downloaded! (Requested: ${slides} slides)`
+      
+      toast.success(slideNote, {
+        description: 'If the file has extra slides, this is a limitation of the SlidesGPT API.',
+        duration: 6000,
+      })
     } catch (error: any) {
       toast.dismiss(loadingToast)
       toast.error(error.message || 'Failed to generate PowerPoint file')

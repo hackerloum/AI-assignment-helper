@@ -18,6 +18,7 @@ import { CreditCounter } from '@/components/dashboard/CreditCounter'
 import { UsageChart } from '@/components/dashboard/UsageChart'
 import { RecentActivity } from '@/components/dashboard/RecentActivity'
 import { QuickActions } from '@/components/dashboard/QuickActions'
+import { PaymentHistoryWidget } from '@/components/dashboard/PaymentHistoryWidget'
 import { useUser } from '@/hooks/useUser'
 import { useUsageStats } from '@/hooks/useUsageStats'
 import { useAssignments } from '@/hooks/useAssignments'
@@ -275,6 +276,15 @@ export default function DashboardPage() {
             transition={{ delay: 0.4 }}
           >
             <RecentActivity />
+          </motion.div>
+
+          {/* Payment History Widget */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <PaymentHistoryWidget />
           </motion.div>
         </div>
       </div>

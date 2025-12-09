@@ -55,6 +55,7 @@ export function ContentEditor({
   const [activeSection, setActiveSection] = useState<string | null>('1')
   const [generating, setGenerating] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
+  const [wordCount, setWordCount] = useState(500) // Default word count
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [localReferences, setLocalReferences] = useState<Reference[]>(references)
 
@@ -129,6 +130,7 @@ export function ContentEditor({
           section: section.title,
           prompt: aiPrompt,
           assignment_type: assignmentType,
+          wordCount: wordCount,
         }),
       })
 
@@ -255,17 +257,53 @@ export function ContentEditor({
               exit={{ height: 0, opacity: 0 }}
               className="space-y-4 overflow-hidden"
             >
-              <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">
-                  What do you want to write about?
-                </label>
-                <textarea
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="e.g., Explain the importance of database normalization in software engineering..."
-                  rows={4}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    What do you want to write about?
+                  </label>
+                  <textarea
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="e.g., Explain the importance of database normalization in software engineering..."
+                    rows={4}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">
+                    Word Count: {wordCount.toLocaleString()} words
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="200"
+                      max="2000"
+                      step="50"
+                      value={wordCount}
+                      onChange={(e) => setWordCount(Number(e.target.value))}
+                      className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                    <div className="flex gap-2">
+                      {[300, 500, 800, 1200, 1500].map((count) => (
+                        <button
+                          key={count}
+                          onClick={() => setWordCount(count)}
+                          className={`px-3 py-1 text-xs rounded-lg transition-all ${
+                            wordCount === count
+                              ? 'bg-indigo-500 text-white'
+                              : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                          }`}
+                        >
+                          {count}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Estimated cost: {Math.max(5, Math.ceil(wordCount / 100))} credits
+                  </p>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {sections.map((section) => (

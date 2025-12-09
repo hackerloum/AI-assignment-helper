@@ -236,36 +236,49 @@ function createSlidesGPTPrompt(
     creative: "Use a creative, engaging style with visual elements. Make it colorful and dynamic while maintaining clarity.",
   };
   
-  let prompt = `Create a PowerPoint presentation with EXACTLY ${slideCountToUse} slides (NO MORE, NO LESS).\n\n`;
-  prompt += `Topic: ${presentation.title}\n`;
+  // Build a very structured, explicit prompt with maximum emphasis on slide count
+  let prompt = `Create a PowerPoint presentation with EXACTLY ${slideCountToUse} slides.\n\n`;
   
+  // Repeat the slide count requirement multiple times
+  prompt += `SLIDE COUNT REQUIREMENT: ${slideCountToUse} SLIDES\n`;
+  prompt += `SLIDE COUNT REQUIREMENT: ${slideCountToUse} SLIDES\n`;
+  prompt += `SLIDE COUNT REQUIREMENT: ${slideCountToUse} SLIDES\n\n`;
+  
+  prompt += `Topic: ${presentation.title}\n`;
   if (presentation.subtitle) {
     prompt += `Subtitle: ${presentation.subtitle}\n`;
   }
-
-  prompt += `\nPRESENTATION STYLE: ${style}\n`;
-  prompt += `${styleGuidance[style as keyof typeof styleGuidance] || styleGuidance.academic}\n\n`;
+  prompt += `Style: ${style} - ${styleGuidance[style as keyof typeof styleGuidance] || styleGuidance.academic}\n\n`;
   
-  prompt += `⚠️ CRITICAL REQUIREMENT: You MUST create EXACTLY ${slideCountToUse} slides. Count them carefully. Do not add extra slides.\n\n`;
+  prompt += `YOU MUST CREATE EXACTLY ${slideCountToUse} SLIDES. HERE ARE THE ${slideCountToUse} SLIDES TO CREATE:\n\n`;
   
-  prompt += `Here are the ${slideCountToUse} slides to create:\n\n`;
-  
+  // List each slide explicitly with very clear numbering
   slidesToInclude.forEach((slide, index) => {
-    prompt += `SLIDE ${index + 1} of ${slideCountToUse}:\n`;
+    const slideNum = index + 1;
+    prompt += `SLIDE ${slideNum} OF ${slideCountToUse}:\n`;
     prompt += `Title: ${slide.title}\n`;
     if (slide.bulletPoints && slide.bulletPoints.length > 0) {
       prompt += `Content:\n`;
-      slide.bulletPoints.forEach(point => {
+      slide.bulletPoints.forEach((point, idx) => {
         prompt += `  • ${point}\n`;
       });
     } else if (slide.content) {
       prompt += `Content: ${slide.content}\n`;
     }
-    prompt += "\n";
+    prompt += `\n`;
   });
 
-  prompt += `\n⚠️ FINAL REMINDER: Create EXACTLY ${slideCountToUse} slides total. Count: ${slideCountToUse}. Do not create ${slideCountToUse + 1} or more slides.`;
-  prompt += `\n\nFollow the ${style} presentation style throughout.`;
+  prompt += `\n`;
+  prompt += `CRITICAL FINAL REMINDERS:\n`;
+  prompt += `- Total slides to create: ${slideCountToUse}\n`;
+  prompt += `- Do NOT create ${slideCountToUse + 1} slides\n`;
+  prompt += `- Do NOT create ${slideCountToUse + 2} slides\n`;
+  prompt += `- Do NOT create any slides beyond ${slideCountToUse}\n`;
+  prompt += `- The final presentation must have exactly ${slideCountToUse} slides\n`;
+  prompt += `- Follow ${style} style\n`;
+  prompt += `- Use simple, student-friendly language\n\n`;
+  
+  prompt += `FINAL COUNT CHECK: ${slideCountToUse} SLIDES = ${slideCountToUse} SLIDES ONLY.`;
 
   return prompt;
 }

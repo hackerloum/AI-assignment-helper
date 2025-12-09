@@ -54,50 +54,161 @@ export async function POST(request: NextRequest) {
 
     const finalPrompt = prompt || topic
     const finalAssignmentType = assignment_type || assignmentType
+    const targetWordCount = wordCount || 500
 
     if (!finalPrompt) {
       return NextResponse.json({ error: 'Prompt or topic required' }, { status: 400 })
     }
 
+    // Calculate credits based on word count (1 credit per 100 words, minimum 5 credits)
+    const creditCost = Math.max(5, Math.ceil(targetWordCount / 100))
+
     // Deduct credits for content generation
-    const creditResult = await deductCredits(user.id, 'essay', supabase)
+    const creditResult = await deductCredits(user.id, 'essay', supabase, creditCost)
     if (!creditResult.success) {
       return NextResponse.json(
-        { error: `Insufficient credits. You need 10 credits but only have ${creditResult.remainingCredits}.` },
+        { error: `Insufficient credits. You need ${creditCost} credits but only have ${creditResult.remainingCredits}.` },
         { status: 400 }
       )
     }
 
     // Generate content using AI
-    // If section is provided, generate section-specific content
+    // If section is provided, generate section-specific content ONLY
     let content: string
     if (section) {
-      // For section-based generation, create a more specific prompt
-      const sectionPrompt = `Write a ${wordCount || 500}-word ${section.toLowerCase()} section for an academic assignment on: "${finalPrompt}". 
+      // Determine section-specific instructions
+      const sectionInstructions = {
+        'Introduction': `Write ONLY an introduction section (${targetWordCount} words). This should:
+- Start with a hook or attention-grabbing opening
+- Provide background context on the topic
+- Clearly state the main topic and its importance
+- Present a thesis statement or main argument
+- Preview what will be discussed (but do NOT write the actual discussion)
+- End with a transition sentence
 
-Requirements:
+IMPORTANT: Write ONLY the introduction. Do NOT write body paragraphs or conclusion.`,
+        
+        'Body': `Write ONLY body paragraphs (${targetWordCount} words). This should:
+- Develop the main arguments and points
+- Use clear topic sentences for each paragraph
+- Provide evidence, examples, and explanations
+- Use transitions between paragraphs
+- Support the thesis statement
+
+IMPORTANT: Write ONLY body paragraphs. Do NOT write introduction or conclusion.`,
+        
+        'Conclusion': `Write ONLY a conclusion section (${targetWordCount} words). This should:
+- Restate the thesis in different words
+- Summarize the main points discussed
+- Provide final thoughts or implications
+- End with a strong closing statement
+
+IMPORTANT: Write ONLY the conclusion. Do NOT write introduction or body paragraphs.`
+      }
+
+      const sectionGuidance = sectionInstructions[section as keyof typeof sectionInstructions] || 
+        `Write ONLY a ${section.toLowerCase()} section (${targetWordCount} words) for an academic assignment.`
+
+      // For section-based generation, create a very specific prompt
+      const sectionPrompt = `${sectionGuidance}
+
+Topic: "${finalPrompt}"
+
+CRITICAL REQUIREMENTS:
+- Write EXACTLY ${targetWordCount} words (aim for this target)
 - Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting
 - Use only paragraph breaks to separate ideas
-- Write professionally and academically
-- Ensure proper flow and coherence`
+- Write in a student-friendly, clear, and engaging style
+- Use simple language where possible, but maintain academic tone
+- Include examples and explanations to help understanding
+- Make it comprehensive and detailed - this is for a real assignment
+- Write ONLY the ${section} section - do NOT include other sections`
       
-      const systemInstruction = `You are an expert academic writer. Write a well-structured ${section.toLowerCase()} section for an academic assignment. 
+      const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content. Your writing should be:
 
-CRITICAL: Do NOT use markdown formatting (no ##, **, or other markdown syntax). Write plain text only with proper paragraph breaks.`
+1. **Student-Friendly**: Clear, engaging, easy to understand, with explanations of complex concepts
+2. **Comprehensive**: Detailed and thorough, not superficial
+3. **Academic**: Professional tone, well-structured, properly formatted
+4. **Realistic**: Appropriate length and depth for actual student assignments
+
+CRITICAL RULES:
+- Do NOT use markdown formatting (no ##, **, or other markdown syntax)
+- Write plain text only with proper paragraph breaks
+- Write ONLY the requested section - do NOT write other sections
+- Make content detailed and comprehensive to look like a real assignment
+- Use ${targetWordCount} words as the target length`
       
       // Call Gemini directly for section-specific content
       const rawContent = await callGemini(
         sectionPrompt,
         systemInstruction,
         0.7,
-        Math.floor((wordCount || 500) * 1.5)
+        Math.floor(targetWordCount * 2) // Allow more tokens for longer, detailed content
       )
       
       // Strip markdown headers (double-check)
       content = stripMarkdownHeaders(rawContent)
+      
+      // Ensure we only have the requested section (remove any other sections that might have been generated)
+      // This is a safety check in case AI still generates other sections
+      if (section === 'Introduction') {
+        // Remove any body or conclusion text
+        const introEndMarkers = [
+          '## Body',
+          '## Conclusion',
+          'Body:',
+          'Conclusion:',
+          'In the body',
+          'In conclusion',
+          'To conclude'
+        ]
+        for (const marker of introEndMarkers) {
+          const index = content.toLowerCase().indexOf(marker.toLowerCase())
+          if (index > 0) {
+            content = content.substring(0, index).trim()
+            break
+          }
+        }
+      } else if (section === 'Body') {
+        // Remove introduction or conclusion
+        const bodyStartMarkers = ['## Introduction', 'Introduction:', '## Conclusion', 'Conclusion:']
+        for (const marker of bodyStartMarkers) {
+          const index = content.toLowerCase().indexOf(marker.toLowerCase())
+          if (index > 0) {
+            content = content.substring(index + marker.length).trim()
+          }
+        }
+        const conclusionMarkers = ['## Conclusion', 'Conclusion:', 'In conclusion', 'To conclude']
+        for (const marker of conclusionMarkers) {
+          const index = content.toLowerCase().indexOf(marker.toLowerCase())
+          if (index > 0) {
+            content = content.substring(0, index).trim()
+            break
+          }
+        }
+      } else if (section === 'Conclusion') {
+        // Remove introduction or body
+        const conclusionStartMarkers = ['## Introduction', 'Introduction:', '## Body', 'Body:']
+        for (const marker of conclusionStartMarkers) {
+          const index = content.toLowerCase().indexOf(marker.toLowerCase())
+          if (index > 0) {
+            content = content.substring(index + marker.length).trim()
+            // Find the actual conclusion start
+            const conclusionMarkers = ['in conclusion', 'to conclude', 'conclusion:', '## Conclusion']
+            for (const cm of conclusionMarkers) {
+              const cmIndex = content.toLowerCase().indexOf(cm.toLowerCase())
+              if (cmIndex > 0) {
+                content = content.substring(cmIndex + cm.length).trim()
+                break
+              }
+            }
+            break
+          }
+        }
+      }
     } else {
       // Legacy: use topic and wordCount
-      content = await generateEssay(finalPrompt, wordCount || 1000)
+      content = await generateEssay(finalPrompt, targetWordCount || 1000)
     }
 
     // Extract references from content (simple extraction - in production, use better method)

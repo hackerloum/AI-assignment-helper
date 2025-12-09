@@ -210,16 +210,117 @@ export async function summarizeText(
   );
 }
 
-export async function generateResearch(query: string): Promise<string> {
-  const systemInstruction =
-    "You are an expert research assistant. Provide comprehensive, well-researched answers to research questions. Structure your response with clear sections, use evidence-based information, and cite key points when relevant. Be thorough but concise, and ensure accuracy.";
-  const prompt = `Answer the following research question comprehensively:\n\n${query}\n\nProvide a detailed, well-structured answer that covers the main aspects of the topic.`;
+export interface ResearchOptions {
+  depth?: 'basic' | 'intermediate' | 'advanced';
+  format?: 'comprehensive' | 'summary' | 'detailed';
+  includeExamples?: boolean;
+  includeVisualSuggestions?: boolean;
+  studentLevel?: 'high-school' | 'undergraduate' | 'graduate';
+}
+
+export async function generateResearch(
+  query: string,
+  options: ResearchOptions = {}
+): Promise<string> {
+  const {
+    depth = 'intermediate',
+    format = 'comprehensive',
+    includeExamples = true,
+    includeVisualSuggestions = true,
+    studentLevel = 'undergraduate'
+  } = options;
+
+  // Determine explanation style based on student level
+  const explanationStyle = {
+    'high-school': 'Use simple language, avoid jargon, explain technical terms, use analogies and real-world examples',
+    'undergraduate': 'Use clear academic language, define key terms, provide context, include relevant examples',
+    'graduate': 'Use sophisticated academic language, assume familiarity with concepts, include nuanced analysis'
+  }[studentLevel];
+
+  // Determine depth instructions
+  const depthInstructions = {
+    'basic': 'Provide a clear, concise overview covering the essential points. Keep it brief and easy to understand.',
+    'intermediate': 'Provide a thorough explanation with multiple perspectives, key concepts, and important details.',
+    'advanced': 'Provide an in-depth analysis with comprehensive coverage, multiple viewpoints, critical analysis, and detailed explanations.'
+  }[depth];
+
+  const systemInstruction = `You are an expert academic research assistant and educator specializing in helping students understand complex topics. Your goal is to make learning accessible, engaging, and comprehensive.
+
+CORE PRINCIPLES:
+1. **Student-Friendly Approach**: ${explanationStyle}
+2. **Academic Rigor**: Maintain accuracy and cite important concepts
+3. **Clear Structure**: Organize information logically with clear headings
+4. **Visual Learning**: ${includeVisualSuggestions ? 'Suggest diagrams, charts, or visual aids where helpful' : 'Focus on textual explanations'}
+5. **Practical Application**: ${includeExamples ? 'Include real-world examples, case studies, and practical applications' : 'Focus on theoretical understanding'}
+
+RESPONSE STRUCTURE:
+Your response MUST follow this exact format using markdown:
+
+## 📚 Overview
+[A brief 2-3 sentence introduction to the topic]
+
+## 🎯 Key Concepts
+[Break down the main concepts in simple terms. Use bullet points or numbered lists.]
+
+## 📖 Detailed Explanation
+[${depthInstructions}]
+
+${includeExamples ? `## 💡 Examples & Applications
+[Provide 2-3 concrete examples, case studies, or real-world applications that help students understand the concept better]` : ''}
+
+## 🔑 Key Takeaways
+[Summarize the 3-5 most important points students should remember]
+
+${includeVisualSuggestions ? `## 📊 Visual Learning Suggestions
+[Suggest 2-3 types of diagrams, charts, or visual aids that would help visualize this concept (e.g., "A flowchart showing...", "A timeline diagram of...", "A comparison table of...")]` : ''}
+
+## 📚 Further Reading
+[Suggest 2-3 areas for deeper exploration or related topics]
+
+IMPORTANT FORMATTING RULES:
+- Use markdown headers (##, ###) for clear structure
+- Use bullet points (-) and numbered lists for clarity
+- Use **bold** for key terms and important concepts
+- Use *italics* for emphasis
+- Use emojis sparingly but effectively (📚 🎯 📖 💡 🔑 📊)
+- Break up long paragraphs into shorter, digestible chunks
+- Use tables when comparing concepts
+- Use code blocks for technical examples if relevant
+
+TONE:
+- Friendly and encouraging, like a helpful tutor
+- Professional but approachable
+- Enthusiastic about the subject matter
+- Patient and clear in explanations`;
+
+  const formatInstructions = {
+    'comprehensive': 'Provide a full, detailed response covering all aspects',
+    'summary': 'Provide a concise summary focusing on the most important points',
+    'detailed': 'Provide an extremely detailed, in-depth analysis with extensive coverage'
+  }[format];
+
+  const prompt = `Research Question: "${query}"
+
+Instructions:
+- ${formatInstructions}
+- ${depthInstructions}
+- Make it engaging and easy to understand for ${studentLevel} level students
+- Ensure all information is accurate and well-structured
+- Use the exact response structure provided in the system instructions
+
+Generate a comprehensive, student-friendly research response that will help the student fully understand this topic.`;
+
+  const maxTokens = {
+    'basic': 1500,
+    'intermediate': 2500,
+    'advanced': 4000
+  }[depth];
 
   return await callGemini(
     prompt,
     systemInstruction,
     0.7,
-    2000 // Allow for longer research responses
+    maxTokens
   );
 }
 
