@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
           // If payment completed, handle it
           if (status === "completed" && payment.payment_status !== "completed") {
-            await handleCompletedPayment(payment, paymentData.transid, supabase);
+            await handleCompletedPayment(payment, paymentData.transid || null, supabase);
           }
         }
       }
