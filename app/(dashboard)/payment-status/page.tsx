@@ -48,6 +48,7 @@ export default function PaymentStatusPage() {
     }, 3000)
 
     return () => clearInterval(pollInterval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId])
 
   // Countdown for redirect after success
@@ -290,7 +291,7 @@ export default function PaymentStatusPage() {
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4" />
-                          I've Completed Payment - Verify Now
+                          I&apos;ve Completed Payment - Verify Now
                         </>
                       )}
                     </button>
