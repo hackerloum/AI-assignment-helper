@@ -13,12 +13,10 @@ export async function createClient() {
 
   const cookieStore = await cookies();
   
-  // Log cookies for debugging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    const allCookies = cookieStore.getAll();
-    const authCookies = allCookies.filter(c => c.name.includes('sb-'));
-    console.log('[Server Client] Auth cookies found:', authCookies.length);
-  }
+  // Log cookies for debugging
+  const allCookies = cookieStore.getAll();
+  const authCookies = allCookies.filter(c => c.name.includes('sb-'));
+  console.log('[Server Client] Total cookies:', allCookies.length, '| Auth cookies:', authCookies.length);
 
   return createServerClient(
     supabaseUrl,
@@ -37,9 +35,7 @@ export async function createClient() {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
             // user sessions.
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[Server Client] Cookie set error (expected in some contexts)');
-            }
+            console.log('[Server Client] Cookie set skipped (expected in some contexts)');
           }
         },
       },

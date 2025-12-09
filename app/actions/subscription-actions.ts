@@ -7,6 +7,7 @@ import {
   formatTanzanianPhone,
   validateTanzanianPhone,
 } from "@/lib/zenopay";
+import { cookies, headers } from "next/headers";
 
 export async function initiateSubscriptionPayment(data: {
   planType: 'daily' | 'monthly';
@@ -17,32 +18,49 @@ export async function initiateSubscriptionPayment(data: {
   try {
     console.log("[Server Action] Initiating payment for:", data.buyerEmail);
     
+    // Force Next.js to wait for cookies and headers (important for server actions)
+    const cookieStore = await cookies();
+    const headersList = await headers();
+    
+    console.log("[Server Action] Cookie count:", cookieStore.getAll().length);
+    console.log("[Server Action] Auth cookies:", 
+      cookieStore.getAll().filter(c => c.name.includes('sb-')).map(c => c.name)
+    );
+    
     const supabase = await createClient();
     
-    // Try to get user with detailed logging
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    console.log("[Server Action] Auth check:", { 
-      hasUser: !!user, 
-      userEmail: user?.email,
-      authError: authError?.message 
+    // Try getSession first (more reliable for server actions in production)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log("[Server Action] Session check:", { 
+      hasSession: !!session, 
+      sessionUser: session?.user?.email,
+      sessionError: sessionError?.message 
     });
 
-    if (authError) {
-      console.error("[Server Action] Authentication error:", authError);
-      return { 
-        success: false, 
-        error: "Authentication error. Please refresh the page and try again." 
-      };
+    let user = session?.user;
+
+    // Fallback to getUser if session didn't work
+    if (!user) {
+      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
+      user = userFromGetUser || null;
+      
+      console.log("[Server Action] GetUser fallback:", { 
+        hasUser: !!user, 
+        userEmail: user?.email,
+        authError: authError?.message 
+      });
     }
 
     if (!user) {
-      console.error("[Server Action] No user found in session");
+      console.error("[Server Action] No user found after both attempts");
       return { 
         success: false, 
-        error: "Session expired. Please refresh the page and log in again." 
+        error: "Authentication failed. Please try logging out and logging in again." 
       };
     }
+
+    console.log("[Server Action] ✅ User authenticated:", user.email);
 
     // Validate required fields
     if (!data.buyerEmail || !data.buyerName || !data.buyerPhone) {
