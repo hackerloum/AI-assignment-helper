@@ -119,6 +119,14 @@ export default function SubscriptionPage() {
   const handleConfirmPurchase = async () => {
     if (!selectedPlan) return
 
+    // Check if user is logged in client-side first
+    if (!user) {
+      toast.error('You must be logged in to purchase. Please refresh the page and try again.')
+      setLoading(null)
+      setDialogOpen(false)
+      return
+    }
+
     setLoading(selectedPlan)
 
     // Validate form data
@@ -138,12 +146,16 @@ export default function SubscriptionPage() {
     }
 
     try {
+      console.log('Initiating payment for user:', user.email)
+      
       const result = await initiateSubscriptionPayment({
         planType: selectedPlan,
         buyerEmail: formData.email,
         buyerName: formData.name,
         buyerPhone: cleanedPhone,
       })
+
+      console.log('Payment result:', result)
 
       if (result.success) {
         if (result.paymentUrl) {
@@ -155,10 +167,12 @@ export default function SubscriptionPage() {
           setDialogOpen(false)
         }
       } else {
+        console.error('Payment failed:', result.error)
         toast.error(result.error || 'Failed to initiate payment')
       }
-    } catch (error) {
-      toast.error('An error occurred')
+    } catch (error: any) {
+      console.error('Payment error:', error)
+      toast.error(error.message || 'An error occurred')
     } finally {
       setLoading(null)
     }

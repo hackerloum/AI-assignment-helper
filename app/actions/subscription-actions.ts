@@ -15,15 +15,33 @@ export async function initiateSubscriptionPayment(data: {
   buyerPhone: string;
 }): Promise<{ success: boolean; paymentUrl?: string; error?: string }> {
   try {
+    console.log("[Server Action] Initiating payment for:", data.buyerEmail);
+    
     const supabase = await createClient();
     
-    // Use getUser() directly as it's more reliable in server actions
-    // It reads from cookies which are properly handled by the middleware
+    // Try to get user with detailed logging
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
-      return { success: false, error: "Not authenticated. Please log in again." };
+    console.log("[Server Action] Auth check:", { 
+      hasUser: !!user, 
+      userEmail: user?.email,
+      authError: authError?.message 
+    });
+
+    if (authError) {
+      console.error("[Server Action] Authentication error:", authError);
+      return { 
+        success: false, 
+        error: "Authentication error. Please refresh the page and try again." 
+      };
+    }
+
+    if (!user) {
+      console.error("[Server Action] No user found in session");
+      return { 
+        success: false, 
+        error: "Session expired. Please refresh the page and log in again." 
+      };
     }
 
     // Validate required fields
