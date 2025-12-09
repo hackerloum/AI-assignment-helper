@@ -12,15 +12,19 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[Subscription API] Request received");
     
-    // Get cookies from the request
-    const cookieStore = await cookies();
+    // Try to get the access token from Authorization header first (more reliable)
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
     
-    // Log cookie info
+    console.log("[Subscription API] Auth header present:", !!authHeader);
+    
+    // Get cookies as fallback
+    const cookieStore = await cookies();
     const allCookies = cookieStore.getAll();
     const authCookies = allCookies.filter(c => c.name.includes('sb-'));
     console.log("[Subscription API] Total cookies:", allCookies.length, "| Auth cookies:", authCookies.length);
     
-    // Create Supabase client with proper cookie handling for API routes
+    // Create Supabase client
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -39,16 +43,22 @@ export async function POST(request: NextRequest) {
             }
           },
         },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
       }
     );
     
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get authenticated user (will use the access token if provided)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
 
     console.log("[Subscription API] Auth check:", { 
       hasUser: !!user, 
       userEmail: user?.email,
-      authError: authError?.message 
+      authError: authError?.message,
+      usedToken: !!accessToken
     });
 
     if (authError || !user) {

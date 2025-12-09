@@ -147,10 +147,25 @@ export default function SubscriptionPage() {
     try {
       console.log('Initiating payment for user:', user.email)
       
-      // Use API route instead of server action for better cookie handling in production
+      // Get the session token to send with the request
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Session expired. Please refresh the page.')
+        setLoading(null)
+        return
+      }
+      
+      // Use API route with explicit authorization header
       const response = await fetch('/api/subscription/initiate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include', // Include cookies
         body: JSON.stringify({
           planType: selectedPlan,
           buyerEmail: formData.email,
