@@ -36,9 +36,12 @@ export async function GET(request: NextRequest) {
       return await checkDatabaseStatus(orderId);
     }
 
+    // At this point, zenopayData is ZenoPayOrderStatusResponse
+    const statusResponse = zenopayData as import("@/lib/zenopay").ZenoPayOrderStatusResponse;
+
     // Parse ZenoPay response
-    if (zenopayData.resultcode === "000" && zenopayData.data && zenopayData.data.length > 0) {
-      const paymentData = zenopayData.data[0];
+    if (statusResponse.resultcode === "000" && statusResponse.data && statusResponse.data.length > 0) {
+      const paymentData = statusResponse.data[0];
       const paymentStatus = paymentData.payment_status;
 
       // Map ZenoPay status to our status
@@ -91,7 +94,7 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // ZenoPay returned error or no data
-      console.error("[Check ZenoPay Status] ZenoPay response:", zenopayData);
+      console.error("[Check ZenoPay Status] ZenoPay response:", statusResponse);
       return await checkDatabaseStatus(orderId);
     }
   } catch (error: any) {
