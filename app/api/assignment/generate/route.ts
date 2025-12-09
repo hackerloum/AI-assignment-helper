@@ -60,6 +60,21 @@ export async function POST(request: NextRequest) {
       references,
     } = body
 
+    // Validate required fields
+    if (!type || !['individual', 'group'].includes(type)) {
+      return NextResponse.json(
+        { error: 'Assignment type is required and must be "individual" or "group"' },
+        { status: 400 }
+      )
+    }
+
+    if (!content || content.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Assignment content is required' },
+        { status: 400 }
+      )
+    }
+
     // Deduct credits (assignment generation costs more)
     const creditResult = await deductCredits(user.id, 'essay', supabase) // Using essay cost for now
     if (!creditResult.success) {
@@ -72,17 +87,23 @@ export async function POST(request: NextRequest) {
     // Calculate word count
     const wordCount = content ? content.split(/\s+/).filter(Boolean).length : 0
 
+    // Get title - ensure it's not empty
+    const title = coverPageData?.assignment_title || 
+                  coverPageData?.title || 
+                  coverPageData?.task || 
+                  'Untitled Assignment'
+
     // Prepare assignment data
     const assignmentData: any = {
       user_id: user.id,
       assignment_type: type,
-      title: coverPageData?.assignment_title || coverPageData?.title || coverPageData?.task || 'Untitled Assignment',
+      title: title.trim(),
       course_code: coverPageData?.course_code || coverPageData?.courseCode || coverPageData?.module_code,
       course_name: coverPageData?.course_name || coverPageData?.courseName || coverPageData?.module_name,
       instructor_name: coverPageData?.instructor_name || coverPageData?.instructor,
       submission_date: coverPageData?.submission_date || coverPageData?.submissionDate || null,
-      assignment_content: content,
-      assignment_references: references || [],
+      assignment_content: content.trim(),
+      assignment_references: Array.isArray(references) ? references : [],
       word_count: wordCount,
       ai_model_used: 'gpt-4',
       generation_time_seconds: 0,
@@ -107,13 +128,18 @@ export async function POST(request: NextRequest) {
 
     // Add type-specific fields
     if (type === 'individual') {
-      assignmentData.student_name = coverPageData?.student_name || coverPageData?.studentName
-      assignmentData.registration_number = coverPageData?.registration_number || coverPageData?.registrationNumber
+      assignmentData.student_name = coverPageData?.student_name || coverPageData?.studentName || null
+      assignmentData.registration_number = coverPageData?.registration_number || coverPageData?.registrationNumber || null
     } else if (type === 'group') {
-      assignmentData.group_name = coverPageData?.group_name || coverPageData?.groupName
-      assignmentData.group_number = coverPageData?.group_number
-      assignmentData.group_representatives = coverPageData?.group_representatives || []
-      assignmentData.group_members = coverPageData?.group_members || []
+      assignmentData.group_name = coverPageData?.group_name || coverPageData?.groupName || null
+      assignmentData.group_number = coverPageData?.group_number || null
+      // Ensure JSONB fields are arrays
+      assignmentData.group_representatives = Array.isArray(coverPageData?.group_representatives) 
+        ? coverPageData.group_representatives 
+        : []
+      assignmentData.group_members = Array.isArray(coverPageData?.group_members) 
+        ? coverPageData.group_members 
+        : []
     }
 
     // Add template reference
@@ -132,7 +158,12 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating assignment:', error)
-      return NextResponse.json({ error: 'Failed to create assignment' }, { status: 500 })
+      console.error('Assignment data being inserted:', JSON.stringify(assignmentData, null, 2))
+      return NextResponse.json({ 
+        error: 'Failed to create assignment',
+        details: error.message,
+        hint: error.hint || 'Check console for full error details'
+      }, { status: 500 })
     }
 
     return NextResponse.json({ 

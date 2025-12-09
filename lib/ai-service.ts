@@ -30,7 +30,7 @@ interface GeminiResponse {
 /**
  * Helper function to call Gemini API
  */
-async function callGemini(
+export async function callGemini(
   prompt: string,
   systemInstruction?: string,
   temperature: number = 0.7,
@@ -101,15 +101,39 @@ export async function generateEssay(
   wordCount: number = 500
 ): Promise<string> {
   const systemInstruction =
-    "You are an expert academic writer. Write well-structured, academic essays with proper introduction, body paragraphs, and conclusion.";
-  const prompt = `Write a ${wordCount}-word essay on the topic: "${topic}". Ensure it has a clear thesis statement, well-developed arguments, and a strong conclusion.`;
+    "You are an expert academic writer. Write well-structured, academic essays with proper introduction, body paragraphs, and conclusion. IMPORTANT: Do NOT use markdown formatting (no ##, **, or other markdown syntax). Write plain text only with proper paragraph breaks.";
+  const prompt = `Write a ${wordCount}-word essay on the topic: "${topic}". Ensure it has a clear thesis statement, well-developed arguments, and a strong conclusion. Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting. Use only paragraph breaks to separate sections.`;
 
-  return await callGemini(
+  const content = await callGemini(
     prompt,
     systemInstruction,
     0.7,
     Math.floor(wordCount * 1.5)
   );
+
+  // Strip any markdown headers that might have been added
+  return stripMarkdownHeaders(content);
+}
+
+/**
+ * Remove markdown headers and formatting from text
+ */
+export function stripMarkdownHeaders(text: string): string {
+  // Remove markdown headers (##, ###, etc.)
+  let cleaned = text.replace(/^#{1,6}\s+.+$/gm, '');
+  
+  // Remove bold/italic markdown (**text**, *text*)
+  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
+  cleaned = cleaned.replace(/\*([^*]+)\*/g, '$1');
+  
+  // Remove any remaining markdown links [text](url)
+  cleaned = cleaned.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+  
+  // Clean up multiple newlines
+  cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
+  
+  // Trim whitespace
+  return cleaned.trim();
 }
 
 export async function paraphraseText(text: string): Promise<string> {

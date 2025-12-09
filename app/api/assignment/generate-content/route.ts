@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { deductCredits } from '@/lib/credits'
-import { generateEssay } from '@/lib/ai-service'
+import { generateEssay, stripMarkdownHeaders, callGemini } from '@/lib/ai-service'
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,8 +72,29 @@ export async function POST(request: NextRequest) {
     // If section is provided, generate section-specific content
     let content: string
     if (section) {
-      // Use the prompt directly for section-based generation
-      content = await generateEssay(finalPrompt, wordCount || 500)
+      // For section-based generation, create a more specific prompt
+      const sectionPrompt = `Write a ${wordCount || 500}-word ${section.toLowerCase()} section for an academic assignment on: "${finalPrompt}". 
+
+Requirements:
+- Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting
+- Use only paragraph breaks to separate ideas
+- Write professionally and academically
+- Ensure proper flow and coherence`
+      
+      const systemInstruction = `You are an expert academic writer. Write a well-structured ${section.toLowerCase()} section for an academic assignment. 
+
+CRITICAL: Do NOT use markdown formatting (no ##, **, or other markdown syntax). Write plain text only with proper paragraph breaks.`
+      
+      // Call Gemini directly for section-specific content
+      const rawContent = await callGemini(
+        sectionPrompt,
+        systemInstruction,
+        0.7,
+        Math.floor((wordCount || 500) * 1.5)
+      )
+      
+      // Strip markdown headers (double-check)
+      content = stripMarkdownHeaders(rawContent)
     } else {
       // Legacy: use topic and wordCount
       content = await generateEssay(finalPrompt, wordCount || 1000)

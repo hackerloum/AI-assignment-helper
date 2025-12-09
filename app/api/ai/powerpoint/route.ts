@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { deductCredits } from "@/lib/credits";
 import { generatePresentation } from "@/lib/powerpoint-service-enhanced";
+import { calculatePowerPointCredits } from "@/lib/powerpoint-credits";
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,9 +64,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Deduct credits - pass authenticated supabase client
-    // PowerPoint generation costs more due to enhanced features and file generation
-    const creditCost = 20; // Premium cost for PowerPoint generation with file creation
+    // Calculate credits based on slide count
+    // 5 slides or less: 20 credits
+    // Above 5 slides: 20 credits + 7 credits per additional slide
+    const creditCost = calculatePowerPointCredits(slides);
     const creditResult = await deductCredits(user.id, "powerpoint", supabase, creditCost);
     if (!creditResult.success) {
       return NextResponse.json(

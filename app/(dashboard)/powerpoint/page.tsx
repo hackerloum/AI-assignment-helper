@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Presentation, 
@@ -17,10 +17,13 @@ import {
   Layout,
   Clock,
   FileDown,
-  Copy
+  Copy,
+  AlertTriangle,
+  Coins
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Breadcrumb } from '@/components/ui/Breadcrumb'
+import { calculatePowerPointCredits, getPowerPointCreditBreakdown } from '@/lib/powerpoint-credits'
 
 const presentationStyles = [
   { value: 'professional', label: 'Professional', description: 'Business-focused' },
@@ -53,6 +56,23 @@ export default function PowerPointPage() {
   const [presentation, setPresentation] = useState<Presentation | null>(null)
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(false)
+  
+  // Calculate credit cost based on slide count
+  const creditCost = calculatePowerPointCredits(slides)
+  const creditBreakdown = getPowerPointCreditBreakdown(slides)
+  
+  // Show warning when user selects 20 slides
+  useEffect(() => {
+    if (slides === 20) {
+      toast.warning(
+        `Warning: 20 slides will cost ${creditCost} credits!`,
+        {
+          description: creditBreakdown.breakdown,
+          duration: 5000,
+        }
+      )
+    }
+  }, [slides, creditCost, creditBreakdown])
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -326,7 +346,13 @@ export default function PowerPointPage() {
               <label className="block text-sm font-medium text-slate-300">
                 Number of Slides
               </label>
-              <span className="text-lg font-bold text-white">{slides}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-lg font-bold text-white">{slides}</span>
+                <div className="flex items-center gap-1 px-2 py-1 bg-pink-500/10 border border-pink-500/20 rounded-lg">
+                  <Coins className="w-4 h-4 text-pink-400" />
+                  <span className="text-sm font-semibold text-pink-400">{creditCost}</span>
+                </div>
+              </div>
             </div>
             <input
               type="range"
@@ -341,6 +367,45 @@ export default function PowerPointPage() {
               <span>3 slides</span>
               <span>20 slides</span>
             </div>
+            
+            {/* Credit Breakdown */}
+            <div className="mt-4 p-3 bg-dashboard-bg rounded-lg border border-dashboard-border">
+              <div className="flex items-start gap-2">
+                <Coins className="w-4 h-4 text-slate-400 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-slate-300 mb-1">Credit Cost</p>
+                  <p className="text-xs text-slate-400">
+                    {slides <= 5 ? (
+                      <span>{creditBreakdown.breakdown}</span>
+                    ) : (
+                      <span>
+                        Base: 20 credits (5 slides) + {creditBreakdown.additionalCredits} credits ({slides - 5} extra slides × 7) = <span className="font-semibold text-pink-400">{creditCost} credits</span>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Warning for 20 slides */}
+            {slides === 20 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg"
+              >
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-yellow-400 mb-1">High Credit Cost Warning</p>
+                    <p className="text-xs text-slate-300">
+                      Generating 20 slides will cost <span className="font-bold text-yellow-400">{creditCost} credits</span>. 
+                      Consider using fewer slides to save credits.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
 
           {/* Style Selection */}
