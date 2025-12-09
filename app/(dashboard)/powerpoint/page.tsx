@@ -38,9 +38,24 @@ export default function PowerPointPage() {
     setPresentation(null)
 
     try {
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Session expired. Please refresh the page.')
+        setIsLoading(false)
+        return
+      }
+
       const response = await fetch('/api/ai/powerpoint', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
         body: JSON.stringify({ 
           topic,
           slides,

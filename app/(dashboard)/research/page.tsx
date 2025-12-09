@@ -50,9 +50,25 @@ export default function ResearchPage() {
     setIsLoading(true)
 
     try {
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Session expired. Please refresh the page.')
+        setIsLoading(false)
+        setMessages(prev => prev.slice(0, -1))
+        return
+      }
+
       const response = await fetch('/api/ai/research', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
         body: JSON.stringify({ query: queryToSend }),
       })
 

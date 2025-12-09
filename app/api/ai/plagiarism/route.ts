@@ -1,23 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { deductCredits } from "@/lib/credits";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[Plagiarism API] Request received");
+    // Get access token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
     
-    // Authenticate user
-    const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    console.log("[Plagiarism API] Auth check:", { 
-      hasUser: !!user, 
-      userEmail: user?.email,
-      authError: authError?.message 
-    });
+    const cookieStore = await cookies();
+    
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              });
+            } catch {}
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
+      }
+    );
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined);
 
     if (authError || !user) {
       return NextResponse.json(
