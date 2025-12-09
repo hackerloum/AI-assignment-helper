@@ -38,12 +38,12 @@ export async function initiateSubscriptionPayment(data: {
       sessionError: sessionError?.message 
     });
 
-    let user = session?.user;
+    let user = session?.user ?? null;
 
     // Fallback to getUser if session didn't work
     if (!user) {
       const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
-      user = userFromGetUser || null;
+      user = userFromGetUser ?? null;
       
       console.log("[Server Action] GetUser fallback:", { 
         hasUser: !!user, 
