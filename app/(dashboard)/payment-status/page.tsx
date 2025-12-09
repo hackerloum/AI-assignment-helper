@@ -3,21 +3,24 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { CheckCircle, XCircle, Clock, Loader2, ArrowRight } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Loader2, ArrowRight, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { useUser } from '@/hooks/useUser'
 
 type PaymentStatus = 'pending' | 'completed' | 'failed' | 'checking'
 
 export default function PaymentStatusPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { user, supabase } = useUser()
   const orderId = searchParams.get('order_id')
   const planType = searchParams.get('plan')
   
   const [status, setStatus] = useState<PaymentStatus>('checking')
   const [paymentDetails, setPaymentDetails] = useState<any>(null)
   const [countdown, setCountdown] = useState(5)
+  const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
     if (!orderId) {
@@ -78,6 +81,52 @@ export default function PaymentStatusPage() {
       }
     } catch (error) {
       console.error('Error checking payment status:', error)
+    }
+  }
+
+  const verifyPayment = async () => {
+    if (!orderId || !user || !supabase) {
+      toast.error('Unable to verify payment. Please refresh the page.')
+      return
+    }
+
+    setVerifying(true)
+    try {
+      // Get session token
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Session expired. Please refresh the page.')
+        setVerifying(false)
+        return
+      }
+
+      const response = await fetch('/api/payments/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ order_id: orderId }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setStatus('completed')
+        setPaymentDetails(data.payment)
+        toast.success('Payment verified successfully! Credits have been added to your account.')
+        // Refresh credits on dashboard
+        window.dispatchEvent(new Event('credits-updated'))
+      } else {
+        toast.error(data.error || 'Failed to verify payment')
+      }
+    } catch (error: any) {
+      console.error('Error verifying payment:', error)
+      toast.error('An error occurred while verifying payment. Please try again.')
+    } finally {
+      setVerifying(false)
     }
   }
 
@@ -215,12 +264,38 @@ export default function PaymentStatusPage() {
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm">Waiting for confirmation...</span>
                 </div>
-                <button
-                  onClick={checkPaymentStatus}
-                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  Refresh Status
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={checkPaymentStatus}
+                    disabled={verifying}
+                    className="text-sm text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className="w-4 h-4 inline mr-1" />
+                    Refresh Status
+                  </button>
+                  <div className="pt-2 border-t border-dashboard-border">
+                    <p className="text-xs text-slate-500 mb-3">
+                      Already completed payment on your phone?
+                    </p>
+                    <button
+                      onClick={verifyPayment}
+                      disabled={verifying}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {verifying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          I've Completed Payment - Verify Now
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
