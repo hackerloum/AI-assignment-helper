@@ -7,7 +7,7 @@ export default function SetupPage() {
   // Check environment variables (these are available at build time for NEXT_PUBLIC_* vars)
   const hasSupabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
   const hasSupabaseKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  // Note: OPENAI_API_KEY is server-only, so we can't check it on the client
+  // Note: GEMINI_API_KEY is server-only, so we can't check it on the client
   // But we can check if Supabase is configured which is the main requirement
   const allConfigured = hasSupabaseUrl && hasSupabaseKey;
 
@@ -57,9 +57,9 @@ export default function SetupPage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold">OpenAI API Key</h3>
+                <h3 className="font-semibold">Gemini API Key</h3>
                 <p className="text-sm text-muted-foreground">
-                  ⚠ OPENAI_API_KEY (server-side only, check server logs if missing)
+                  ⚠ GEMINI_API_KEY (server-side only, check server logs if missing)
                 </p>
               </div>
             </div>
@@ -80,14 +80,14 @@ export default function SetupPage() {
                   Supabase Dashboard
                 </a>
               </li>
-              <li>Add your OpenAI API key from{" "}
+              <li>Add your Gemini API key from{" "}
                 <a
-                  href="https://platform.openai.com/api-keys"
+                  href="https://makersuite.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  OpenAI Platform
+                  Google AI Studio
                 </a>
               </li>
               <li>Restart your development server</li>

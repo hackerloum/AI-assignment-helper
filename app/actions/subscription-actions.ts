@@ -16,9 +16,16 @@ export async function initiateSubscriptionPayment(data: {
 }): Promise<{ success: boolean; paymentUrl?: string; error?: string }> {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    
+    // Try getSession first (more reliable for server actions)
+    const { data: { session } } = await supabase.auth.getSession();
+    let user = session?.user ?? null;
+    
+    // Fallback to getUser if session didn't work
+    if (!user) {
+      const { data: { user: userFromGetUser } } = await supabase.auth.getUser();
+      user = userFromGetUser;
+    }
 
     if (!user) {
       return { success: false, error: "Not authenticated" };

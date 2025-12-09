@@ -7,11 +7,7 @@ import Link from 'next/link'
 import { useCredits } from '@/hooks/useCredits'
 
 export function CreditCounter() {
-  const { credits, loading, refresh } = useCredits()
-
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  const { credits, loading } = useCredits()
 
   if (loading) {
     return (

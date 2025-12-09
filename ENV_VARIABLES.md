@@ -22,16 +22,18 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    - **anon/public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - **service_role key** → `SUPABASE_SERVICE_ROLE_KEY` (keep this secret!)
 
-### OpenAI Configuration
+### Gemini API Configuration
 
 ```env
-OPENAI_API_KEY=your_openai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 **Where to get it:**
-1. Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. Create a new API key
 3. Copy the key (it's only shown once!)
+
+**Note:** The application uses Google's Gemini 2.5 Flash model for all AI features.
 
 ### App Configuration
 
@@ -110,11 +112,12 @@ After setting up environment variables, verify they're working:
 - Verify variable names match exactly (case-sensitive)
 - Ensure no extra spaces in values
 
-### "OpenAI API error"
+### "Gemini API error"
 
-- Verify `OPENAI_API_KEY` is correct
-- Check OpenAI account has credits/quota
+- Verify `GEMINI_API_KEY` is correct
+- Check Google AI Studio account has quota/credits
 - Ensure key hasn't been revoked
+- Verify the API key has access to Gemini models
 
 ### Authentication not working
 
@@ -129,7 +132,7 @@ After setting up environment variables, verify they're working:
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Client | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Client | Supabase anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server | Supabase service role key |
-| `OPENAI_API_KEY` | ✅ | Server | OpenAI API key |
+| `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key |
 | `NEXT_PUBLIC_APP_URL` | ✅ | Client | Application URL |
 | `ZENOPAY_API_KEY` | ✅ | Server | ZenoPay API key for mobile money payments (handles all providers) |
 

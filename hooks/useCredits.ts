@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export function useCredits() {
   const [credits, setCredits] = useState<number>(0)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setLoading(true)
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
@@ -57,11 +57,11 @@ export function useCredits() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     refresh()
-  }, [])
+  }, [refresh])
 
   return { credits, loading, refresh }
 }

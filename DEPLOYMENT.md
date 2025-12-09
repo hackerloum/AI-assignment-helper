@@ -7,7 +7,7 @@ This guide provides step-by-step instructions for deploying the AI Assignment He
 - A GitHub account with your code pushed to a repository
 - A Vercel account (sign up at [vercel.com](https://vercel.com))
 - Supabase project set up and configured
-- OpenAI API key
+- Gemini API key
 
 ## Quick Deployment Steps
 
@@ -44,7 +44,7 @@ You can leave these as default.
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | Supabase Dashboard → Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Supabase Dashboard → Settings → API |
-| `OPENAI_API_KEY` | OpenAI API key | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| `GEMINI_API_KEY` | Google Gemini API key | [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey) |
 | `NEXT_PUBLIC_APP_URL` | Your Vercel deployment URL | Will be `https://your-app.vercel.app` (set after first deploy) |
 | `ZENOPAY_API_KEY` | ZenoPay API key for mobile money payments (handles M-Pesa, TigoPesa, AirtelMoney) | ZenoPay Dashboard |
 
@@ -114,12 +114,12 @@ Vercel automatically deploys:
 
 ### Production Environment
 - Use production Supabase project
-- Use production OpenAI API key
+- Use production Gemini API key
 - Set `NEXT_PUBLIC_APP_URL` to production URL
 
 ### Preview Environment
 - Can use same Supabase project or separate test project
-- Use same OpenAI API key (or separate test key)
+- Use same Gemini API key (or separate test key)
 - `NEXT_PUBLIC_APP_URL` will be auto-set by Vercel
 
 ### Development Environment
@@ -149,10 +149,10 @@ Vercel automatically deploys:
 - Verify Supabase project is active
 - Check Supabase dashboard for errors
 
-**Error: OpenAI API error**
-- Verify `OPENAI_API_KEY` is correct
-- Check OpenAI account has credits/quota
-- Review OpenAI API status
+**Error: Gemini API error**
+- Verify `GEMINI_API_KEY` is correct
+- Check Google AI Studio account has quota/credits
+- Review Gemini API status
 
 **Error: Authentication not working**
 - Verify Supabase redirect URLs are configured
