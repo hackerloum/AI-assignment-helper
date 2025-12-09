@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Generate DOCX
     const buffer = await generateAssignmentDocument(assignment)
 
-    return new NextResponse(new Uint8Array(buffer), {
+    return new NextResponse(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'Content-Disposition': `attachment; filename="assignment_${assignmentId}.docx"`,
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     // Try to generate DOCX, fallback to text if it fails
     try {
       const buffer = await generateAssignmentDocument(assignment)
-      return new NextResponse(new Uint8Array(buffer), {
+      return new NextResponse(buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'Content-Disposition': `attachment; filename="assignment_${assignmentId}.docx"`,
