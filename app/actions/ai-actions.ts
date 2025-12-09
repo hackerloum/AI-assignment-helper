@@ -24,8 +24,8 @@ export async function generateEssay(
       return { success: false, error: "Not authenticated" };
     }
 
-    // Deduct credits
-    const creditResult = await deductCredits(user.id, "essay");
+    // Deduct credits - pass supabase client for proper auth
+    const creditResult = await deductCredits(user.id, "essay", supabase);
     if (!creditResult.success) {
       return {
         success: false,
@@ -65,7 +65,7 @@ export async function paraphraseText(
       return { success: false, error: "Not authenticated" };
     }
 
-    const creditResult = await deductCredits(user.id, "paraphrase");
+    const creditResult = await deductCredits(user.id, "paraphrase", supabase);
     if (!creditResult.success) {
       return {
         success: false,
@@ -110,7 +110,7 @@ export async function checkGrammar(
       return { success: false, error: "Not authenticated" };
     }
 
-    const creditResult = await deductCredits(user.id, "grammar");
+    const creditResult = await deductCredits(user.id, "grammar", supabase);
     if (!creditResult.success) {
       return {
         success: false,
@@ -155,7 +155,7 @@ export async function generateCitation(
       return { success: false, error: "Not authenticated" };
     }
 
-    const creditResult = await deductCredits(user.id, "citation");
+    const creditResult = await deductCredits(user.id, "citation", supabase);
     if (!creditResult.success) {
       return {
         success: false,
@@ -194,7 +194,7 @@ export async function summarizeText(
       return { success: false, error: "Not authenticated" };
     }
 
-    const creditResult = await deductCredits(user.id, "summarizer");
+    const creditResult = await deductCredits(user.id, "summarizer", supabase);
     if (!creditResult.success) {
       return {
         success: false,

@@ -84,7 +84,8 @@ export async function POST(request: NextRequest) {
       await addCredits(
         payment.user_id,
         payment.credits_purchased,
-        `Payment confirmed - Order ${order_id}`
+        `Payment confirmed - Order ${order_id}`,
+        supabase
       );
       
       console.log("[ZenoPay Callback] ✅ Credits added for user:", payment.user_id);

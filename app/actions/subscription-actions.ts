@@ -155,7 +155,8 @@ export async function initiateSubscriptionPayment(data: {
     await addCredits(
       user.id,
       plan.credits,
-      `Purchased ${plan.name} via ZenoPay`
+      `Purchased ${plan.name} via ZenoPay`,
+      supabase
     );
 
     // Payment completed, redirect to success page

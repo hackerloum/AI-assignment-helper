@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Deduct credits (using summarizer cost as research is similar)
-    const creditResult = await deductCredits(user.id, "summarizer");
+    // Pass the authenticated supabase client to ensure proper credit access
+    const creditResult = await deductCredits(user.id, "summarizer", supabase);
     if (!creditResult.success) {
       return NextResponse.json(
         {

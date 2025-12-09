@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Deduct credits
-    const creditResult = await deductCredits(user.id, "grammar");
+    // Deduct credits - pass authenticated supabase client
+    const creditResult = await deductCredits(user.id, "grammar", supabase);
     if (!creditResult.success) {
       return NextResponse.json(
         {

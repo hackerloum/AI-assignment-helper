@@ -111,7 +111,8 @@ export async function initiatePayment(data: {
     await addCredits(
       user.id,
       data.credits,
-      `Purchased ${data.credits} credits via ZenoPay`
+      `Purchased ${data.credits} credits via ZenoPay`,
+      supabase
     );
 
     // ZenoPay payment completed, redirect to success page
@@ -166,7 +167,8 @@ export async function processPaymentCallback(
       await addCredits(
         payment.user_id,
         payment.credits_purchased,
-        `Purchased ${payment.credits_purchased} credits`
+        `Purchased ${payment.credits_purchased} credits`,
+        supabase
       );
     }
 

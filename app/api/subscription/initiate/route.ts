@@ -181,7 +181,8 @@ export async function POST(request: NextRequest) {
     await addCredits(
       user.id,
       plan.credits,
-      `Purchased ${plan.name} via ZenoPay`
+      `Purchased ${plan.name} via ZenoPay`,
+      supabase
     );
 
     console.log("[Subscription API] ✅ Payment initiated for:", user.email);
