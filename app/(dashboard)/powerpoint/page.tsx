@@ -50,7 +50,7 @@ interface Presentation {
 
 export default function PowerPointPage() {
   const [topic, setTopic] = useState('')
-  const [slides, setSlides] = useState(5)
+  const [slides, setSlides] = useState(7)
   const [selectedStyle, setSelectedStyle] = useState('professional')
   const [isLoading, setIsLoading] = useState(false)
   const [presentation, setPresentation] = useState<Presentation | null>(null)
@@ -222,16 +222,7 @@ export default function PowerPointPage() {
       URL.revokeObjectURL(url)
       
       toast.dismiss(loadingToast)
-      
-      // Note about slide count (SlidesGPT may add extra slides)
-      const slideNote = slides <= 5 
-        ? `PowerPoint file downloaded! Note: SlidesGPT may generate slightly more slides than requested.`
-        : `PowerPoint file downloaded! (Requested: ${slides} slides)`
-      
-      toast.success(slideNote, {
-        description: 'If the file has extra slides, this is a limitation of the SlidesGPT API.',
-        duration: 6000,
-      })
+      toast.success(`PowerPoint file downloaded successfully! (${slides} slides)`)
     } catch (error: any) {
       toast.dismiss(loadingToast)
       toast.error(error.message || 'Failed to generate PowerPoint file')
@@ -386,9 +377,13 @@ export default function PowerPointPage() {
                   <p className="text-xs text-slate-400">
                     {slides <= 5 ? (
                       <span>{creditBreakdown.breakdown}</span>
+                    ) : slides === 6 ? (
+                      <span>Base: 20 credits (5 slides) + 7 credits (1 extra slide) = <span className="font-semibold text-pink-400">27 credits</span></span>
+                    ) : slides === 7 ? (
+                      <span><span className="font-semibold text-pink-400">33 credits</span></span>
                     ) : (
                       <span>
-                        Base: 20 credits (5 slides) + {creditBreakdown.additionalCredits} credits ({slides - 5} extra slides × 7) = <span className="font-semibold text-pink-400">{creditCost} credits</span>
+                        Base: 33 credits (7 slides) + {creditBreakdown.additionalCredits} credits ({slides - 7} extra slides × 7) = <span className="font-semibold text-pink-400">{creditCost} credits</span>
                       </span>
                     )}
                   </p>
