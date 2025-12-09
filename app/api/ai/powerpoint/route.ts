@@ -96,13 +96,40 @@ export async function POST(request: NextRequest) {
 
     // If file blob is present and download requested, return file
     if (downloadFile && presentation.fileBlob) {
-      const buffer = await presentation.fileBlob.arrayBuffer();
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'Content-Disposition': `attachment; filename="${presentation.title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.pptx"`,
-        },
-      });
+      try {
+        // Validate the blob is actually a PowerPoint file
+        const arrayBuffer = await presentation.fileBlob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // PPTX files are ZIP archives, they start with "PK" (0x50 0x4B)
+        if (uint8Array.length < 2 || uint8Array[0] !== 0x50 || uint8Array[1] !== 0x4B) {
+          // Not a valid PowerPoint file, return error
+          const text = new TextDecoder().decode(uint8Array.slice(0, 500));
+          console.error("Invalid PowerPoint file received:", text);
+          return NextResponse.json(
+            { 
+              error: "Invalid PowerPoint file received from API. The file may be corrupted or the API returned an error.",
+              details: text.substring(0, 200)
+            },
+            { status: 500 }
+          );
+        }
+
+        // Return the valid PowerPoint file
+        return new NextResponse(arrayBuffer, {
+          headers: {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'Content-Disposition': `attachment; filename="${presentation.title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.pptx"`,
+            'Content-Length': arrayBuffer.byteLength.toString(),
+          },
+        });
+      } catch (error: any) {
+        console.error("Error processing PowerPoint file:", error);
+        return NextResponse.json(
+          { error: "Failed to process PowerPoint file: " + error.message },
+          { status: 500 }
+        );
+      }
     }
 
     // Return presentation data for preview

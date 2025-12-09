@@ -137,18 +137,48 @@ export default function PowerPointPage() {
         }),
       })
 
+      // Check if response is OK
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to generate PowerPoint file')
+        // Try to get error message
+        let errorMessage = 'Failed to generate PowerPoint file'
+        try {
+          const data = await response.json()
+          errorMessage = data.error || data.details || errorMessage
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`
+        }
+        throw new Error(errorMessage)
+      }
+
+      // Check content type to ensure it's a PowerPoint file
+      const contentType = response.headers.get('content-type')
+      if (contentType && !contentType.includes('application/vnd.openxmlformats') && !contentType.includes('application/octet-stream')) {
+        // Might be an error response
+        const text = await response.text()
+        throw new Error(`Invalid response from server: ${text.substring(0, 200)}`)
       }
 
       // Download the file
       const blob = await response.blob()
+      
+      // Validate blob is a PowerPoint file (PPTX files start with PK)
+      const arrayBuffer = await blob.arrayBuffer()
+      const uint8Array = new Uint8Array(arrayBuffer)
+      
+      if (uint8Array.length < 2 || uint8Array[0] !== 0x50 || uint8Array[1] !== 0x4B) {
+        // Not a valid PowerPoint file, try to read as text
+        const text = new TextDecoder().decode(uint8Array.slice(0, 500))
+        throw new Error(`Invalid PowerPoint file received. The file may be corrupted. Error: ${text.substring(0, 200)}`)
+      }
+
+      // Create download link
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `${presentation.title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.pptx`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
       
       toast.dismiss()

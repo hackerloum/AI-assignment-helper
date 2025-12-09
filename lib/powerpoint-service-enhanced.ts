@@ -166,18 +166,19 @@ function createFallbackPresentation(
 
 /**
  * Format presentation for PowerPoint Generator API
+ * Note: The API requires a template file, but we'll structure the JSON correctly
  */
 function formatForPowerPointAPI(presentation: Presentation): any {
   const slides = [];
 
-  // Title slide
+  // Title slide (index 0)
   slides.push({
     type: "slide",
     slide_index: 0,
     shapes: [
       {
         name: "Title 1",
-        content: presentation.title,
+        content: presentation.title || "Presentation",
       },
       {
         name: "Subtitle 2",
@@ -186,12 +187,17 @@ function formatForPowerPointAPI(presentation: Presentation): any {
     ],
   });
 
-  // Content slides
-  presentation.slides.slice(1).forEach((slide, index) => {
+  // Content slides - use all slides from presentation
+  presentation.slides.forEach((slide, index) => {
+    // Skip if it's the title slide (already added)
+    if (index === 0 && slide.layout === "title") {
+      return;
+    }
+
     const shapes: any[] = [
       {
         name: "Title 1",
-        content: slide.title,
+        content: slide.title || `Slide ${index + 1}`,
       },
     ];
 
@@ -210,14 +216,17 @@ function formatForPowerPointAPI(presentation: Presentation): any {
 
     slides.push({
       type: "slide",
-      slide_index: index + 1,
+      slide_index: slides.length, // Use current slides array length
       shapes,
     });
   });
 
+  // Use a generic template name - the API might have default templates
+  const templateName = "default_template.pptx";
+
   return {
     presentation: {
-      template: `${presentation.theme || "professional"}_template.pptx`,
+      template: templateName,
       export_version: "Pptx2010",
       resultFileName: `${presentation.title.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}`,
       slides,
@@ -239,9 +248,19 @@ async function createPowerPointFile(
   const formData = new FormData();
   formData.append("jsonData", JSON.stringify(jsonData));
 
+  // Note: The PowerPoint Generator API requires a template file
+  // If no template is provided, the API might return an error
+  // We'll try without template first, and if it fails, we'll provide better error handling
   if (templateBlob) {
     formData.append("files", templateBlob, jsonData.presentation.template);
   }
+  
+  // Log the request for debugging
+  console.log("PowerPoint API Request:", {
+    template: jsonData.presentation.template,
+    slideCount: jsonData.presentation.slides.length,
+    hasTemplate: !!templateBlob,
+  });
 
   const response = await fetch(PPTX_API_GEN_URL, {
     method: "POST",
@@ -253,10 +272,63 @@ async function createPowerPointFile(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`PowerPoint API error: ${response.statusText} - ${errorText}`);
+    console.error("PowerPoint API error:", {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText,
+      jsonData: JSON.stringify(jsonData).substring(0, 200),
+    });
+    
+    // Try to parse as JSON for better error message
+    let errorMessage = errorText;
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.message || errorJson.error || errorText;
+    } catch {
+      // Not JSON, use as-is
+    }
+    
+    throw new Error(`PowerPoint API error (${response.status}): ${errorMessage}`);
   }
 
-  return await response.blob();
+  // Check if response is actually a PowerPoint file
+  const contentType = response.headers.get("content-type");
+  const blob = await response.blob();
+
+  // Validate it's a PowerPoint file by checking the first bytes (PPTX files start with PK)
+  const arrayBuffer = await blob.arrayBuffer();
+  const uint8Array = new Uint8Array(arrayBuffer);
+  
+  // PPTX files are ZIP archives, they start with "PK" (0x50 0x4B)
+  if (uint8Array.length < 2 || uint8Array[0] !== 0x50 || uint8Array[1] !== 0x4B) {
+    // Try to read as text to see if it's an error message
+    const text = new TextDecoder().decode(uint8Array.slice(0, 1000));
+    console.error("Invalid PowerPoint file response:", {
+      firstBytes: Array.from(uint8Array.slice(0, 10)),
+      text: text.substring(0, 500),
+      contentType,
+      blobSize: blob.size,
+    });
+    
+    // Check if it's a JSON error response
+    if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
+      try {
+        const errorJson = JSON.parse(text);
+        throw new Error(`PowerPoint API returned an error: ${errorJson.message || errorJson.error || JSON.stringify(errorJson)}`);
+      } catch {
+        // Not valid JSON
+      }
+    }
+    
+    throw new Error(`Invalid PowerPoint file received. The API may require a template file. Response: ${text.substring(0, 300)}`);
+  }
+
+  // Validate content type
+  if (contentType && !contentType.includes("application/vnd.openxmlformats") && !contentType.includes("application/octet-stream")) {
+    console.warn("Unexpected content type:", contentType);
+  }
+
+  return blob;
 }
 
 /**
