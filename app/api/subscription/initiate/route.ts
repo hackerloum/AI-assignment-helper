@@ -184,12 +184,14 @@ export async function POST(request: NextRequest) {
       `Purchased ${plan.name} via ZenoPay`
     );
 
-    console.log("[Subscription API] ✅ Payment successful for:", user.email);
+    console.log("[Subscription API] ✅ Payment initiated for:", user.email);
 
-    // Payment completed, return success with redirect URL
+    // Return payment status page URL
     return NextResponse.json({
       success: true,
-      paymentUrl: `/subscription?success=true&paymentId=${payment.id}&plan=${planType}`,
+      paymentUrl: `/payment-status?order_id=${payment.id}&plan=${planType}`,
+      orderId: payment.id,
+      status: "pending"
     });
   } catch (error: any) {
     console.error("[Subscription API] Error:", error);
