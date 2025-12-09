@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // Return to sign in with error if something went wrong
-  return NextResponse.redirect(`${origin}/auth/signin?error=verification_failed`)
+  // Return to login with error if something went wrong
+  return NextResponse.redirect(`${origin}/login?error=verification_failed`)
 }
 

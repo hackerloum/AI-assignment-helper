@@ -88,8 +88,7 @@ export function LoginForm() {
       
       // Wait for animation then redirect
       setTimeout(() => {
-        router.push('/dashboard')
-        router.refresh()
+        window.location.href = '/dashboard'
       }, 1000)
     } catch (error: any) {
       setErrors({ general: 'An unexpected error occurred. Please try again.' })

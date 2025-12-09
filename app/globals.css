@@ -37,6 +37,23 @@
     --error-red: #EF4444;
     --glass-bg: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.12);
+
+    /* Dashboard colors */
+    --dashboard-bg: #0A0E27;
+    --dashboard-surface: #0F172A;
+    --dashboard-elevated: #1E293B;
+    --dashboard-border: rgba(255, 255, 255, 0.08);
+    --sidebar-bg: #0A0E27;
+    --sidebar-item-hover: rgba(245, 158, 11, 0.1);
+    --sidebar-item-active: rgba(245, 158, 11, 0.15);
+    --accent-primary: #F59E0B;
+    --accent-secondary: #3B82F6;
+    --accent-success: #10B981;
+    --accent-warning: #F59E0B;
+    --accent-danger: #EF4444;
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-tertiary: #64748B;
   }
 
   .dark {
@@ -88,4 +105,40 @@
 
 .auth-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(245, 158, 11, 0.7);
+}
+
+/* Dashboard utility classes */
+.bg-dashboard-bg {
+  background-color: var(--dashboard-bg);
+}
+
+.bg-dashboard-surface {
+  background-color: var(--dashboard-surface);
+}
+
+.bg-dashboard-elevated {
+  background-color: var(--dashboard-elevated);
+}
+
+.border-dashboard-border {
+  border-color: var(--dashboard-border);
+}
+
+.bg-sidebar-bg {
+  background-color: var(--sidebar-bg);
+}
+
+.bg-sidebar-item-hover {
+  background-color: var(--sidebar-item-hover);
+}
+
+.bg-sidebar-item-active {
+  background-color: var(--sidebar-item-active);
+}
+
+/* Glassmorphism effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
