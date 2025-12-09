@@ -108,7 +108,8 @@ export function LoginForm() {
         } catch (error) {
           // redirect() throws NEXT_REDIRECT error which is expected
           // If it's a different error, fallback to client redirect
-          if (error && typeof error === 'object' && 'digest' in error && error.digest?.includes('NEXT_REDIRECT')) {
+          const errorWithDigest = error as { digest?: string } | null
+          if (errorWithDigest && typeof errorWithDigest.digest === 'string' && errorWithDigest.digest.includes('NEXT_REDIRECT')) {
             // This is the expected redirect - do nothing, navigation will happen
             return
           }
