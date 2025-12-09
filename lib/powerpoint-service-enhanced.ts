@@ -1,14 +1,13 @@
 /**
  * Enhanced PowerPoint Service
- * Uses Gemini API for content generation and PowerPoint Generator API
+ * Uses Gemini API for content generation and SlidesGPT API
  * to create actual .pptx files
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-const PPTX_API_GEN_URL = "https://gen.powerpointgeneratorapi.com/v1.0/generator/create";
-const PPTX_API_BEARER_TOKEN = process.env.PPTX_API_BEARER_TOKEN;
+import { generateSlidesGPTPresentation, downloadSlidesGPTPresentation } from "./slidesgpt-service";
 
 export interface Slide {
   title: string;
@@ -165,170 +164,31 @@ function createFallbackPresentation(
 }
 
 /**
- * Format presentation for PowerPoint Generator API
- * Note: The API requires a template file, but we'll structure the JSON correctly
+ * Create a prompt for SlidesGPT from presentation data
  */
-function formatForPowerPointAPI(presentation: Presentation): any {
-  const slides = [];
+function createSlidesGPTPrompt(presentation: Presentation): string {
+  // Create a comprehensive prompt for SlidesGPT
+  let prompt = `${presentation.title}\n\n`;
+  
+  if (presentation.subtitle) {
+    prompt += `${presentation.subtitle}\n\n`;
+  }
 
-  // Title slide (index 0)
-  slides.push({
-    type: "slide",
-    slide_index: 0,
-    shapes: [
-      {
-        name: "Title 1",
-        content: presentation.title || "Presentation",
-      },
-      {
-        name: "Subtitle 2",
-        content: presentation.subtitle || "AI-Generated Presentation",
-      },
-    ],
-  });
-
-  // Content slides - use all slides from presentation
+  prompt += "Create a presentation with the following slides:\n\n";
+  
   presentation.slides.forEach((slide, index) => {
-    // Skip if it's the title slide (already added)
-    if (index === 0 && slide.layout === "title") {
-      return;
-    }
-
-    const shapes: any[] = [
-      {
-        name: "Title 1",
-        content: slide.title || `Slide ${index + 1}`,
-      },
-    ];
-
-    // Format bullet points or content
+    prompt += `Slide ${index + 1}: ${slide.title}\n`;
     if (slide.bulletPoints && slide.bulletPoints.length > 0) {
-      shapes.push({
-        name: "Content Placeholder 2",
-        content: slide.bulletPoints.map((point) => `• ${point}`).join("\n"),
+      slide.bulletPoints.forEach(point => {
+        prompt += `- ${point}\n`;
       });
     } else if (slide.content) {
-      shapes.push({
-        name: "Content Placeholder 2",
-        content: slide.content,
-      });
+      prompt += `${slide.content}\n`;
     }
-
-    slides.push({
-      type: "slide",
-      slide_index: slides.length, // Use current slides array length
-      shapes,
-    });
+    prompt += "\n";
   });
 
-  // Use a generic template name - the API might have default templates
-  const templateName = "default_template.pptx";
-
-  return {
-    presentation: {
-      template: templateName,
-      export_version: "Pptx2010",
-      resultFileName: `${presentation.title.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}`,
-      slides,
-    },
-  };
-}
-
-/**
- * Create PowerPoint file using PowerPoint Generator API
- */
-async function createPowerPointFile(
-  jsonData: any,
-  templateBlob?: Blob
-): Promise<Blob> {
-  if (!PPTX_API_BEARER_TOKEN) {
-    throw new Error("PowerPoint Generator API token not configured");
-  }
-
-  const formData = new FormData();
-  formData.append("jsonData", JSON.stringify(jsonData));
-
-  // Note: The PowerPoint Generator API requires a template file
-  // If no template is provided, the API might return an error
-  // We'll try without template first, and if it fails, we'll provide better error handling
-  if (templateBlob) {
-    formData.append("files", templateBlob, jsonData.presentation.template);
-  }
-  
-  // Log the request for debugging
-  console.log("PowerPoint API Request:", {
-    template: jsonData.presentation.template,
-    slideCount: jsonData.presentation.slides.length,
-    hasTemplate: !!templateBlob,
-  });
-
-  const response = await fetch(PPTX_API_GEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${PPTX_API_BEARER_TOKEN}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("PowerPoint API error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorText,
-      jsonData: JSON.stringify(jsonData).substring(0, 200),
-    });
-    
-    // Try to parse as JSON for better error message
-    let errorMessage = errorText;
-    try {
-      const errorJson = JSON.parse(errorText);
-      errorMessage = errorJson.message || errorJson.error || errorText;
-    } catch {
-      // Not JSON, use as-is
-    }
-    
-    throw new Error(`PowerPoint API error (${response.status}): ${errorMessage}`);
-  }
-
-  // Check if response is actually a PowerPoint file
-  const contentType = response.headers.get("content-type");
-  const blob = await response.blob();
-
-  // Validate it's a PowerPoint file by checking the first bytes (PPTX files start with PK)
-  const arrayBuffer = await blob.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
-  
-  // PPTX files are ZIP archives, they start with "PK" (0x50 0x4B)
-  if (uint8Array.length < 2 || uint8Array[0] !== 0x50 || uint8Array[1] !== 0x4B) {
-    // Try to read as text to see if it's an error message
-    const text = new TextDecoder().decode(uint8Array.slice(0, 1000));
-    console.error("Invalid PowerPoint file response:", {
-      firstBytes: Array.from(uint8Array.slice(0, 10)),
-      text: text.substring(0, 500),
-      contentType,
-      blobSize: blob.size,
-    });
-    
-    // Check if it's a JSON error response
-    if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
-      try {
-        const errorJson = JSON.parse(text);
-        throw new Error(`PowerPoint API returned an error: ${errorJson.message || errorJson.error || JSON.stringify(errorJson)}`);
-      } catch {
-        // Not valid JSON
-      }
-    }
-    
-    throw new Error(`Invalid PowerPoint file received. The API may require a template file. Response: ${text.substring(0, 300)}`);
-  }
-
-  // Validate content type
-  if (contentType && !contentType.includes("application/vnd.openxmlformats") && !contentType.includes("application/octet-stream")) {
-    console.warn("Unexpected content type:", contentType);
-  }
-
-  return blob;
+  return prompt;
 }
 
 /**
@@ -340,26 +200,29 @@ export async function generatePresentation(
   slideCount: number = 5,
   style: string = "professional",
   createFile: boolean = false
-): Promise<Presentation & { fileBlob?: Blob }> {
+): Promise<Presentation & { fileBlob?: Blob; slidesGPTId?: string }> {
   // Step 1: Generate content using AI
   const presentation = await generatePresentationContent(topic, slideCount, style);
 
-  // Step 2: If file creation is requested, create .pptx file
+  // Step 2: If file creation is requested, create .pptx file using SlidesGPT
   if (createFile) {
-    if (!PPTX_API_BEARER_TOKEN) {
-      console.error("PowerPoint Generator API token not configured");
-      throw new Error("PowerPoint Generator API token (PPTX_API_BEARER_TOKEN) is not configured. Please add it to your environment variables.");
-    }
-
     try {
-      const apiData = formatForPowerPointAPI(presentation);
-      const fileBlob = await createPowerPointFile(apiData);
+      // Create a prompt for SlidesGPT
+      const slidesGPTPrompt = createSlidesGPTPrompt(presentation);
+      
+      // Generate presentation with SlidesGPT
+      const slidesGPTResponse = await generateSlidesGPTPresentation(slidesGPTPrompt);
+      
+      // Download the file
+      const fileBlob = await downloadSlidesGPTPresentation(slidesGPTResponse.id);
+      
       return {
         ...presentation,
         fileBlob,
+        slidesGPTId: slidesGPTResponse.id,
       };
     } catch (error: any) {
-      console.error("Error creating PowerPoint file:", error);
+      console.error("Error creating PowerPoint file with SlidesGPT:", error);
       // Re-throw the error so the API route can handle it properly
       throw new Error(`Failed to create PowerPoint file: ${error.message}`);
     }
@@ -367,12 +230,3 @@ export async function generatePresentation(
 
   return presentation;
 }
-
-/**
- * Export presentation data to PowerPoint API format (for debugging/testing)
- */
-export function exportToPowerPointFormat(presentation: Presentation): string {
-  const apiData = formatForPowerPointAPI(presentation);
-  return JSON.stringify(apiData, null, 2);
-}
-

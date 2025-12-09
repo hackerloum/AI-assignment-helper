@@ -67,7 +67,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true,
-      customTemplateId: customTemplate.id 
+      customTemplateId: customTemplate.id,
+      fileUrl: `/uploads/samples/${fileName}`,
+      sample_file_url: `/uploads/samples/${fileName}`
     })
   } catch (error: any) {
     console.error('Error in upload-sample route:', error)

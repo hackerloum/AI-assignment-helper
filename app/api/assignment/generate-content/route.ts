@@ -12,10 +12,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { topic, wordCount, assignmentType } = await request.json()
+    const { section, prompt, assignment_type, topic, wordCount, assignmentType } = await request.json()
 
-    if (!topic) {
-      return NextResponse.json({ error: 'Topic required' }, { status: 400 })
+    const finalPrompt = prompt || topic
+    const finalAssignmentType = assignment_type || assignmentType
+
+    if (!finalPrompt) {
+      return NextResponse.json({ error: 'Prompt or topic required' }, { status: 400 })
     }
 
     // Deduct credits for content generation
@@ -28,7 +31,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate content using AI
-    const content = await generateEssay(topic, wordCount)
+    // If section is provided, generate section-specific content
+    let content: string
+    if (section) {
+      // Use the prompt directly for section-based generation
+      content = await generateEssay(finalPrompt, wordCount || 500)
+    } else {
+      // Legacy: use topic and wordCount
+      content = await generateEssay(finalPrompt, wordCount || 1000)
+    }
 
     // Extract references from content (simple extraction - in production, use better method)
     const references: any[] = []

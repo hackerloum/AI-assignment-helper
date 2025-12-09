@@ -23,24 +23,28 @@ export async function POST(request: NextRequest) {
     // 4. Extract cover page structure
     // 5. Return the extracted format
 
-    // For now, return a mock extracted format
-    const extractedFormat = {
-      font: 'Times New Roman',
-      font_size: 12,
-      line_spacing: 1.5,
-      margins: { top: 1, bottom: 1, left: 1, right: 1 },
-      cover_page_format: {
-        fields: [
-          { label: 'TITLE', position: 'center', bold: true },
-          { label: 'NAME', position: 'left' },
-          { label: 'DATE', position: 'left' },
-        ],
+    // For now, return a mock analysis with the expected structure
+    const analysis = {
+      detected_format: {
+        font_family: 'Times New Roman',
+        font_size: 12,
+        line_spacing: 1.5,
+        margins: { top: 1, bottom: 1, left: 1, right: 1 },
+        heading_style: { font_size: 14, bold: true },
       },
+      cover_page_detected: true,
+      structure: {
+        has_title_page: true,
+        has_table_of_contents: false,
+        sections_count: 3,
+      },
+      confidence_score: 0.85,
     }
 
     return NextResponse.json({ 
       success: true,
-      extractedFormat 
+      analysis,
+      extractedFormat: analysis.detected_format // For backward compatibility
     })
   } catch (error: any) {
     console.error('Error in analyze-sample route:', error)

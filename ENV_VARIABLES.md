@@ -37,22 +37,22 @@ GEMINI_API_KEY=your_gemini_api_key
 
 **Note:** The application uses Google's Gemini 2.5 Flash model for PowerPoint presentation generation, providing high-quality presentations with speaker notes, visual suggestions, and better structure.
 
-### PowerPoint Generator API Configuration (for .pptx File Generation)
+### SlidesGPT API Configuration (for .pptx File Generation)
 
 ```env
-PPTX_API_BEARER_TOKEN=your_powerpoint_api_bearer_token
-PPTX_API_USERNAME=your_powerpoint_api_username
-PPTX_API_PASSWORD=your_powerpoint_api_password
-PPTX_API_KEY=your_powerpoint_api_key
+SLIDESGPT_API_KEY=your_slidesgpt_api_key
 ```
 
-**Where to get them:**
-1. Go to [PowerPoint Generator API](https://powerpointgeneratorapi.com/)
-2. Sign up for an account
-3. Get your credentials from the dashboard
-4. Use the bearer token for authentication (recommended) or username/password/key
+**Default API Key:**
+The application comes with a default API key pre-configured. You can override it by setting `SLIDESGPT_API_KEY` in your environment variables.
 
-**Note:** This API is used to create actual .pptx PowerPoint files. The bearer token is the simplest authentication method. If you have a pre-generated token, only `PPTX_API_BEARER_TOKEN` is required.
+**Where to get it:**
+1. Go to [SlidesGPT API](https://api.slidesgpt.com/)
+2. Sign up for an account
+3. Get your API key from the dashboard
+4. Add it to your `.env.local` file
+
+**Note:** This API is used to create actual .pptx PowerPoint files. The API generates presentations based on prompts and returns downloadable .pptx files.
 
 ### App Configuration
 
@@ -153,10 +153,7 @@ After setting up environment variables, verify they're working:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Client | Supabase anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server | Supabase service role key |
 | `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key (for all AI features including PowerPoint) |
-| `PPTX_API_BEARER_TOKEN` | ⚠️ | Server | PowerPoint Generator API bearer token (for .pptx files) |
-| `PPTX_API_USERNAME` | ➖ | Server | PowerPoint API username (alternative to bearer token) |
-| `PPTX_API_PASSWORD` | ➖ | Server | PowerPoint API password (alternative to bearer token) |
-| `PPTX_API_KEY` | ➖ | Server | PowerPoint API key (alternative to bearer token) |
+| `SLIDESGPT_API_KEY` | ⚠️ | Server | SlidesGPT API key (for .pptx file generation, has default value) |
 | `NEXT_PUBLIC_APP_URL` | ✅ | Client | Application URL |
 | `ZENOPAY_API_KEY` | ✅ | Server | ZenoPay API key for mobile money payments (handles all providers) |
 

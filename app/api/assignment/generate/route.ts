@@ -38,27 +38,44 @@ export async function POST(request: NextRequest) {
     const assignmentData: any = {
       user_id: user.id,
       assignment_type: type,
-      title: coverPageData?.title || 'Untitled Assignment',
-      course_code: coverPageData?.courseCode,
-      course_name: coverPageData?.courseName,
-      instructor_name: coverPageData?.instructor,
-      submission_date: coverPageData?.submissionDate || null,
+      title: coverPageData?.assignment_title || coverPageData?.title || coverPageData?.task || 'Untitled Assignment',
+      course_code: coverPageData?.course_code || coverPageData?.courseCode || coverPageData?.module_code,
+      course_name: coverPageData?.course_name || coverPageData?.courseName || coverPageData?.module_name,
+      instructor_name: coverPageData?.instructor_name || coverPageData?.instructor,
+      submission_date: coverPageData?.submission_date || coverPageData?.submissionDate || null,
       assignment_content: content,
-      references: references || [],
+      assignment_references: references || [],
       word_count: wordCount,
       ai_model_used: 'gpt-4',
       generation_time_seconds: 0,
     }
 
+    // Add LGTI-specific fields if present
+    if (coverPageData?.program_name) {
+      assignmentData.program_name = coverPageData.program_name
+    }
+    if (coverPageData?.module_name) {
+      assignmentData.module_name = coverPageData.module_name
+    }
+    if (coverPageData?.module_code) {
+      assignmentData.module_code = coverPageData.module_code
+    }
+    if (coverPageData?.type_of_work) {
+      assignmentData.type_of_work = coverPageData.type_of_work
+    }
+    if (coverPageData?.task) {
+      assignmentData.task = coverPageData.task
+    }
+
     // Add type-specific fields
     if (type === 'individual') {
-      assignmentData.student_name = coverPageData?.studentName
-      assignmentData.registration_number = coverPageData?.registrationNumber
+      assignmentData.student_name = coverPageData?.student_name || coverPageData?.studentName
+      assignmentData.registration_number = coverPageData?.registration_number || coverPageData?.registrationNumber
     } else if (type === 'group') {
-      assignmentData.group_name = coverPageData?.groupName
-      // These would come from GroupMembersManager component
-      assignmentData.group_representatives = []
-      assignmentData.group_members = []
+      assignmentData.group_name = coverPageData?.group_name || coverPageData?.groupName
+      assignmentData.group_number = coverPageData?.group_number
+      assignmentData.group_representatives = coverPageData?.group_representatives || []
+      assignmentData.group_members = coverPageData?.group_members || []
     }
 
     // Add template reference

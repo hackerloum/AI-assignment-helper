@@ -8,17 +8,13 @@ Add these to your `.env.local` file:
 # Gemini API - For content generation (same key as other AI features)
 GEMINI_API_KEY=your_gemini_api_key
 
-# PowerPoint Generator API - For .pptx file generation
-PPTX_API_BEARER_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoiaGFja2VybG91bUBnbWFpbC5jb20iLCJuYmYiOiIxNzY1Mjk2Nzg3IiwiZXhwIjoiMTc5NjgzMjc4NyJ9.nAZtXXQLu59D6fNjX5gVIIi0iqqulmUC4VMO2zaN-Jo
+# SlidesGPT API - For .pptx file generation (optional, has default)
+SLIDESGPT_API_KEY=jm6fbznofjysacspsx653yffstgbij63
 ```
 
-## Your PowerPoint Generator API Credentials
+## SlidesGPT API
 
-```
-Email: hackerloum@gmail.com
-API Key: 246ba6d7-09b7-496a-b44a-3ac2a6c01073
-Bearer Token: [added to env above]
-```
+The application uses SlidesGPT API for generating .pptx files. A default API key is pre-configured, but you can override it with your own key.
 
 ## Quick Test
 
@@ -50,7 +46,8 @@ Bearer Token: [added to env above]
 
 ## Files Changed
 
-1. `lib/powerpoint-service-enhanced.ts` - Main service with Gemini + PowerPoint API
+1. `lib/powerpoint-service-enhanced.ts` - Main service with Gemini + SlidesGPT API
+2. `lib/slidesgpt-service.ts` - SlidesGPT API integration
 2. `lib/powerpoint-generator-api.ts` - PowerPoint Generator API integration
 3. `app/api/ai/powerpoint/route.ts` - API endpoint
 4. `app/(dashboard)/powerpoint/page.tsx` - Enhanced UI

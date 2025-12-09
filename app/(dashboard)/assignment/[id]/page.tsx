@@ -156,11 +156,11 @@ export default function AssignmentDetailPage() {
         </div>
 
         {/* References */}
-        {assignment.references && assignment.references.length > 0 && (
+        {assignment.assignment_references && assignment.assignment_references.length > 0 && (
           <div className="mt-8 pt-8 border-t border-dashboard-border">
             <h2 className="text-xl font-bold text-white mb-4">References</h2>
             <ol className="list-decimal list-inside space-y-2">
-              {assignment.references.map((ref: any, index: number) => (
+              {assignment.assignment_references.map((ref: any, index: number) => (
                 <li key={index} className="text-slate-300">
                   {ref.title}
                   {ref.author && ` - ${ref.author}`}

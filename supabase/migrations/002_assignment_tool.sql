@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS public.assignment_templates (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   college_name TEXT NOT NULL,
-  college_code TEXT UNIQUE NOT NULL, -- e.g., 'UDSM', 'DIT', 'MUCE'
+  college_code TEXT NOT NULL, -- e.g., 'UDSM', 'DIT', 'MUCE'
   template_type TEXT NOT NULL CHECK (template_type IN ('individual', 'group')),
   cover_page_format JSONB NOT NULL, -- Structure for cover page
   content_format JSONB NOT NULL, -- Formatting rules
@@ -13,7 +13,9 @@ CREATE TABLE IF NOT EXISTS public.assignment_templates (
   is_active BOOLEAN DEFAULT TRUE,
   preview_image TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  -- Ensure unique combination of college_code and template_type
+  UNIQUE(college_code, template_type)
 );
 
 -- User custom templates (from sample uploads)
@@ -52,7 +54,7 @@ CREATE TABLE IF NOT EXISTS public.assignments_new (
   
   -- Content
   assignment_content TEXT,
-  references JSONB,
+  assignment_references JSONB,
   word_count INTEGER,
   
   -- Template used
@@ -113,6 +115,7 @@ CREATE POLICY "Users can delete own assignments" ON public.assignments_new
   FOR DELETE USING (auth.uid() = user_id);
 
 -- Seed data for Tanzanian universities
+-- Use ON CONFLICT to avoid errors if migration is run multiple times
 INSERT INTO public.assignment_templates (college_name, college_code, template_type, cover_page_format, content_format) VALUES
 (
   'University of Dar es Salaam',
@@ -197,5 +200,37 @@ INSERT INTO public.assignment_templates (college_name, college_code, template_ty
     "line_spacing": 1.5,
     "margins": {"top": 1, "bottom": 1, "left": 1.25, "right": 1.25}
   }'::jsonb
-);
+),
+(
+  'Local Government Training Institute',
+  'LGTI',
+  'group',
+  '{
+    "logo_position": "center",
+    "institution_name": "THE LOCAL GOVERNMENT TRAINING INSTITUTE (LGTI)",
+    "institution_name_size": 16,
+    "institution_name_bold": true,
+    "institution_name_uppercase": true,
+    "fields": [
+      {"label": "LOGO OF COLLEGE", "type": "logo", "align": "center"},
+      {"label": "PROGRAM NAME", "value": "placeholder", "align": "center"},
+      {"label": "MODULE NAME", "value": "placeholder", "align": "center"},
+      {"label": "MODULE CODE", "value": "placeholder", "align": "center"},
+      {"label": "INSTRUCTOR''S NAME", "value": "placeholder", "align": "left"},
+      {"label": "TYPE OF WORK", "value": "GROUP ASSIGNMENT", "align": "left", "bold": true},
+      {"label": "GROUP NUMBER", "value": "placeholder", "align": "left"},
+      {"label": "SUBMISSION DATE", "value": "placeholder", "align": "left"},
+      {"label": "GROUP PARTICIPANTS", "type": "table", "columns": ["S/N", "NAME OF PARTICIPANTS", "REGISTRATION NUMBER", "PHONE NUMBER"]},
+      {"label": "Task", "value": "placeholder", "align": "left", "bold": true}
+    ]
+  }'::jsonb,
+  '{
+    "font": "Times New Roman",
+    "font_size": 12,
+    "line_spacing": 1.5,
+    "margins": {"top": 1, "bottom": 1, "left": 1, "right": 1},
+    "heading_style": {"font_size": 14, "bold": true}
+  }'::jsonb
+)
+ON CONFLICT (college_code, template_type) DO NOTHING;
 

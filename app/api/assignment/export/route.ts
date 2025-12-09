@@ -1,6 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { generateAssignmentDocument } from '@/lib/utils/docx-generator'
 
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { assignmentId } = await request.json()
+
+    if (!assignmentId) {
+      return NextResponse.json({ error: 'Assignment ID required' }, { status: 400 })
+    }
+
+    // Fetch assignment data
+    const { data: assignment, error } = await supabase
+      .from('assignments_new')
+      .select('*')
+      .eq('id', assignmentId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (error || !assignment) {
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
+    }
+
+    // Generate DOCX
+    const buffer = await generateAssignmentDocument(assignment)
+
+    return new NextResponse(buffer, {
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': `attachment; filename="assignment_${assignmentId}.docx"`,
+      },
+    })
+  } catch (error: any) {
+    console.error('Export error:', error)
+    return NextResponse.json(
+      { error: error.message || 'Export failed' },
+      { status: 500 }
+    )
+  }
+}
+
+// Keep GET method for backward compatibility
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -30,31 +77,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
     }
 
-    // In production, you would use a library like docx or pdfkit to generate the file
-    // For now, return a simple text representation
+    // Try to generate DOCX, fallback to text if it fails
+    try {
+      const buffer = await generateAssignmentDocument(assignment)
+      return new NextResponse(buffer, {
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'Content-Disposition': `attachment; filename="assignment_${assignmentId}.docx"`,
+        },
+      })
+    } catch (docxError) {
+      // Fallback to text format
+      let content = `Assignment: ${assignment.title}\n\n`
+      content += `Course: ${assignment.course_name || 'N/A'}\n`
+      content += `Instructor: ${assignment.instructor_name || 'N/A'}\n\n`
+      content += `${assignment.assignment_content || 'No content'}\n\n`
+      
+      if (assignment.assignment_references && assignment.assignment_references.length > 0) {
+        content += `References:\n`
+        assignment.assignment_references.forEach((ref: any, index: number) => {
+          content += `${index + 1}. ${ref.title}`
+          if (ref.author || ref.authors) content += ` - ${ref.author || ref.authors}`
+          if (ref.year) content += ` (${ref.year})`
+          content += '\n'
+        })
+      }
 
-    let content = `Assignment: ${assignment.title}\n\n`
-    content += `Course: ${assignment.course_name || 'N/A'}\n`
-    content += `Instructor: ${assignment.instructor_name || 'N/A'}\n\n`
-    content += `${assignment.assignment_content || 'No content'}\n\n`
-    
-    if (assignment.references && assignment.references.length > 0) {
-      content += `References:\n`
-      assignment.references.forEach((ref: any, index: number) => {
-        content += `${index + 1}. ${ref.title}`
-        if (ref.author) content += ` - ${ref.author}`
-        if (ref.year) content += ` (${ref.year})`
-        content += '\n'
+      return new NextResponse(content, {
+        headers: {
+          'Content-Type': 'text/plain',
+          'Content-Disposition': `attachment; filename="assignment_${assignmentId}.txt"`,
+        },
       })
     }
-
-    // Return as text for now (in production, generate actual DOCX/PDF)
-    return new NextResponse(content, {
-      headers: {
-        'Content-Type': format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="assignment.${format}"`,
-      },
-    })
   } catch (error: any) {
     console.error('Error in export route:', error)
     return NextResponse.json(
@@ -63,4 +118,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
