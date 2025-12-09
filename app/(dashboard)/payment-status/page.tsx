@@ -160,7 +160,7 @@ export default function PaymentStatusPage() {
       case 'pending':
         return {
           title: 'Payment Pending',
-          description: 'Please complete the payment on your mobile phone. We\'re waiting for confirmation...',
+          description: 'Please complete the payment on your mobile phone. We&apos;re waiting for confirmation...',
           color: 'yellow'
         }
       default:
