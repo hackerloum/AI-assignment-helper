@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { addCredits } from "@/lib/credits";
 import {
   initiateZenoPayPayment,
@@ -11,8 +12,35 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[Subscription API] Request received");
     
-    // Create Supabase client - this will properly read cookies from the request
-    const supabase = await createClient();
+    // Get cookies from the request
+    const cookieStore = await cookies();
+    
+    // Log cookie info
+    const allCookies = cookieStore.getAll();
+    const authCookies = allCookies.filter(c => c.name.includes('sb-'));
+    console.log("[Subscription API] Total cookies:", allCookies.length, "| Auth cookies:", authCookies.length);
+    
+    // Create Supabase client with proper cookie handling for API routes
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              });
+            } catch {
+              // Cookie setting might fail in API routes, that's okay
+            }
+          },
+        },
+      }
+    );
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
