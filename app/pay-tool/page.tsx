@@ -399,7 +399,7 @@ export default function PayToolPage() {
                      ) : (
                        <>
                          <CheckCircle2 className="w-4 h-4" />
-                         I've Completed Payment - Verify Now
+                         I&apos;ve Completed Payment - Verify Now
                        </>
                      )}
                    </motion.button>
