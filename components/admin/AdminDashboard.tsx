@@ -1,116 +1,215 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Users, DollarSign, FileText, BarChart3, Settings, LogOut, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { 
+  Users, 
+  DollarSign, 
+  FileText, 
+  TrendingUp, 
+  Shield,
+  BarChart3,
+  CreditCard,
+  CheckCircle2,
+  Clock,
+  Zap,
+  ArrowRight
+} from 'lucide-react';
+import { AdminAnalytics } from './AdminAnalytics';
 import { AdminUsersManagement } from './AdminUsersManagement';
 import { AdminPaymentsManagement } from './AdminPaymentsManagement';
 import { AdminSubmissionsManagement } from './AdminSubmissionsManagement';
-import { AdminAnalytics } from './AdminAnalytics';
 import { AdminSettings } from './AdminSettings';
-import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@/hooks/useUser';
 
 export function AdminDashboard() {
+  const { user } = useUser();
   const [activeTab, setActiveTab] = useState('overview');
-  const [adminUser, setAdminUser] = useState<any>(null);
-  const router = useRouter();
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAdminUser();
+    fetchAnalytics();
+    
+    // Check URL for tab parameter
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
   }, []);
 
-  const fetchAdminUser = async () => {
+  const fetchAnalytics = async () => {
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setAdminUser(user);
+      const response = await fetch('/api/admin/analytics');
+      const result = await response.json();
+      if (result.success) {
+        setAnalytics(result.data);
       }
     } catch (error) {
-      console.error('Error fetching admin user:', error);
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/cp/login');
+  const stats = analytics ? [
+    {
+      name: 'Total Users',
+      value: analytics.totalUsers.toString(),
+      change: `${analytics.activeUsers || 0} active`,
+      trend: 'up' as const,
+      icon: Users,
+      color: 'from-blue-500 to-cyan-500',
+      textColor: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
+    },
+    {
+      name: 'Total Revenue',
+      value: `$${((analytics.totalRevenue || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: `${analytics.totalPayments || 0} payments`,
+      trend: 'up' as const,
+      icon: DollarSign,
+      color: 'from-emerald-500 to-teal-500',
+      textColor: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+    },
+    {
+      name: 'Pending Reviews',
+      value: (analytics.pendingSubmissions || 0).toString(),
+      change: `${analytics.approvedSubmissions || 0} approved`,
+      trend: 'up' as const,
+      icon: FileText,
+      color: 'from-amber-500 to-orange-500',
+      textColor: 'text-amber-400',
+      bgColor: 'bg-amber-500/10',
+    },
+    {
+      name: 'Success Rate',
+      value: analytics && (analytics.approvedSubmissions + analytics.pendingSubmissions) > 0
+        ? `${Math.round((analytics.approvedSubmissions / (analytics.approvedSubmissions + analytics.pendingSubmissions)) * 100)}%`
+        : '0%',
+      change: 'approval rate',
+      trend: 'up' as const,
+      icon: TrendingUp,
+      color: 'from-purple-500 to-pink-500',
+      textColor: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
+    },
+  ] : [];
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'users', label: 'Users', icon: Users },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'submissions', label: 'Submissions', icon: FileText },
+    { id: 'settings', label: 'Settings', icon: Shield },
+  ];
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Update URL without page reload
+    const url = new URL(window.location.href);
+    if (tab === 'overview') {
+      url.searchParams.delete('tab');
+    } else {
+      url.searchParams.set('tab', tab);
+    }
+    window.history.pushState({}, '', url);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-bold">Control Panel</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            {adminUser && (
-              <span className="text-sm text-muted-foreground">
-                {adminUser.email}
-              </span>
-            )}
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+          Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'Admin'}! 👋
+        </h1>
+        <p className="text-lg text-slate-400">
+          Manage your platform and monitor system activity
+        </p>
+      </motion.div>
+
+      {/* Stats Cards */}
+      {!loading && analytics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="relative bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 overflow-hidden group hover:border-amber-500/30 transition-all duration-300"
+            >
+              {/* Background gradient */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
+              
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 ${stat.bgColor} rounded-xl`}>
+                    <stat.icon className={`w-6 h-6 ${stat.textColor}`} />
+                  </div>
+                  <span className={`text-sm font-semibold ${stat.trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {stat.change}
+                  </span>
+                </div>
+                
+                <h3 className="text-3xl font-bold text-white mb-1">{stat.value}</h3>
+                <p className="text-sm text-slate-400">{stat.name}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </header>
+      )}
 
-      {/* Main Content */}
-      <main className="container py-6 px-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="users">
-              <Users className="h-4 w-4 mr-2" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="payments">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Payments
-            </TabsTrigger>
-            <TabsTrigger value="submissions">
-              <FileText className="h-4 w-4 mr-2" />
-              Submissions
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+      {/* Loading State */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 animate-pulse">
+              <div className="h-4 bg-white/5 rounded w-32 mb-4" />
+              <div className="h-8 bg-white/5 rounded w-24 mb-2" />
+              <div className="h-3 bg-white/5 rounded w-20" />
+            </div>
+          ))}
+        </div>
+      )}
 
-          <TabsContent value="overview" className="space-y-6">
-            <AdminAnalytics />
-          </TabsContent>
+      {/* Tabs */}
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
+                  isActive
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-          <TabsContent value="users" className="space-y-6">
-            <AdminUsersManagement />
-          </TabsContent>
-
-          <TabsContent value="payments" className="space-y-6">
-            <AdminPaymentsManagement />
-          </TabsContent>
-
-          <TabsContent value="submissions" className="space-y-6">
-            <AdminSubmissionsManagement />
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <AdminSettings />
-          </TabsContent>
-        </Tabs>
-      </main>
+        {/* Tab Content */}
+        <div className="mt-6">
+          {activeTab === 'overview' && <AdminAnalytics />}
+          {activeTab === 'users' && <AdminUsersManagement />}
+          {activeTab === 'payments' && <AdminPaymentsManagement />}
+          {activeTab === 'submissions' && <AdminSubmissionsManagement />}
+          {activeTab === 'settings' && <AdminSettings />}
+        </div>
+      </div>
     </div>
   );
 }
-
