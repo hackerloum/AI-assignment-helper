@@ -16,13 +16,20 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 
 interface Template {
-  id: string
-  college_name: string
-  college_code: string
-  template_type: 'individual' | 'group'
+  id?: string
+  code: string
+  type: 'individual' | 'group'
+  path?: string
+  size?: number
+  modified?: string
+  preview_url?: string
+  // Legacy fields from Supabase (for backward compatibility)
+  college_name?: string
+  college_code?: string
+  template_type?: 'individual' | 'group'
   preview_image?: string
-  cover_page_format: any
-  content_format: any
+  cover_page_format?: any
+  content_format?: any
   is_favorite?: boolean
 }
 
@@ -49,6 +56,36 @@ export function TemplateSelector({
   const fetchTemplates = async () => {
     setLoading(true)
     try {
+      // First, try to fetch DOCX templates from the new API
+      const response = await fetch('/api/assignment/templates/list')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.templates) {
+          // Filter by assignment type and map to Template interface
+          const docxTemplates: Template[] = data.templates
+            .filter((t: any) => t.type === assignmentType)
+            .map((t: any) => ({
+              id: `${t.code}_${t.type}`,
+              code: t.code,
+              type: t.type,
+              path: t.path,
+              size: t.size,
+              modified: t.modified,
+              preview_url: t.preview_url,
+              college_code: t.code,
+              college_name: t.code, // Will be enhanced with metadata later
+              template_type: t.type,
+            }))
+          
+          if (docxTemplates.length > 0) {
+            setTemplates(docxTemplates)
+            setLoading(false)
+            return
+          }
+        }
+      }
+      
+      // Fallback to Supabase templates (for backward compatibility)
       const supabase = createClient()
       const { data, error } = await supabase
         .from('assignment_templates')
@@ -57,8 +94,24 @@ export function TemplateSelector({
         .eq('is_active', true)
 
       if (error) throw error
-      setTemplates(data || [])
+      
+      // Map Supabase templates to Template interface
+      const supabaseTemplates: Template[] = (data || []).map((t: any) => ({
+        id: t.id,
+        code: t.college_code,
+        type: t.template_type,
+        college_name: t.college_name,
+        college_code: t.college_code,
+        template_type: t.template_type,
+        preview_image: t.preview_image,
+        cover_page_format: t.cover_page_format,
+        content_format: t.content_format,
+        is_favorite: t.is_favorite,
+      }))
+      
+      setTemplates(supabaseTemplates)
     } catch (error: any) {
+      console.error('Error fetching templates:', error)
       toast.error(error.message || 'Failed to fetch templates')
     } finally {
       setLoading(false)
@@ -66,13 +119,14 @@ export function TemplateSelector({
   }
 
   const filteredTemplates = templates.filter(template =>
-    template.college_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.college_code.toLowerCase().includes(searchQuery.toLowerCase())
+    (template.college_name?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+    (template.college_code?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+    template.code.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  // Group templates by college
+  // Group templates by college code
   const groupedTemplates = filteredTemplates.reduce((acc, template) => {
-    const key = template.college_code
+    const key = template.code || template.college_code || 'other'
     if (!acc[key]) {
       acc[key] = []
     }
@@ -129,7 +183,7 @@ export function TemplateSelector({
                 <div className="flex items-center gap-3 mb-4">
                   <Building2 className="w-5 h-5 text-indigo-400" />
                   <h3 className="text-lg font-semibold text-white">
-                    {collegeTemplates[0].college_name}
+                    {collegeTemplates[0].college_name || collegeCode}
                   </h3>
                   <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-medium rounded-full">
                     {collegeCode}
@@ -138,10 +192,10 @@ export function TemplateSelector({
                 <div className="grid md:grid-cols-2 gap-4">
                   {collegeTemplates.map((template) => (
                     <TemplateCard
-                      key={template.id}
+                      key={template.id || `${template.code}_${template.type}`}
                       template={template}
-                      isSelected={selectedId === template.id}
-                      onSelect={() => onSelect(template.id)}
+                      isSelected={selectedId === (template.id || `${template.code}_${template.type}`)}
+                      onSelect={() => onSelect(template.id || `${template.code}_${template.type}`)}
                       onPreview={() => setPreviewTemplate(template)}
                     />
                   ))}
@@ -198,28 +252,48 @@ function TemplateCard({ template, isSelected, onSelect, onPreview }: TemplateCar
         {template.preview_image ? (
           <Image
             src={template.preview_image}
-            alt={`${template.college_name} template`}
+            alt={`${template.college_name || template.code} template`}
             fill
             className="object-cover"
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <FileText className="w-12 h-12 text-slate-600" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+            <FileText className="w-12 h-12 text-slate-600 mb-2" />
+            <p className="text-xs text-slate-500 text-center">
+              {template.code} {template.type}
+            </p>
+            {template.size && (
+              <p className="text-xs text-slate-600 mt-1">
+                {(template.size / 1024).toFixed(1)} KB
+              </p>
+            )}
           </div>
         )}
 
         {/* Preview Overlay */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <button
             onClick={(e) => {
               e.stopPropagation()
               onPreview()
             }}
-            className="px-4 py-2 bg-white text-black rounded-lg font-medium flex items-center gap-2"
+            className="px-4 py-2 bg-white text-black rounded-lg font-medium flex items-center gap-2 hover:bg-gray-100"
           >
             <Eye className="w-4 h-4" />
             Preview
           </button>
+          {template.preview_url && (
+            <a
+              href={template.preview_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="px-4 py-2 bg-indigo-500 text-white rounded-lg font-medium flex items-center gap-2 hover:bg-indigo-600"
+            >
+              <FileText className="w-4 h-4" />
+              Download
+            </a>
+          )}
         </div>
       </div>
 
@@ -227,23 +301,32 @@ function TemplateCard({ template, isSelected, onSelect, onPreview }: TemplateCar
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className={`px-2 py-1 text-xs font-medium rounded ${
-            template.template_type === 'group'
+            (template.type || template.template_type) === 'group'
               ? 'bg-purple-500/10 text-purple-400'
               : 'bg-blue-500/10 text-blue-400'
           }`}>
-            {template.template_type}
+            {template.type || template.template_type}
           </span>
           {template.is_favorite && (
             <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
           )}
         </div>
         <div className="text-sm text-slate-400">
-          <p className="font-medium text-white mb-1">Format Details:</p>
-          <ul className="space-y-1">
-            <li>• Font: {template.content_format.font}</li>
-            <li>• Size: {template.content_format.font_size}pt</li>
-            <li>• Spacing: {template.content_format.line_spacing}</li>
-          </ul>
+          {template.content_format ? (
+            <>
+              <p className="font-medium text-white mb-1">Format Details:</p>
+              <ul className="space-y-1">
+                <li>• Font: {template.content_format.font}</li>
+                <li>• Size: {template.content_format.font_size}pt</li>
+                <li>• Spacing: {template.content_format.line_spacing}</li>
+              </ul>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-white mb-1">DOCX Template</p>
+              <p className="text-xs">Ready to use template file</p>
+            </>
+          )}
         </div>
       </div>
     </motion.div>
@@ -278,8 +361,8 @@ function TemplatePreviewModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-dashboard-border">
           <div>
-            <h3 className="text-xl font-bold text-white">{template.college_name}</h3>
-            <p className="text-sm text-slate-400">{template.college_code} - {template.template_type}</p>
+            <h3 className="text-xl font-bold text-white">{template.college_name || template.code}</h3>
+            <p className="text-sm text-slate-400">{template.code} - {template.type || template.template_type}</p>
           </div>
           <button
             onClick={onClose}
@@ -291,12 +374,51 @@ function TemplatePreviewModal({
 
         {/* Preview Content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Cover Page Format */}
-            <div>
-              <h4 className="text-lg font-semibold text-white mb-4">Cover Page Format</h4>
-              <div className="bg-white p-8 rounded-lg text-black">
-                {template.cover_page_format.fields?.map((field: any, index: number) => (
+          {template.preview_url ? (
+            // DOCX Template Preview
+            <div className="space-y-4">
+              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <FileText className="w-8 h-8 text-indigo-400" />
+                  <div>
+                    <h4 className="text-lg font-semibold text-white">DOCX Template</h4>
+                    <p className="text-sm text-slate-400">Ready-to-use Word document template</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm text-slate-300">
+                  <p>• Template Code: <span className="text-white font-medium">{template.code}</span></p>
+                  <p>• Type: <span className="text-white font-medium">{template.type || template.template_type}</span></p>
+                  {template.size && (
+                    <p>• File Size: <span className="text-white font-medium">{(template.size / 1024).toFixed(1)} KB</span></p>
+                  )}
+                </div>
+                <div className="mt-6">
+                  <a
+                    href={template.preview_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-medium rounded-lg transition-all"
+                  >
+                    <FileText className="w-5 h-5" />
+                    Download Template
+                  </a>
+                </div>
+              </div>
+              <div className="bg-slate-800/50 rounded-lg p-4">
+                <p className="text-sm text-slate-400 mb-2">📝 Template Variables:</p>
+                <p className="text-xs text-slate-500">
+                  This template uses docxtemplater syntax. Variables like {'{college_name}'}, {'{student_name}'}, {'{assignment_content}'} will be automatically filled with your data.
+                </p>
+              </div>
+            </div>
+          ) : (
+            // Legacy Supabase Template Preview
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Cover Page Format */}
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-4">Cover Page Format</h4>
+                <div className="bg-white p-8 rounded-lg text-black">
+                  {template.cover_page_format?.fields?.map((field: any, index: number) => (
                   <div key={index} className={`mb-3 text-${field.align || 'left'}`}>
                     {field.type === 'table' ? (
                       <div className="my-4">
@@ -338,28 +460,29 @@ function TemplatePreviewModal({
               <div className="space-y-3">
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-sm text-slate-400 mb-1">Font Family</p>
-                  <p className="text-white font-medium">{template.content_format.font}</p>
+                  <p className="text-white font-medium">{template.content_format?.font}</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-sm text-slate-400 mb-1">Font Size</p>
-                  <p className="text-white font-medium">{template.content_format.font_size}pt</p>
+                  <p className="text-white font-medium">{template.content_format?.font_size}pt</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-sm text-slate-400 mb-1">Line Spacing</p>
-                  <p className="text-white font-medium">{template.content_format.line_spacing}</p>
+                  <p className="text-white font-medium">{template.content_format?.line_spacing}</p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-4">
                   <p className="text-sm text-slate-400 mb-1">Margins</p>
                   <p className="text-white font-medium">
-                    Top: {template.content_format.margins?.top}&quot;, 
-                    Bottom: {template.content_format.margins?.bottom}&quot;, 
-                    Left: {template.content_format.margins?.left}&quot;, 
-                    Right: {template.content_format.margins?.right}&quot;
+                    Top: {template.content_format?.margins?.top}&quot;, 
+                    Bottom: {template.content_format?.margins?.bottom}&quot;, 
+                    Left: {template.content_format?.margins?.left}&quot;, 
+                    Right: {template.content_format?.margins?.right}&quot;
                   </p>
                 </div>
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Footer */}

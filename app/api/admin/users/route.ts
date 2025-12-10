@@ -1,19 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { isAdmin } from '@/lib/admin/auth';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is admin
-    const userIsAdmin = await isAdmin();
-    if (!userIsAdmin) {
+    // Check if user is admin - get user from request
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check admin role
+    const adminClient = createAdminClient();
+    const { data: roleData } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const hasAdminRole = roleData && roleData.some(r => r.role === 'admin');
+    
+    if (!hasAdminRole) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 403 }
       );
     }
-
-    const adminClient = createAdminClient();
 
     // Get all users from auth
     const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
@@ -60,4 +76,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

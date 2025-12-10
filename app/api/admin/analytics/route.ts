@@ -1,25 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { isAdmin } from '@/lib/admin/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is admin
-    const userIsAdmin = await isAdmin();
-    if (!userIsAdmin) {
+    // Check if user is admin - get user from request
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Check admin role
+    const adminClient = createAdminClient();
+    const { data: roleData } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const hasAdminRole = roleData && roleData.some(r => r.role === 'admin');
+    
+    if (!hasAdminRole) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 403 }
       );
     }
 
-    const adminClient = createAdminClient();
-
-    // Get total users
-    const { count: totalUsers } = await adminClient
-      .from('user_credits')
-      .select('*', { count: 'exact', head: true });
+    // Get total users from auth.users
+    const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
+    const totalUsers = authUsers?.users.length || 0;
 
     // Get total payments and revenue
     const { data: payments } = await adminClient
@@ -39,10 +53,7 @@ export async function GET(request: NextRequest) {
     const pendingSubmissions = submissions?.filter((s) => s.status === 'pending').length || 0;
     const approvedSubmissions = submissions?.filter((s) => s.status === 'approved').length || 0;
 
-    // Get active users (users with recent activity - last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+    // Get active users - count users who have user_credits (paid users)
     const { count: activeUsers } = await adminClient
       .from('user_credits')
       .select('*', { count: 'exact', head: true });
@@ -66,4 +77,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

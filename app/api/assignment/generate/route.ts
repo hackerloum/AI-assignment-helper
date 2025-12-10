@@ -144,7 +144,17 @@ export async function POST(request: NextRequest) {
 
     // Add template reference
     if (method === 'template' && templateId) {
-      assignmentData.template_id = templateId
+      // Check if templateId is in format "CODE_TYPE" (for DOCX templates)
+      // or a UUID (for Supabase templates)
+      const templateIdMatch = templateId.match(/^([A-Z0-9]+)_(individual|group)$/)
+      if (templateIdMatch) {
+        // DOCX template format: CODE_TYPE
+        assignmentData.template_code = templateIdMatch[1]
+        assignmentData.template_type = templateIdMatch[2]
+      } else {
+        // Legacy Supabase template (UUID)
+        assignmentData.template_id = templateId
+      }
     } else if (method === 'sample' && customTemplateId) {
       assignmentData.custom_template_id = customTemplateId
     }

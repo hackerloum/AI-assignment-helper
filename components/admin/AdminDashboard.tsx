@@ -32,10 +32,12 @@ export function AdminDashboard() {
     fetchAnalytics();
     
     // Check URL for tab parameter
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
-    if (tab) {
-      setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab) {
+        setActiveTab(tab);
+      }
     }
   }, []);
 
@@ -109,13 +111,15 @@ export function AdminDashboard() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     // Update URL without page reload
-    const url = new URL(window.location.href);
-    if (tab === 'overview') {
-      url.searchParams.delete('tab');
-    } else {
-      url.searchParams.set('tab', tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'overview') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.pushState({}, '', url);
     }
-    window.history.pushState({}, '', url);
   };
 
   return (
@@ -180,7 +184,7 @@ export function AdminDashboard() {
 
       {/* Tabs */}
       <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -188,10 +192,11 @@ export function AdminDashboard() {
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
+                type="button"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                   isActive
                     ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
                 }`}
               >
                 <Icon className="w-4 h-4" />

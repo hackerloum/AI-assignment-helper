@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateAssignmentDocument } from '@/lib/utils/docx-generator'
+import { generateFromTemplate, getTemplatePath } from '@/lib/utils/docx-template-generator'
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,8 +30,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
     }
 
-    // Generate DOCX
-    const buffer = await generateAssignmentDocument(assignment)
+    // Try to use template-based generation if template is specified
+    let buffer: Buffer
+    try {
+      if (assignment.template_code && assignment.template_type) {
+        // Use DOCX template
+        const templatePath = getTemplatePath(assignment.template_code, assignment.template_type)
+        buffer = await generateFromTemplate(templatePath, assignment)
+      } else {
+        // Fallback to programmatic generation
+        buffer = await generateAssignmentDocument(assignment)
+      }
+    } catch (templateError: any) {
+      console.warn('Template generation failed, falling back to programmatic:', templateError)
+      // Fallback to programmatic generation
+      buffer = await generateAssignmentDocument(assignment)
+    }
 
     return new NextResponse(Uint8Array.from(buffer), {
       headers: {
@@ -79,7 +94,21 @@ export async function GET(request: NextRequest) {
 
     // Try to generate DOCX, fallback to text if it fails
     try {
-      const buffer = await generateAssignmentDocument(assignment)
+      let buffer: Buffer
+      try {
+        if (assignment.template_code && assignment.template_type) {
+          // Use DOCX template
+          const templatePath = getTemplatePath(assignment.template_code, assignment.template_type)
+          buffer = await generateFromTemplate(templatePath, assignment)
+        } else {
+          // Fallback to programmatic generation
+          buffer = await generateAssignmentDocument(assignment)
+        }
+      } catch (templateError: any) {
+        console.warn('Template generation failed, falling back to programmatic:', templateError)
+        buffer = await generateAssignmentDocument(assignment)
+      }
+      
       return new NextResponse(Uint8Array.from(buffer), {
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
