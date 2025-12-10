@@ -13,7 +13,8 @@ import {
   Zap,
   Activity,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  ArrowRight
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
