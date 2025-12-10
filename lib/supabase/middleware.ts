@@ -73,7 +73,7 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-
+  
   // Allow /cp routes through if user exists OR has auth cookies
   // The page itself will verify admin role
   if (

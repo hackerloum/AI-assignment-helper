@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
       generation_time_seconds: 0,
     }
 
-    // Add LGTI-specific fields if present
+    // Add LGTI-specific fields if present (only if they exist in the data)
+    // Note: These columns may not exist in the database yet - they'll be ignored if migration hasn't run
     if (coverPageData?.program_name) {
       assignmentData.program_name = coverPageData.program_name
     }
@@ -124,6 +125,9 @@ export async function POST(request: NextRequest) {
     }
     if (coverPageData?.task) {
       assignmentData.task = coverPageData.task
+    }
+    if (coverPageData?.group_number) {
+      assignmentData.group_number = coverPageData.group_number
     }
 
     // Add type-specific fields
@@ -168,10 +172,27 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating assignment:', error)
+      console.error('Error code:', error.code)
+      console.error('Error details:', error.details)
+      console.error('Error hint:', error.hint)
       console.error('Assignment data being inserted:', JSON.stringify(assignmentData, null, 2))
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Failed to create assignment'
+      if (error.code === '23503') {
+        errorMessage = 'Invalid template reference. Please select a valid template.'
+      } else if (error.code === '23505') {
+        errorMessage = 'Assignment with this data already exists.'
+      } else if (error.code === '42703') {
+        errorMessage = 'Database schema mismatch. Please contact support.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
       return NextResponse.json({ 
-        error: 'Failed to create assignment',
+        error: errorMessage,
         details: error.message,
+        code: error.code,
         hint: error.hint || 'Check console for full error details'
       }, { status: 500 })
     }
