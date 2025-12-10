@@ -88,34 +88,40 @@ export default function ControlPanelLoginPage() {
         return;
       }
 
-      console.log('Admin access granted! Redirecting...');
+      console.log('Admin access granted! Preparing redirect...');
       
-      // Wait for cookies to be fully set
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Try server action first, but always fallback to client redirect
-      let redirectSuccess = false;
-      try {
-        const { handleAdminLoginRedirect } = await import('@/app/actions/admin-actions');
-        console.log('Calling server action for redirect...');
-        await handleAdminLoginRedirect();
-        redirectSuccess = true;
-      } catch (redirectError: any) {
-        // NEXT_REDIRECT is expected - it throws to redirect
-        if (redirectError?.digest?.includes('NEXT_REDIRECT') || redirectError?.message?.includes('NEXT_REDIRECT')) {
-          console.log('Server redirect initiated (expected)');
-          redirectSuccess = true;
-          // Still do client redirect as backup
+      // Wait for cookies and verify session is ready
+      for (let i = 0; i < 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify session is available
+        const { data: { user: verifyUser } } = await supabase.auth.getUser();
+        console.log(`Session check attempt ${i + 1}:`, verifyUser ? 'User found' : 'No user');
+        
+        if (verifyUser && verifyUser.id === data.user.id) {
+          console.log('Session verified! Redirecting...');
+          // Double-check admin access one more time
+          const verifyResponse = await fetch('/api/admin/check-access', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: verifyUser.id }),
+          });
+          
+          const verifyResult = await verifyResponse.json();
+          console.log('Final admin check:', verifyResult);
+          
+          if (verifyResult.hasAccess) {
+            // Session is ready and admin verified - redirect now
+            window.location.replace('/cp');
+            return; // Exit the function
+          }
         }
-        // Always do client redirect as backup
-        console.log('Using client redirect as primary method');
       }
       
-      // Force client-side redirect (more reliable after login)
-      setTimeout(() => {
-        console.log('Executing client redirect to /cp');
-        window.location.href = '/cp';
-      }, 500);
+      // If we get here, session wasn't ready in time
+      console.error('Session not ready after waiting');
+      setError('Session not ready. Please try refreshing the page.');
+      setIsLoading(false);
       
     } catch (err: any) {
       console.error('Login error:', err);
