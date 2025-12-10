@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { data: leaderboard, error } = await supabase
       .from('user_leaderboard')
       .select('*')
-      .order('rank_position', { ascending: true, nullsLast: true })
+      .order('rank_position', { ascending: true, nullsFirst: false })
       .limit(limit);
 
     if (error) {
