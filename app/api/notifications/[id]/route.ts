@@ -7,9 +7,10 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -26,7 +27,7 @@ export async function PATCH(
     const { data: success, error } = await supabase.rpc(
       "mark_notification_read",
       {
-        p_notification_id: params.id,
+        p_notification_id: id,
         p_user_id: user.id,
         p_action_taken: actionTaken,
       }
@@ -63,9 +64,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -79,7 +81,7 @@ export async function DELETE(
     const { error } = await supabase
       .from("notifications")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id);
 
     if (error) {
