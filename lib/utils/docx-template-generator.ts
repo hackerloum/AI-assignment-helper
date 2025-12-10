@@ -140,10 +140,11 @@ function prepareTemplateData(data: AssignmentData): any {
     references: formatReferences(data.assignment_references || []),
     
     // Group members table (for LGTI format)
+    // Format: Array of objects with sn, name, registration_no, phone_number
     group_members: (data.group_members || []).map((member, index) => ({
       sn: index + 1,
       name: member.name || '',
-      registration_no: member.registration_no || '',
+      registration_no: member.registration_no || member.registration_number || '',
       phone_number: member.phone_number || '',
     })),
     
