@@ -10,60 +10,62 @@ export function PricingSection() {
 
   const plans = [
     {
-      id: 'free',
-      name: 'Free Trial',
-      price: '0',
-      period: 'forever',
-      description: 'Perfect to try out our tools',
+      id: 'pay-per-use',
+      name: 'Pay Per Use',
+      price: '200',
+      period: 'per tool',
+      description: 'Use tools without signing up',
       features: [
-        '3 free actions per day',
-        'Access to all AI features',
-        'Basic support',
-        'No credit card required',
-        'No time limit'
+        'No account required',
+        'Pay only for what you use',
+        'Instant access after payment',
+        'Mobile money payment',
+        'Free tools available',
+        'No commitment'
       ],
-      cta: 'Start Free',
+      cta: 'Try Tools Now',
       popular: false,
       gradient: 'from-slate-900 to-slate-800',
-      href: '/register'
+      href: '#quick-tools'
     },
     {
-      id: 'daily',
-      name: 'Daily Pass',
-      price: '500',
-      period: 'per day',
-      description: 'Perfect for occasional assignments',
+      id: 'one-time',
+      name: 'One-Time Payment',
+      price: '2,000',
+      period: 'one-time',
+      description: 'Unlimited access forever',
       features: [
-        'Unlimited tool access for 24 hours',
-        'All AI features included',
-        'No commitment required',
-        'Pay with mobile money',
-        'Instant activation',
-        'Priority support'
+        'Unlimited tool usage',
+        'All premium features',
+        'No recurring charges',
+        'Lifetime access',
+        'Priority support',
+        'Save 90% vs pay-per-use',
+        'Best value for students'
       ],
-      cta: 'Get Daily Pass',
-      popular: false,
-      gradient: 'from-slate-900 to-slate-800',
-      href: '/purchase'
+      cta: 'Get Lifetime Access',
+      popular: true,
+      gradient: 'from-blue-600 to-purple-600',
+      href: '/one-time-payment'
     },
     {
       id: 'monthly',
-      name: 'Monthly Pass',
+      name: 'Monthly Subscription',
       price: '5,000',
       period: 'per month',
-      description: 'Best value for regular students',
+      description: 'For heavy users',
       features: [
-        'Everything in Daily Pass',
-        'Unlimited access for 30 days',
-        'Priority support',
+        'Unlimited access',
+        'All premium features',
         'Usage analytics',
-        'Save 67% vs daily',
+        'Priority support',
         'Cancel anytime',
-        'Early access to new features'
+        'Early access to new tools',
+        'Best for regular users'
       ],
-      cta: 'Get Monthly Pass',
-      popular: true,
-      gradient: 'from-blue-600 to-purple-600',
+      cta: 'Subscribe Monthly',
+      popular: false,
+      gradient: 'from-emerald-600 to-teal-600',
       href: '/purchase'
     }
   ]
@@ -99,7 +101,8 @@ export function PricingSection() {
             <span className="text-amber-400">academic advantage</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-300 leading-relaxed">
-            Affordable plans designed for Tanzanian students. Pay with M-Pesa, Airtel Money, or TigoPesa.
+            Flexible pricing options. Use tools without signing up, or get unlimited access with our one-time payment. 
+            All payments via mobile money.
           </p>
         </motion.div>
 

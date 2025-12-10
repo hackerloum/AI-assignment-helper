@@ -60,8 +60,8 @@ export function HeroSection() {
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl leading-relaxed">
-              Stop struggling with research, citations, and grammar. Get instant AI help 
-              for all your assignments—from APA references to PowerPoint slides.
+              Use our AI tools instantly—no signup required! Pay per use or get unlimited access 
+              with our one-time payment. Perfect for Tanzanian students.
             </p>
 
             {/* Trust Indicators */}
@@ -86,24 +86,24 @@ export function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/register">
+              <motion.a
+                href="#quick-tools"
+                className="group px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Try Tools Now
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </motion.a>
+              <Link href="/one-time-payment">
                 <motion.button
-                  className="group px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
+                  className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 backdrop-blur-sm transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Start Free Trial
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  Get Lifetime Access
                 </motion.button>
               </Link>
-              <motion.button
-                className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 backdrop-blur-sm transition-all duration-300"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-              >
-                Watch Demo
-              </motion.button>
             </div>
 
             {/* Stats */}

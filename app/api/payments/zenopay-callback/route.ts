@@ -110,6 +110,33 @@ export async function POST(request: NextRequest) {
         console.log("[ZenoPay Callback] ✅ Credits added for user:", payment.user_id);
       }
       
+      // For tool payments, unlock the content
+      if (payment.payment_type === "tool") {
+        try {
+          const metadata = payment.metadata || {}
+          if (metadata.paymentId) {
+            // Mark content as unlocked
+            const updatedMetadata = {
+              ...metadata,
+              unlocked: true,
+              unlockedAt: new Date().toISOString(),
+            }
+            
+            await supabase
+              .from("payments")
+              .update({
+                metadata: updatedMetadata,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", order_id)
+            
+            console.log("[ZenoPay Callback] ✅ Tool payment unlocked for paymentId:", metadata.paymentId)
+          }
+        } catch (error) {
+          console.error("[ZenoPay Callback] Error unlocking tool payment:", error)
+        }
+      }
+      
       // For one-time payments, mark user as paid
       if (payment.payment_type === "one_time") {
         // First, check if user_credits record exists

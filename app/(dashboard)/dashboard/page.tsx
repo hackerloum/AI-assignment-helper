@@ -84,7 +84,7 @@ const tools = [
     color: 'from-pink-500 to-rose-500',
     textColor: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
-    toolType: 'summarizer' as const,
+    toolType: 'powerpoint' as const,
   },
   {
     name: 'Content Humanizer',
@@ -104,9 +104,10 @@ export default function DashboardPage() {
   const { assignments, loading: assignmentsLoading } = useAssignments()
   const { credits } = useCredits()
 
-  // Calculate tool usage stats
+  // Calculate tool usage stats (sum credits used, not count assignments)
   const toolStats = tools.map(tool => {
-    const used = assignments.filter(a => a.tool_type === tool.toolType).length
+    const toolAssignments = assignments.filter(a => a.tool_type === tool.toolType)
+    const used = toolAssignments.reduce((sum, a) => sum + (a.credits_used || 0), 0)
     return {
       ...tool,
       stats: { used, total: credits || 50 },
@@ -236,7 +237,7 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                              <span>Usage</span>
+                              <span>Credits Used</span>
                               <span>{tool.stats.used}/{tool.stats.total}</span>
                             </div>
                             <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">

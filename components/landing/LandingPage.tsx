@@ -2,6 +2,7 @@
 
 import { Navigation } from './Navigation'
 import { HeroSection } from './HeroSection'
+import { QuickTools } from './QuickTools'
 import { FeaturesShowcase } from './FeaturesShowcase'
 import { HowItWorks } from './HowItWorks'
 import { PricingSection } from './PricingSection'
@@ -16,6 +17,7 @@ export function LandingPage() {
       <Navigation />
       <main>
         <HeroSection />
+        <QuickTools />
         <FeaturesShowcase />
         <HowItWorks />
         <SocialProof />
