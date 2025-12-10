@@ -103,25 +103,60 @@ export default function PayToolPage() {
       }
 
       // Payment initiated successfully
-      // Start polling for payment status
+      // Start polling for payment status using orderId
       setPaymentStatus('processing')
-      pollPaymentStatus(paymentId)
+      pollPaymentStatus(data.orderId || paymentId)
     } catch (error: any) {
       console.error('Payment error:', error)
-      toast.error(error.message || 'Failed to process payment')
+      
+      // Check if it's a migration error
+      const errorMessage = error.message || 'Failed to process payment'
+      if (errorMessage.includes('migration') || errorMessage.includes('Migration')) {
+        toast.error('Database setup required. Please contact support or check TOOL_PAYMENT_SETUP.md')
+      } else {
+        toast.error(errorMessage)
+      }
+      
       setPaymentStatus('failed')
       setIsProcessing(false)
     }
   }
 
-  const pollPaymentStatus = async (orderId: string) => {
+  const pollPaymentStatus = async (orderIdOrPaymentId: string) => {
     setCheckingStatus(true)
     let attempts = 0
     const maxAttempts = 60 // Check for 5 minutes (5 second intervals)
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(`/api/payments/tool/verify?paymentId=${orderId}`)
+        // Try with orderId first, then fallback to original paymentId
+        const idToCheck = orderIdOrPaymentId || paymentId
+        if (!idToCheck) {
+          console.error('No payment ID available for verification')
+          setCheckingStatus(false)
+          setIsProcessing(false)
+          return
+        }
+
+        const response = await fetch(`/api/payments/tool/verify?paymentId=${encodeURIComponent(idToCheck)}`)
+        
+        if (!response.ok) {
+          // If 404, payment might not be found - could be still processing
+          if (response.status === 404) {
+            console.log(`Payment not found yet (attempt ${attempts + 1}/${maxAttempts})`)
+            attempts++
+            if (attempts < maxAttempts) {
+              setTimeout(checkStatus, 5000)
+            } else {
+              setCheckingStatus(false)
+              setIsProcessing(false)
+              toast.error('Payment verification timeout. Please try refreshing or contact support.')
+            }
+            return
+          }
+          throw new Error(`HTTP ${response.status}`)
+        }
+
         const data = await response.json()
 
         if (data.status === 'completed') {
@@ -129,9 +164,23 @@ export default function PayToolPage() {
           setCheckingStatus(false)
           toast.success('Payment successful! Content unlocked.')
           
-          // Redirect back to tool page with payment ID
+          // Unlock the content using the original paymentId
+          if (paymentId && data.orderId) {
+            try {
+              await fetch('/api/payments/tool/unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paymentId, orderId: data.orderId }),
+              })
+            } catch (unlockError) {
+              console.error('Unlock error:', unlockError)
+              // Continue anyway - webhook might have already unlocked it
+            }
+          }
+          
+          // Redirect back to tool page with original payment ID
           setTimeout(() => {
-            router.push(`/tools/${tool}?paymentId=${orderId}&unlocked=true`)
+            router.push(`/tools/${tool}?paymentId=${paymentId}&unlocked=true`)
           }, 2000)
           return
         } else if (data.status === 'failed') {
@@ -142,13 +191,14 @@ export default function PayToolPage() {
           return
         }
 
+        // Payment still pending
         attempts++
         if (attempts < maxAttempts) {
           setTimeout(checkStatus, 5000) // Check every 5 seconds
         } else {
           setCheckingStatus(false)
           setIsProcessing(false)
-          toast.error('Payment verification timeout. Please check your payment status manually.')
+          toast.error('Payment verification timeout. Please try refreshing or contact support.')
         }
       } catch (error) {
         console.error('Status check error:', error)
@@ -158,11 +208,45 @@ export default function PayToolPage() {
         } else {
           setCheckingStatus(false)
           setIsProcessing(false)
+          toast.error('Error checking payment status. Please try refreshing the page.')
         }
       }
     }
 
     checkStatus()
+  }
+
+  // Manual verification function
+  const handleManualVerify = async () => {
+    setCheckingStatus(true)
+    const idToCheck = paymentId
+    if (!idToCheck) {
+      toast.error('Payment ID not found')
+      setCheckingStatus(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/payments/tool/verify?paymentId=${encodeURIComponent(idToCheck)}`)
+      const data = await response.json()
+
+      if (response.ok && data.status === 'completed') {
+        setPaymentStatus('success')
+        toast.success('Payment verified! Content unlocked.')
+        setTimeout(() => {
+          router.push(`/tools/${tool}?paymentId=${paymentId}&unlocked=true`)
+        }, 2000)
+      } else if (data.status === 'pending') {
+        toast.info('Payment is still pending. Please complete the payment on your phone.')
+      } else {
+        toast.error(data.error || 'Payment not completed yet')
+      }
+    } catch (error) {
+      console.error('Manual verify error:', error)
+      toast.error('Error verifying payment. Please try again.')
+    } finally {
+      setCheckingStatus(false)
+    }
   }
 
   if (paymentStatus === 'success') {
@@ -288,21 +372,39 @@ export default function PayToolPage() {
                 </p>
               </div>
 
-              {paymentStatus === 'processing' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                    <div>
-                      <p className="font-semibold text-blue-900">Processing Payment...</p>
-                      <p className="text-sm text-blue-700">
-                        {checkingStatus 
-                          ? 'Checking payment status...' 
-                          : 'Please complete the payment on your phone'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+               {paymentStatus === 'processing' && (
+                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                   <div className="flex items-center gap-3 mb-3">
+                     <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                     <div className="flex-1">
+                       <p className="font-semibold text-blue-900">Processing Payment...</p>
+                       <p className="text-sm text-blue-700">
+                         {checkingStatus 
+                           ? 'Checking payment status...' 
+                           : 'Please complete the payment on your phone'}
+                       </p>
+                     </div>
+                   </div>
+                   <motion.button
+                     onClick={handleManualVerify}
+                     disabled={checkingStatus}
+                     className="w-full mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                     whileTap={{ scale: checkingStatus ? 1 : 0.98 }}
+                   >
+                     {checkingStatus ? (
+                       <>
+                         <Loader2 className="w-4 h-4 animate-spin" />
+                         Verifying...
+                       </>
+                     ) : (
+                       <>
+                         <CheckCircle2 className="w-4 h-4" />
+                         I've Completed Payment - Verify Now
+                       </>
+                     )}
+                   </motion.button>
+                 </div>
+               )}
 
               {paymentStatus === 'failed' && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">

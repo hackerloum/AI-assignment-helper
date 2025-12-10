@@ -29,42 +29,41 @@ export function PricingSection() {
       href: '#quick-tools'
     },
     {
-      id: 'one-time',
-      name: 'One-Time Payment',
-      price: '2,000',
-      period: 'one-time',
-      description: 'Unlimited access forever',
+      id: 'daily',
+      name: 'Daily Pass',
+      price: '500',
+      period: 'per day',
+      description: 'Perfect for occasional assignments',
       features: [
-        'Unlimited tool usage',
-        'All premium features',
-        'No recurring charges',
-        'Lifetime access',
-        'Priority support',
-        'Save 90% vs pay-per-use',
-        'Best value for students'
+        'Unlimited tool access for 24 hours',
+        'All AI features included',
+        'No commitment required',
+        'Pay with mobile money',
+        'Instant activation',
+        'Priority support'
       ],
-      cta: 'Get Lifetime Access',
-      popular: true,
-      gradient: 'from-blue-600 to-purple-600',
-      href: '/one-time-payment'
+      cta: 'Get Daily Pass',
+      popular: false,
+      gradient: 'from-blue-600 to-cyan-600',
+      href: '/purchase'
     },
     {
       id: 'monthly',
       name: 'Monthly Subscription',
       price: '5,000',
       period: 'per month',
-      description: 'For heavy users',
+      description: 'Best value for regular students',
       features: [
-        'Unlimited access',
+        'Unlimited access for 30 days',
         'All premium features',
         'Usage analytics',
         'Priority support',
+        'Save 67% vs daily',
         'Cancel anytime',
-        'Early access to new tools',
-        'Best for regular users'
+        'Early access to new tools'
       ],
       cta: 'Subscribe Monthly',
-      popular: false,
+      popular: true,
       gradient: 'from-emerald-600 to-teal-600',
       href: '/purchase'
     }
@@ -101,8 +100,8 @@ export function PricingSection() {
             <span className="text-amber-400">academic advantage</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-300 leading-relaxed">
-            Flexible pricing options. Use tools without signing up, or get unlimited access with our one-time payment. 
-            All payments via mobile money.
+            Flexible pricing options. Use tools without signing up, or subscribe for unlimited access. 
+            New users pay a one-time 3,000 TZS registration fee. All payments via mobile money.
           </p>
         </motion.div>
 
@@ -224,13 +223,32 @@ export function PricingSection() {
           </div>
         </motion.div>
 
-        {/* Money-back guarantee */}
+        {/* Registration Fee Info */}
         <motion.div 
           className="text-center mt-12"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.6 }}
+        >
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 max-w-2xl mx-auto">
+            <h3 className="text-lg font-semibold text-white mb-2">New User Registration</h3>
+            <p className="text-slate-300 text-sm mb-3">
+              First-time users pay a one-time registration fee of <span className="font-bold text-amber-400">3,000 TZS</span> to access the dashboard and all features.
+            </p>
+            <p className="text-slate-400 text-xs">
+              This is a one-time payment, not a subscription. After registration, you can use pay-per-use or subscribe to monthly plans.
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Money-back guarantee */}
+        <motion.div 
+          className="text-center mt-8"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.7 }}
         >
           <p className="text-slate-400 text-sm">
             <span className="text-emerald-400 font-semibold">100% Satisfaction Guaranteed</span> - If you&apos;re not happy with the results, contact us within 24 hours for a full refund.

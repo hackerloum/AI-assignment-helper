@@ -1,143 +1,164 @@
-# ZenoPay Integration Guide
-
-This document describes the ZenoPay payment integration for the AI Assignment Helper application.
+# ZenoPay Integration Documentation
 
 ## Overview
 
-ZenoPay is the only payment method integrated for mobile money payments in Tanzania. ZenoPay handles all major mobile money providers (M-Pesa, TigoPesa, AirtelMoney) through a single unified API, eliminating the need for separate integrations. The integration allows users to purchase credits using their mobile money accounts from any supported provider.
+This document describes how the application integrates with ZenoPay for mobile money payments in Tanzania.
 
-## API Details
+## API Endpoints
 
-- **Endpoint:** `https://zenoapi.com/api/payments/mobile_money_tanzania`
-- **Method:** POST
-- **Authentication:** API key via `x-api-key` header
+### 1. Order Status Check
 
-## Required Information
+**URL:** `https://zenoapi.com/api/payments/order-status`  
+**Method:** `GET`  
+**Header:** `x-api-key: YOUR_API_KEY`  
+**Parameter:** `order_id`
 
-For each payment, ZenoPay requires:
-- `order_id`: Unique transaction ID (UUID)
-- `buyer_email`: Payer's email address
-- `buyer_name`: Payer's full name
-- `buyer_phone`: Tanzanian mobile number (format: 07XXXXXXXX)
-- `amount`: Amount in TZS
+**Sample Request:**
+```bash
+curl -X GET "https://zenoapi.com/api/payments/order-status?order_id=3rer407fe-3ee8-4525-456f-ccb95de38250" \
+  -H "x-api-key: YOUR_API_KEY"
+```
+
+**Sample Response:**
+```json
+{
+  "reference": "0936183435",
+  "resultcode": "000",
+  "result": "SUCCESS",
+  "message": "Order fetch successful",
+  "data": [
+    {
+      "order_id": "3rer407fe-3ee8-4525-456f-ccb95de38250",
+      "creation_date": "2025-05-19 08:40:33",
+      "amount": "1000",
+      "payment_status": "COMPLETED",
+      "transid": "CEJ3I3SETSN",
+      "channel": "MPESA-TZ",
+      "reference": "0936183435",
+      "msisdn": "255744963858"
+    }
+  ]
+}
+```
+
+**Payment Status Values:**
+- `COMPLETED` - Payment successful
+- `PENDING` - Payment in progress
+- `FAILED` - Payment failed
+- `CANCELLED` - Payment cancelled
+
+## Webhook Notifications
+
+### Setup
+
+Include `webhook_url` in your payment initiation request:
+
+```json
+{
+  "order_id": "3rer407fe-3ee8-4525-456f-ccb95de38250",
+  "buyer_email": "iam@gmail.com",
+  "buyer_name": "John Joh",
+  "buyer_phone": "0744963858",
+  "amount": 1000,
+  "webhook_url": "https://your-domain.com/api/payments/zenopay-callback"
+}
+```
+
+### Authentication
+
+ZenoPay sends `x-api-key` in the request header. Our webhook handler verifies this matches `ZENOPAY_API_KEY` environment variable.
+
+### Webhook Payload
+
+**Format:**
+```json
+{
+  "order_id": "677e43274d7cb",
+  "payment_status": "COMPLETED",
+  "reference": "1003020496",
+  "metadata": {
+    "product": "..."
+  }
+}
+```
+
+**Note:** Webhooks are only triggered when payment status changes to `COMPLETED`.
 
 ## Implementation Details
 
-### Files Modified/Created
+### 1. Payment Verification (`/api/payments/tool/verify`)
 
-1. **`lib/zenopay.ts`** - ZenoPay API client
-   - `initiateZenoPayPayment()` - Initiates payment with ZenoPay
-   - `validateTanzanianPhone()` - Validates phone number format
-   - `formatTanzanianPhone()` - Formats phone number to Tanzanian format
+This endpoint:
+- First checks our database for payment record
+- If not found, queries ZenoPay directly using order status API
+- If payment is pending, checks ZenoPay for real-time status
+- Updates database if ZenoPay shows completed status
+- Automatically unlocks tool content when payment is verified
 
-2. **`app/actions/payment-actions.ts`** - Payment actions
-   - Updated `initiatePayment()` to support ZenoPay
-   - Handles ZenoPay API calls and payment record creation
+### 2. Webhook Handler (`/api/payments/zenopay-callback`)
 
-3. **`components/purchase/purchase-credits.tsx`** - Purchase UI
-   - Added dialog to collect user information (email, name, phone)
-   - Validates phone number format
-   - Initiates ZenoPay payments
+This endpoint:
+- Verifies `x-api-key` header matches environment variable
+- Parses webhook payload (`order_id`, `payment_status`, `reference`, `transid`)
+- Updates payment record in database
+- Handles different payment types:
+  - **Subscription**: Adds credits to user account
+  - **One-time**: Marks user as paid (registration fee)
+  - **Tool**: Unlocks content for pay-per-use tools
 
-4. **`supabase/schema.sql`** - Database schema
-   - Added 'zenopay' to payment_method check constraint
+### 3. Order Status Check Function (`lib/zenopay.ts`)
 
-5. **`types/database.ts`** - TypeScript types
-   - Updated payment_method type to include 'zenopay'
-
-## Environment Variables
-
-Add the following environment variable:
-
-```env
-ZENOPAY_API_KEY=your_zenopay_api_key
-```
-
-**Important:** Keep this key secure and never commit it to version control.
-
-## Database Migration
-
-If you have an existing database, run the migration:
-
-```sql
--- See supabase/migrations/add_zenopay.sql
-```
-
-Or manually update the constraint:
-
-```sql
-ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_payment_method_check;
-ALTER TABLE payments 
-ADD CONSTRAINT payments_payment_method_check 
-CHECK (payment_method IN ('mpesa', 'tigopesa', 'airtelmoney', 'zenopay'));
-```
+The `checkZenoPayOrderStatus()` function:
+- Queries ZenoPay order status API
+- Returns standardized response format
+- Handles errors gracefully
 
 ## Payment Flow
 
-1. User clicks "Purchase" on a credit package
-2. Dialog opens to collect/confirm user information:
-   - Email (pre-filled from auth)
-   - Full Name (pre-filled if available)
-   - Phone Number (Tanzanian format: 07XXXXXXXX)
-3. User confirms payment details
-4. System creates payment record in database with status "pending"
-5. System calls ZenoPay API with payment details
-6. ZenoPay returns transaction_id if successful
-7. Payment record is updated with transaction_id
-8. User is redirected to success page
-9. Credits are added to user account (handled by callback/webhook if needed)
+### Tool Payments (Pay-Per-Use)
 
-## Phone Number Validation
+1. User initiates tool usage → Creates payment record with `payment_type: 'tool'`
+2. Payment initiated via ZenoPay → Returns `order_id` (UUID)
+3. User completes payment on phone
+4. ZenoPay sends webhook → Updates payment status to `COMPLETED`
+5. Webhook handler unlocks content → Sets `metadata.unlocked: true`
+6. User can verify payment → `/api/payments/tool/verify` checks status
+7. Content unlocked → User can view, copy, download
 
-Tanzanian phone numbers must follow the format: `07XXXXXXXX` (10 digits starting with 07).
+### Subscription Payments
 
-The system automatically:
-- Removes spaces
-- Converts international format (+255 or 255) to local format (07)
-- Validates the final format
+1. User initiates subscription → Creates payment record
+2. Payment completed → Webhook adds credits to account
+3. User can use tools with credits
+
+### One-Time Registration Fee
+
+1. New user signs up → Redirected to payment page
+2. Payment completed → Webhook marks `has_paid_one_time_fee: true`
+3. User gains dashboard access
 
 ## Error Handling
 
-The integration handles various error scenarios:
+- **404 on verify**: Payment not found - checks ZenoPay directly
+- **Invalid API key**: Webhook rejected with 401
+- **Missing order_id**: Webhook rejected with 400
+- **Payment timeout**: User can manually verify payment
 
-- **Missing API key:** Returns error message
-- **Invalid phone number:** Validates format before API call
-- **ZenoPay API errors:** Returns error message from API response
-- **Network errors:** Catches and handles connection failures
+## Environment Variables
+
+Required:
+- `ZENOPAY_API_KEY` - Your ZenoPay API key
+- `NEXT_PUBLIC_APP_URL` - Base URL for webhook callbacks
 
 ## Testing
 
-To test the integration:
+To test payment verification:
+1. Initiate a payment
+2. Complete payment on phone
+3. Call `/api/payments/tool/verify?paymentId={order_id}`
+4. Should return `status: "completed"`
 
-1. Set `ZENOPAY_API_KEY` environment variable
-2. Ensure database schema is updated
-3. Navigate to purchase page
-4. Select a credit package
-5. Fill in payment details
-6. Confirm payment
-7. Check payment status in database
-
-## Security Considerations
-
-- API key is stored server-side only (not exposed to client)
-- Phone numbers are validated before API calls
-- Payment records are protected by Row Level Security (RLS)
-- All API calls are made server-side
-
-## Support
-
-For ZenoPay API issues:
-- Check ZenoPay API documentation
-- Verify API key is correct
-- Check API endpoint is accessible
-- Review error messages in server logs
-
-## Future Enhancements
-
-Potential improvements:
-- Webhook handling for payment status updates
-- Payment status polling
-- Retry mechanism for failed API calls
-- Payment history display
-- Refund handling
-
+To test webhook (use ZenoPay test mode or webhook testing tool):
+1. Send POST to `/api/payments/zenopay-callback`
+2. Include `x-api-key` header
+3. Send payload: `{ "order_id": "...", "payment_status": "COMPLETED", ... }`

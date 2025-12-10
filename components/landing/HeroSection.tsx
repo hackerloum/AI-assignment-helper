@@ -95,13 +95,13 @@ export function HeroSection() {
                 Try Tools Now
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </motion.a>
-              <Link href="/one-time-payment">
+              <Link href="/auth/signup">
                 <motion.button
                   className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 backdrop-blur-sm transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Get Lifetime Access
+                  Sign Up
                 </motion.button>
               </Link>
             </div>

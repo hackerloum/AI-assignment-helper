@@ -24,12 +24,13 @@ export async function POST(request: NextRequest) {
     // Parse the callback payload
     const body = await request.json();
     
-    // ZenoPay webhook format: { order_id, payment_status, reference, metadata }
-    // Also supports: { order_id, payment_status, reference, transid }
+    // ZenoPay webhook format (from documentation):
+    // { "order_id": "...", "payment_status": "COMPLETED", "reference": "...", "metadata": {...} }
     const order_id = body.order_id || body.orderId;
     const payment_status = body.payment_status || body.status;
     const reference = body.reference;
     const transid = body.transid || body.transaction_id || body.transId;
+    const metadata = body.metadata || {};
 
     console.log("[ZenoPay Callback] Full webhook payload:", JSON.stringify(body, null, 2));
     console.log("[ZenoPay Callback] Parsed notification:", {

@@ -8,8 +8,8 @@ export function HowItWorks() {
     {
       number: "01",
       icon: UserPlus,
-      title: "Sign Up Free",
-      description: "Create your account in 30 seconds. Start with 3 free actions every day—no credit card required.",
+      title: "Sign Up & Pay Registration Fee",
+      description: "Create your account and pay a one-time 3,000 TZS registration fee to access the dashboard. No recurring charges—just one-time access fee.",
       color: "blue"
     },
     {
@@ -29,8 +29,8 @@ export function HowItWorks() {
     {
       number: "04",
       icon: TrendingUp,
-      title: "Upgrade for More",
-      description: "Need unlimited access? Subscribe for just 500 TZS/day or 5,000 TZS/month via mobile money.",
+      title: "Subscribe for Unlimited Access",
+      description: "Need unlimited access? Subscribe for 500 TZS/day or 5,000 TZS/month via mobile money. Or use pay-per-use without an account.",
       color: "amber"
     }
   ]

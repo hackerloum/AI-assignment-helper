@@ -30,7 +30,7 @@ export interface ZenoPayError {
 export interface ZenoPayOrderStatusResponse {
   reference: string;
   resultcode: string;
-  result: string;
+  result: "SUCCESS" | "ERROR";
   message: string;
   data?: Array<{
     order_id: string;

@@ -9,8 +9,12 @@ export function FAQSection() {
 
   const faqs = [
     {
-      question: 'How does the free trial work?',
-      answer: 'Every account gets 3 free actions per day, forever. No credit card required. You can use any of our five AI tools—research, rewriting, plagiarism check, citations, or presentations. The limit resets every 24 hours.'
+      question: 'What is the one-time registration fee?',
+      answer: 'New users pay a one-time registration fee of 3,000 TZS when they first sign up. This is a one-time payment (not a subscription) that gives you access to the dashboard and all features. After registration, you can use tools with pay-per-use pricing or subscribe to monthly plans.'
+    },
+    {
+      question: 'Can I use tools without signing up?',
+      answer: 'Yes! You can use our tools without creating an account using the pay-per-use option. Each tool has its own price (ranging from 150-500 TZS). Some tools like grammar checker are completely free. No account required!'
     },
     {
       question: 'What payment methods do you accept?',
