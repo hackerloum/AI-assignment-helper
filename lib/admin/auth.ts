@@ -33,14 +33,14 @@ export async function isAdmin(): Promise<boolean> {
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single();
+      .eq('role', 'admin');
 
-    if (error || !data) {
+    // Use array result instead of single() to avoid errors
+    if (error || !data || data.length === 0) {
       return false;
     }
 
-    return data.role === 'admin';
+    return data[0].role === 'admin';
   } catch (error) {
     console.error('[Admin Auth] Error checking admin status:', error);
     return false;

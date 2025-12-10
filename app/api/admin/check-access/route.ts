@@ -37,10 +37,14 @@ export async function POST(request: NextRequest) {
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .eq('role', 'admin')
-      .single();
+      .eq('role', 'admin');
 
-    const hasAccess = !error && data && data.role === 'admin';
+    // Check if we found any admin roles (array result)
+    const hasAccess = !error && data && data.length > 0 && data[0].role === 'admin';
+    
+    console.log('[Admin Check Access] User ID:', userId);
+    console.log('[Admin Check Access] Query result:', data);
+    console.log('[Admin Check Access] Has access:', hasAccess);
 
     return NextResponse.json({ hasAccess });
   } catch (error: any) {
