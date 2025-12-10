@@ -90,22 +90,32 @@ export default function ControlPanelLoginPage() {
 
       console.log('Admin access granted! Redirecting...');
       
-      // Use server action for redirect (more reliable)
+      // Wait for cookies to be fully set
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Try server action first, but always fallback to client redirect
+      let redirectSuccess = false;
       try {
         const { handleAdminLoginRedirect } = await import('@/app/actions/admin-actions');
         console.log('Calling server action for redirect...');
         await handleAdminLoginRedirect();
+        redirectSuccess = true;
       } catch (redirectError: any) {
         // NEXT_REDIRECT is expected - it throws to redirect
         if (redirectError?.digest?.includes('NEXT_REDIRECT') || redirectError?.message?.includes('NEXT_REDIRECT')) {
           console.log('Server redirect initiated (expected)');
-          return; // Redirect is happening
+          redirectSuccess = true;
+          // Still do client redirect as backup
         }
-        // If server action fails, fallback to client redirect
-        console.log('Server redirect failed, using client redirect:', redirectError);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        window.location.href = '/cp';
+        // Always do client redirect as backup
+        console.log('Using client redirect as primary method');
       }
+      
+      // Force client-side redirect (more reliable after login)
+      setTimeout(() => {
+        console.log('Executing client redirect to /cp');
+        window.location.href = '/cp';
+      }, 500);
       
     } catch (err: any) {
       console.error('Login error:', err);
