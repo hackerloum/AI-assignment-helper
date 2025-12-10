@@ -68,8 +68,14 @@ export async function GET(request: NextRequest) {
         try {
           const zenopayStatus = await checkZenoPayOrderStatus(zenopayApiKey, paymentIdParam)
           
-          if (zenopayStatus.result === 'SUCCESS' && zenopayStatus.data && zenopayStatus.data.length > 0) {
-            const zenoPayment = zenopayStatus.data[0]
+          // Check if it's an error response
+          if ('status' in zenopayStatus && zenopayStatus.status === 'error') {
+            console.error('[Tool Payment Verify] ZenoPay error:', zenopayStatus.message)
+          } else {
+            // TypeScript now knows this is ZenoPayOrderStatusResponse
+            const statusResponse = zenopayStatus as import('@/lib/zenopay').ZenoPayOrderStatusResponse
+            if (statusResponse.result === 'SUCCESS' && statusResponse.data && statusResponse.data.length > 0) {
+              const zenoPayment = statusResponse.data[0]
             return NextResponse.json({
               status: zenoPayment.payment_status === 'COMPLETED' ? 'completed' : 
                       zenoPayment.payment_status === 'PENDING' ? 'pending' : 'failed',
@@ -102,47 +108,54 @@ export async function GET(request: NextRequest) {
         try {
           const zenopayStatus = await checkZenoPayOrderStatus(zenopayApiKey, payment.id)
           
-          if (zenopayStatus.result === 'SUCCESS' && zenopayStatus.data && zenopayStatus.data.length > 0) {
-            const zenoPayment = zenopayStatus.data[0]
-            
-            // Update our database if ZenoPay shows different status
-            if (zenoPayment.payment_status === 'COMPLETED' && payment.payment_status !== 'completed') {
-              console.log('[Tool Payment Verify] Updating payment status from ZenoPay:', payment.id)
+          // Check if it's an error response
+          if ('status' in zenopayStatus && zenopayStatus.status === 'error') {
+            console.error('[Tool Payment Verify] ZenoPay error:', zenopayStatus.message)
+          } else {
+            // TypeScript now knows this is ZenoPayOrderStatusResponse
+            const statusResponse = zenopayStatus as import('@/lib/zenopay').ZenoPayOrderStatusResponse
+            if (statusResponse.result === 'SUCCESS' && statusResponse.data && statusResponse.data.length > 0) {
+              const zenoPayment = statusResponse.data[0]
               
-              // Update payment status
-              await supabase
-                .from('payments')
-                .update({
-                  payment_status: 'completed',
-                  transaction_id: zenoPayment.transid || payment.transaction_id,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', payment.id)
-              
-              // Handle tool payment unlock
-              if (payment.payment_type === 'tool') {
-                const updatedMetadata = {
-                  ...metadata,
-                  unlocked: true,
-                  unlockedAt: new Date().toISOString(),
-                }
+              // Update our database if ZenoPay shows different status
+              if (zenoPayment.payment_status === 'COMPLETED' && payment.payment_status !== 'completed') {
+                console.log('[Tool Payment Verify] Updating payment status from ZenoPay:', payment.id)
+                
+                // Update payment status
                 await supabase
                   .from('payments')
-                  .update({ metadata: updatedMetadata })
+                  .update({
+                    payment_status: 'completed',
+                    transaction_id: zenoPayment.transid || payment.transaction_id,
+                    updated_at: new Date().toISOString(),
+                  })
                   .eq('id', payment.id)
+                
+                // Handle tool payment unlock
+                if (payment.payment_type === 'tool') {
+                  const updatedMetadata = {
+                    ...metadata,
+                    unlocked: true,
+                    unlockedAt: new Date().toISOString(),
+                  }
+                  await supabase
+                    .from('payments')
+                    .update({ metadata: updatedMetadata })
+                    .eq('id', payment.id)
+                }
+                
+                return NextResponse.json({
+                  status: 'completed',
+                  transactionId: zenoPayment.transid,
+                  amount: payment.amount,
+                  tool: metadata.tool,
+                  originalPaymentId: metadata.paymentId,
+                  orderId: payment.id,
+                  channel: zenoPayment.channel,
+                  reference: zenoPayment.reference,
+                  message: 'Payment verified and completed',
+                })
               }
-              
-              return NextResponse.json({
-                status: 'completed',
-                transactionId: zenoPayment.transid,
-                amount: payment.amount,
-                tool: metadata.tool,
-                originalPaymentId: metadata.paymentId,
-                orderId: payment.id,
-                channel: zenoPayment.channel,
-                reference: zenoPayment.reference,
-                message: 'Payment verified and completed',
-              })
             }
           }
         } catch (zenoError) {
