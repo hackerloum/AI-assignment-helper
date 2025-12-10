@@ -76,16 +76,17 @@ export async function GET(request: NextRequest) {
             const statusResponse = zenopayStatus as import('@/lib/zenopay').ZenoPayOrderStatusResponse
             if (statusResponse.result === 'SUCCESS' && statusResponse.data && statusResponse.data.length > 0) {
               const zenoPayment = statusResponse.data[0]
-            return NextResponse.json({
-              status: zenoPayment.payment_status === 'COMPLETED' ? 'completed' : 
-                      zenoPayment.payment_status === 'PENDING' ? 'pending' : 'failed',
-              transactionId: zenoPayment.transid,
-              amount: parseInt(zenoPayment.amount),
-              orderId: zenoPayment.order_id,
-              channel: zenoPayment.channel,
-              reference: zenoPayment.reference,
-              message: 'Payment found in ZenoPay but not in database. Please contact support.',
-            })
+              return NextResponse.json({
+                status: zenoPayment.payment_status === 'COMPLETED' ? 'completed' : 
+                        zenoPayment.payment_status === 'PENDING' ? 'pending' : 'failed',
+                transactionId: zenoPayment.transid,
+                amount: parseInt(zenoPayment.amount),
+                orderId: zenoPayment.order_id,
+                channel: zenoPayment.channel,
+                reference: zenoPayment.reference,
+                message: 'Payment found in ZenoPay but not in database. Please contact support.',
+              })
+            }
           }
         } catch (zenoError) {
           console.error('[Tool Payment Verify] ZenoPay check error:', zenoError)
