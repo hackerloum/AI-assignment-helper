@@ -48,7 +48,22 @@ export default function AssignmentDetailPage() {
 
   const handleExport = async (format: 'docx' | 'pdf') => {
     try {
-      const response = await fetch(`/api/assignment/export?assignmentId=${assignmentId}&format=${format}`)
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        toast.error('Session expired. Please refresh the page.')
+        return
+      }
+
+      const response = await fetch(`/api/assignment/export?assignmentId=${assignmentId}&format=${format}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
+      })
       
       if (!response.ok) {
         throw new Error('Failed to export assignment')

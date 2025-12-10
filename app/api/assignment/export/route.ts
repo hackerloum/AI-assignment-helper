@@ -1,14 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { generateAssignmentDocument } from '@/lib/utils/docx-generator'
 import { generateFromTemplate, getTemplatePath } from '@/lib/utils/docx-template-generator'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Get access token from Authorization header (more reliable than cookies)
+    const authHeader = request.headers.get('authorization')
+    const accessToken = authHeader?.replace('Bearer ', '')
+    
+    // Get cookies as fallback
+    const cookieStore = await cookies()
+    
+    // Create Supabase client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            } catch {
+              // Cookie setting might fail in API routes
+            }
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
+      }
+    )
+    
+    // Get authenticated user (will use the access token if provided)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined)
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -65,10 +100,44 @@ export async function POST(request: NextRequest) {
 // Keep GET method for backward compatibility
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Get access token from Authorization header (more reliable than cookies)
+    const authHeader = request.headers.get('authorization')
+    const accessToken = authHeader?.replace('Bearer ', '')
+    
+    // Get cookies as fallback
+    const cookieStore = await cookies()
+    
+    // Create Supabase client
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options)
+              })
+            } catch {
+              // Cookie setting might fail in API routes
+            }
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
+      }
+    )
+    
+    // Get authenticated user (will use the access token if provided)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined)
 
-    if (!user) {
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
