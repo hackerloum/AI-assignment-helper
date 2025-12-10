@@ -17,59 +17,35 @@ export default async function ControlPanelPage() {
       redirect('/cp/login');
     }
 
-    console.log('[Admin Page] User found:', user.id, user.email);
-    console.log('[Admin Page] User ID type:', typeof user.id);
-    console.log('[Admin Page] User ID length:', user.id?.length);
+    console.log('[Admin Page] ============ ADMIN CHECK START ============');
+    console.log('[Admin Page] User ID:', user.id);
+    console.log('[Admin Page] Email:', user.email);
 
-    // Check admin status directly using admin client (bypasses RLS)
+    // Check admin status using admin client (bypasses RLS)
     const adminClient = createAdminClient();
     
-    // First, let's check ALL roles for this user (no filter)
+    // Get ALL roles for this exact user_id - no filters
     const { data: allUserRoles, error: allRolesError } = await adminClient
       .from('user_roles')
       .select('*')
       .eq('user_id', user.id);
     
-    console.log('[Admin Page] ALL roles for this user_id:', JSON.stringify(allUserRoles, null, 2));
-    console.log('[Admin Page] All roles error:', allRolesError?.message);
+    console.log('[Admin Page] Query user_id:', user.id);
+    console.log('[Admin Page] All roles query error:', allRolesError);
+    console.log('[Admin Page] All roles found:', JSON.stringify(allUserRoles, null, 2));
 
-    // Now query specifically for admin role
-    const { data: roleData, error: roleError } = await adminClient
-      .from('user_roles')
-      .select('role, user_id')
-      .eq('user_id', user.id)
-      .eq('role', 'admin');
+    // Check if this user has admin role
+    const hasAdminRole = allUserRoles && allUserRoles.some(r => r.role === 'admin');
 
-    console.log('[Admin Page] Admin role query result:', JSON.stringify(roleData, null, 2));
-    console.log('[Admin Page] Admin role query error:', roleError?.message);
-    console.log('[Admin Page] Role data type:', typeof roleData);
-    console.log('[Admin Page] Role data is array?', Array.isArray(roleData));
-    console.log('[Admin Page] Role data length:', roleData?.length);
-
-    // Check if we found an admin role
-    const hasAdminRole = roleData && roleData.length > 0 && roleData[0].role === 'admin';
+    console.log('[Admin Page] Has admin role?', hasAdminRole);
+    console.log('[Admin Page] ============ ADMIN CHECK END ============');
 
     if (!hasAdminRole) {
-      console.log('[Admin Page] ❌ Access denied - no admin role found');
-      console.log('[Admin Page] Role data:', roleData);
-      console.log('[Admin Page] Error:', roleError?.message);
-      
-      // Debug: Check what roles exist for this user
-      const { data: allRoles } = await adminClient
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', user.id);
-      console.log('[Admin Page] All roles for user:', allRoles);
-      
-      // Also check by email for debugging
-      const { data: authUsers } = await adminClient.auth.admin.listUsers();
-      const authUser = authUsers?.users.find(u => u.id === user.id);
-      console.log('[Admin Page] Auth user found:', authUser?.email);
-      
+      console.log('[Admin Page] ❌ Access DENIED');
       redirect('/cp/login?error=unauthorized');
     }
 
-    console.log('[Admin Page] ✅ Access granted for admin user:', user.email);
+    console.log('[Admin Page] ✅ Access GRANTED');
     return <AdminDashboard />;
   } catch (error: any) {
     console.error('[Admin Page] ❌ Unexpected error:', error);
@@ -77,4 +53,3 @@ export default async function ControlPanelPage() {
     redirect('/cp/login?error=unauthorized');
   }
 }
-

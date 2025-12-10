@@ -11,64 +11,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hasAccess: false, error: 'userId is required' }, { status: 400 });
     }
 
-    // Try to get authenticated user from session (may not be available immediately after login)
-    const supabase = await createClient();
-    const { data: { user: sessionUser } } = await supabase.auth.getUser();
-
-    // If we have a session user, verify userId matches (security check)
-    if (sessionUser && userId !== sessionUser.id) {
-      // Only allow checking other users if current user is admin
-      const adminClient = createAdminClient();
-      const { data: currentUserRole } = await adminClient
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', sessionUser.id)
-        .eq('role', 'admin');
-
-      // Use array check instead of single()
-      if (!currentUserRole || currentUserRole.length === 0) {
-        return NextResponse.json({ hasAccess: false, error: 'Unauthorized' }, { status: 403 });
-      }
-    }
+    console.log('[Check Access] ============ START ============');
+    console.log('[Check Access] Checking user_id:', userId);
 
     // Check if the userId has admin role using admin client (bypasses RLS)
     const adminClient = createAdminClient();
     
-    console.log('[Admin Check Access] Checking user_id:', userId);
-    console.log('[Admin Check Access] User ID type:', typeof userId);
-    
-    // First, get all roles for this user
-    const { data: allRoles, error: allError } = await adminClient
+    // Get ALL roles for this user - simpler query
+    const { data: allRoles, error: queryError } = await adminClient
       .from('user_roles')
       .select('*')
       .eq('user_id', userId);
-    
-    console.log('[Admin Check Access] All roles for user:', JSON.stringify(allRoles, null, 2));
-    
-    // Now query specifically for admin
-    const { data, error } = await adminClient
-      .from('user_roles')
-      .select('role, user_id')
-      .eq('user_id', userId)
-      .eq('role', 'admin');
 
-    console.log('[Admin Check Access] Admin query result:', JSON.stringify(data, null, 2));
-    console.log('[Admin Check Access] Admin query error:', error?.message);
+    console.log('[Check Access] Query error:', queryError);
+    console.log('[Check Access] All roles found:', JSON.stringify(allRoles, null, 2));
     
-    // Check if we found any admin roles (array result)
-    const hasAccess = !error && data && Array.isArray(data) && data.length > 0 && data[0].role === 'admin';
+    // Check if any role is 'admin'
+    const hasAdminRole = allRoles && allRoles.some(r => r.role === 'admin');
     
-    console.log('[Admin Check Access] Has access:', hasAccess);
-    console.log('[Admin Check Access] Data is array?', Array.isArray(data));
-    console.log('[Admin Check Access] Data length:', data?.length);
+    console.log('[Check Access] Has admin role?', hasAdminRole);
+    console.log('[Check Access] ============ END ============');
 
-    return NextResponse.json({ hasAccess });
+    return NextResponse.json({ hasAccess: hasAdminRole });
   } catch (error: any) {
-    console.error('[Admin Check Access] Error:', error);
+    console.error('[Check Access] Error:', error);
     return NextResponse.json(
       { hasAccess: false, error: error.message },
       { status: 500 }
     );
   }
 }
-
