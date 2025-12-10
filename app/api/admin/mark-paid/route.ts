@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/admin/auth";
 
 /**
  * EMERGENCY ADMIN ENDPOINT
@@ -8,6 +9,15 @@ import { createAdminClient } from "@/lib/supabase/server";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check if user is admin
+    const userIsAdmin = await isAdmin();
+    if (!userIsAdmin) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { userId, email, orderId } = body;
 
@@ -154,6 +164,15 @@ export async function POST(request: NextRequest) {
 // GET endpoint to check status
 export async function GET(request: NextRequest) {
   try {
+    // Check if user is admin
+    const userIsAdmin = await isAdmin();
+    if (!userIsAdmin) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 403 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     const email = searchParams.get('email');

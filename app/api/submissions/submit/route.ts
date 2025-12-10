@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       groupId,
       title,
       subject,
+      collegeName,
       academicLevel,
       wordCount,
       formattingStyle,
@@ -29,17 +30,35 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!title || !subject || !assignmentContent) {
+    if (!title || !subject) {
       return NextResponse.json(
-        { error: "Missing required fields: title, subject, and assignmentContent are required" },
+        { error: "Missing required fields: title and subject are required" },
         { status: 400 }
       );
     }
 
-    // Validate word count
-    if (!wordCount || wordCount < 100) {
+    if (!collegeName) {
       return NextResponse.json(
-        { error: "Word count must be at least 100 words" },
+        { error: "College/University name is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate: either file upload OR text content required
+    const hasFile = Array.isArray(fileUrls) && fileUrls.length > 0 && fileUrls[0];
+    const hasContent = assignmentContent && assignmentContent.trim().length > 0;
+
+    if (!hasFile && !hasContent) {
+      return NextResponse.json(
+        { error: "Please either upload a file or provide assignment content" },
+        { status: 400 }
+      );
+    }
+
+    // Validate word count for text submissions
+    if (hasContent && (!wordCount || wordCount < 100)) {
+      return NextResponse.json(
+        { error: "Word count must be at least 100 words when providing text content" },
         { status: 400 }
       );
     }
@@ -70,12 +89,13 @@ export async function POST(request: NextRequest) {
         group_id: submissionType === 'group' ? groupId : null,
         title: title.trim(),
         subject: subject.trim(),
+        college_name: collegeName.trim(),
         academic_level: academicLevel || 'undergraduate',
         word_count: parseInt(wordCount) || 0,
         formatting_style: formattingStyle || 'APA',
         cover_page_data: coverPageData || {},
-        assignment_content: assignmentContent.trim(),
-        file_urls: Array.isArray(fileUrls) ? fileUrls : [],
+        assignment_content: hasContent ? assignmentContent.trim() : '',
+        file_urls: Array.isArray(fileUrls) && fileUrls.length > 0 ? fileUrls : [],
         references: Array.isArray(references) ? references : [],
         status: 'pending',
         can_use_for_training: canUseForTraining,

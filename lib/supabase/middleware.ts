@@ -73,6 +73,22 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
+
+  // Protect admin control panel routes (/cp) except login page
+  // Admin authentication is handled by the page itself to check roles
+  if (
+    request.nextUrl.pathname.startsWith("/cp") &&
+    !request.nextUrl.pathname.startsWith("/cp/login") &&
+    !request.nextUrl.pathname.startsWith("/api")
+  ) {
+    // If no user, redirect to admin login
+    if (!user && !hasAuthCookies) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/cp/login";
+      return NextResponse.redirect(url);
+    }
+    // Role check is done in the page component/server action
+  }
   
   // If user exists OR auth cookies exist, allow access to dashboard
   // This gives time for session to sync

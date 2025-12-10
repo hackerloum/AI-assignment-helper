@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { isModeratorOrAdmin } from "@/lib/admin/auth";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,11 +13,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Add admin check
-    // const isAdmin = await checkAdminRole(user.id);
-    // if (!isAdmin) {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    // Check if user is admin or moderator
+    const hasAccess = await isModeratorOrAdmin();
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');

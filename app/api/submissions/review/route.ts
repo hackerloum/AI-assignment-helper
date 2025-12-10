@@ -5,6 +5,7 @@ import {
   awardSubmissionCredits,
   checkAndAwardAchievements,
 } from "@/lib/submission-credits";
+import { isModeratorOrAdmin } from "@/lib/admin/auth";
 
 async function getGroupMemberCount(
   groupId: string | null,
@@ -31,12 +32,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Add admin/moderator role check here
-    // For now, we'll allow any authenticated user to review
-    // const isAdmin = await checkAdminRole(user.id);
-    // if (!isAdmin) {
-    //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    // }
+    // Check if user is admin or moderator
+    const hasAccess = await isModeratorOrAdmin();
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const body = await request.json();
     const {

@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
+    const collegeName = searchParams.get('collegeName');
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
 
     if (status) {
       query = query.eq('status', status);
+    }
+
+    if (collegeName) {
+      query = query.ilike('college_name', `%${collegeName}%`);
     }
 
     const { data: submissions, error } = await query;
@@ -48,7 +53,26 @@ export async function GET(request: NextRequest) {
       countQuery = countQuery.eq('status', status);
     }
 
+    if (collegeName) {
+      countQuery = countQuery.ilike('college_name', `%${collegeName}%`);
+    }
+
     const { count } = await countQuery;
+
+    // Get unique college names for filtering
+    const { data: collegeData } = await supabase
+      .from('assignment_submissions')
+      .select('college_name')
+      .eq('user_id', user.id)
+      .not('college_name', 'is', null);
+
+    const uniqueColleges = Array.from(
+      new Set(
+        (collegeData || [])
+          .map(item => item.college_name)
+          .filter(Boolean)
+      )
+    ).sort();
 
     return NextResponse.json({
       success: true,
@@ -56,6 +80,7 @@ export async function GET(request: NextRequest) {
       total: count || 0,
       limit,
       offset,
+      colleges: uniqueColleges,
     });
   } catch (error: any) {
     console.error('List submissions error:', error);
