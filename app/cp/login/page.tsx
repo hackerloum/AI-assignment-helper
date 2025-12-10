@@ -1,10 +1,5 @@
 'use client';
 
-/**
- * Admin Login Page - Disguised as Control Panel
- * Route: /cp/login (not /admin/login to avoid obvious admin access)
- */
-
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -23,7 +18,6 @@ export default function ControlPanelLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for error parameter in URL
   useEffect(() => {
     try {
       const errorParam = searchParams?.get('error');
@@ -31,7 +25,7 @@ export default function ControlPanelLoginPage() {
         setError('Access denied. You do not have admin permissions. Please verify you have been granted admin role in the database.');
       }
     } catch (e) {
-      // Ignore errors if searchParams is not available
+      // Ignore
     }
   }, [searchParams]);
 
@@ -40,79 +34,70 @@ export default function ControlPanelLoginPage() {
     setIsLoading(true);
     setError(null);
 
+    console.log('=== Admin Login Start ===');
+
     try {
       const supabase = createClient();
       
-      // Attempt login
+      // Login
+      console.log('Logging in...');
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (loginError) {
+      if (loginError || !data?.user) {
+        console.error('Login failed:', loginError);
         setError('Invalid credentials. Please try again.');
         setIsLoading(false);
         return;
       }
 
-      if (!data?.user) {
-        setError('Login failed. Please try again.');
-        setIsLoading(false);
-        return;
-      }
+      console.log('Login successful. User ID:', data.user.id);
+      console.log('Waiting for cookies...');
+      
+      // Wait for cookies
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Wait a moment for cookies to be set
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Verify admin role - pass userId directly
+      console.log('Checking admin access...');
+      
+      // Check admin
       const response = await fetch('/api/admin/check-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: data.user.id }),
       });
 
+      console.log('Check access response status:', response.status);
+      
       if (!response.ok) {
-        console.error('Check access failed:', response.status, response.statusText);
-        const errorData = await response.json().catch(() => ({}));
-        setError(errorData.error || 'Failed to verify admin access. Please try again.');
+        const errorText = await response.text();
+        console.error('Check access failed:', response.status, errorText);
+        setError('Failed to verify admin access. Check server logs.');
         setIsLoading(false);
         return;
       }
 
       const result = await response.json();
-      const { hasAccess, error: accessError } = result;
+      console.log('Check access result:', result);
 
-      if (!hasAccess) {
-        // Sign out if not admin
+      if (!result.hasAccess) {
         await supabase.auth.signOut();
-        setError(accessError || 'Access denied. You do not have permission to access this area. Make sure you have been granted admin role.');
+        setError('Access denied. You do not have admin role. Check server console for details.');
         setIsLoading(false);
         return;
       }
 
-      // Show success message
-      setError(null);
+      console.log('Admin access granted! Redirecting...');
       
-      // Wait longer for cookies to be fully set
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Use server action for reliable redirect (like regular login)
-      try {
-        const { handleAdminLoginRedirect } = await import('@/app/actions/admin-actions');
-        await handleAdminLoginRedirect();
-      } catch (redirectError: any) {
-        // NEXT_REDIRECT is expected when redirect() is called
-        if (redirectError?.digest?.includes('NEXT_REDIRECT')) {
-          // Redirect happened, this is expected
-          return;
-        }
-        // Fallback to client-side redirect if server action fails
-        console.error('Server redirect failed, using client redirect:', redirectError);
+      // Redirect
+      setTimeout(() => {
         window.location.href = '/cp';
-      }
+      }, 500);
+      
     } catch (err: any) {
-      console.error('Admin login error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Check console logs.');
       setIsLoading(false);
     }
   };
@@ -186,10 +171,10 @@ export default function ControlPanelLoginPage() {
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>This is a restricted area. Unauthorized access is prohibited.</p>
+            <p className="mt-2 text-xs">Check server console for detailed logs</p>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
