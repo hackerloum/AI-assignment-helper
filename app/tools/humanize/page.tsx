@@ -58,41 +58,6 @@ export default function PublicHumanizePage() {
 
     checkPaymentStatus()
   }, [paymentId, searchParams])
-  const [checkingPayment, setCheckingPayment] = useState(false)
-
-  // Check if payment is unlocked when component mounts or paymentId changes
-  useEffect(() => {
-    const checkPaymentStatus = async () => {
-      const urlParams = new URLSearchParams(window.location.search)
-      const unlockedParam = urlParams.get('unlocked')
-      const paymentIdParam = urlParams.get('paymentId')
-
-      if (unlockedParam === 'true' && paymentIdParam) {
-        setPaymentId(paymentIdParam)
-        setHasPaid(true)
-        return
-      }
-
-      if (paymentId) {
-        setCheckingPayment(true)
-        try {
-          const response = await fetch(`/api/payments/tool/unlock?paymentId=${paymentId}`)
-          const data = await response.json()
-
-          if (data.unlocked) {
-            setHasPaid(true)
-            toast.success('Content unlocked!')
-          }
-        } catch (error) {
-          console.error('Error checking payment status:', error)
-        } finally {
-          setCheckingPayment(false)
-        }
-      }
-    }
-
-    checkPaymentStatus()
-  }, [paymentId])
 
   const handleHumanize = async () => {
     if (!originalText.trim() || isLoading) return
