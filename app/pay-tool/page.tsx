@@ -60,6 +60,11 @@ export default function PayToolPage() {
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (!paymentId) {
+      toast.error('Payment ID is missing')
+      return
+    }
+
     if (!validateTanzanianPhone(buyerPhone)) {
       toast.error('Please enter a valid Tanzanian phone number (07XXXXXXXX)')
       return
@@ -176,7 +181,7 @@ export default function PayToolPage() {
             Your payment has been confirmed. The content is now unlocked.
           </p>
           <Link
-            href={`/tools/${tool}?paymentId=${paymentId}&unlocked=true`}
+            href={paymentId ? `/tools/${tool}?paymentId=${paymentId}&unlocked=true` : `/tools/${tool}`}
             className="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
           >
             View Content
