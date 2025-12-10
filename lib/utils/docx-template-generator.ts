@@ -150,16 +150,20 @@ function prepareTemplateData(data: AssignmentData): any {
     
     // Group members table (for LGTI format)
     // Format: Array of objects with sn, name, registration_no, phone_number
-    group_members: (data.group_members || []).map((member: any, index: number) => {
-      // Handle both object format and ensure all fields are strings
-      const memberData = typeof member === 'object' ? member : {}
-      return {
-        sn: index + 1,
-        name: memberData.name || memberData.name || '',
-        registration_no: memberData.registration_no || memberData.registration_number || '',
-        phone_number: memberData.phone_number || memberData.phone || '',
-      }
-    }),
+    group_members: (data.group_members || [])
+      .filter((member: any) => member && (member.name || member.registration_no)) // Filter out empty/invalid members
+      .map((member: any, index: number) => {
+        // Handle both object format and ensure all fields are strings
+        // Data might come from database as JSONB, so ensure it's an object
+        const memberData = member && typeof member === 'object' ? member : {}
+        
+        return {
+          sn: index + 1,
+          name: String(memberData.name || ''),
+          registration_no: String(memberData.registration_no || memberData.registration_number || ''),
+          phone_number: String(memberData.phone_number || memberData.phone || ''),
+        }
+      }),
     
     // Group representatives
     group_representatives: (data.group_representatives || []).map((rep) => ({
