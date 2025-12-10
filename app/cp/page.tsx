@@ -18,19 +18,33 @@ export default async function ControlPanelPage() {
     }
 
     console.log('[Admin Page] User found:', user.id, user.email);
+    console.log('[Admin Page] User ID type:', typeof user.id);
+    console.log('[Admin Page] User ID length:', user.id?.length);
 
     // Check admin status directly using admin client (bypasses RLS)
     const adminClient = createAdminClient();
     
-    // Query for admin role - use array instead of single() to avoid errors
+    // First, let's check ALL roles for this user (no filter)
+    const { data: allUserRoles, error: allRolesError } = await adminClient
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    console.log('[Admin Page] ALL roles for this user_id:', JSON.stringify(allUserRoles, null, 2));
+    console.log('[Admin Page] All roles error:', allRolesError?.message);
+
+    // Now query specifically for admin role
     const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('role, user_id')
       .eq('user_id', user.id)
       .eq('role', 'admin');
 
-    console.log('[Admin Page] Role query result:', JSON.stringify(roleData, null, 2));
-    console.log('[Admin Page] Role query error:', roleError?.message);
+    console.log('[Admin Page] Admin role query result:', JSON.stringify(roleData, null, 2));
+    console.log('[Admin Page] Admin role query error:', roleError?.message);
+    console.log('[Admin Page] Role data type:', typeof roleData);
+    console.log('[Admin Page] Role data is array?', Array.isArray(roleData));
+    console.log('[Admin Page] Role data length:', roleData?.length);
 
     // Check if we found an admin role
     const hasAdminRole = roleData && roleData.length > 0 && roleData[0].role === 'admin';
