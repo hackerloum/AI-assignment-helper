@@ -90,10 +90,11 @@ export default function ControlPanelLoginPage() {
 
       console.log('Admin access granted! Redirecting...');
       
-      // Redirect
-      setTimeout(() => {
-        window.location.href = '/cp';
-      }, 500);
+      // Wait longer for cookies to fully propagate
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Force a hard redirect with full page reload
+      window.location.replace('/cp');
       
     } catch (err: any) {
       console.error('Login error:', err);
