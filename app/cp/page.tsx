@@ -1,76 +1,93 @@
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/server';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 
-export default async function ControlPanelPage() {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+export default function ControlPanelPage() {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    console.log('='.repeat(80));
-    console.log('[ADMIN PAGE] ========== START ==========');
-    console.log('[ADMIN PAGE] User error:', userError?.message || 'none');
-    console.log('[ADMIN PAGE] User found:', user ? 'YES' : 'NO');
-    
-    if (!user) {
-      console.log('[ADMIN PAGE] ❌ No user, redirecting to login');
-      console.log('='.repeat(80));
-      redirect('/cp/login');
+  useEffect(() => {
+    async function checkAdminAccess() {
+      try {
+        console.log('[CP PAGE CLIENT] Starting admin check...');
+        
+        const supabase = createClient();
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+          console.log('[CP PAGE CLIENT] No user found:', userError?.message);
+          router.push('/cp/login');
+          return;
+        }
+
+        console.log('[CP PAGE CLIENT] User found:', user.email, user.id);
+
+        // Check admin access via API
+        const response = await fetch('/api/admin/check-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id }),
+        });
+
+        if (!response.ok) {
+          console.error('[CP PAGE CLIENT] Check access failed:', response.status);
+          router.push('/cp/login?error=unauthorized');
+          return;
+        }
+
+        const result = await response.json();
+        console.log('[CP PAGE CLIENT] Check result:', result);
+
+        if (result.hasAccess) {
+          console.log('[CP PAGE CLIENT] ✅ Access granted');
+          setHasAccess(true);
+          setIsChecking(false);
+        } else {
+          console.log('[CP PAGE CLIENT] ❌ Access denied');
+          router.push('/cp/login?error=unauthorized');
+        }
+      } catch (err: any) {
+        console.error('[CP PAGE CLIENT] Error:', err);
+        setError(err.message);
+        router.push('/cp/login?error=unauthorized');
+      }
     }
 
-    console.log('[ADMIN PAGE] User email:', user.email);
-    console.log('[ADMIN PAGE] User ID:', user.id);
+    checkAdminAccess();
+  }, [router]);
 
-    const adminClient = createAdminClient();
-    
-    // Get ALL roles for this user - no filters first
-    const { data: allRoles, error: allError } = await adminClient
-      .from('user_roles')
-      .select('*');
-    
-    console.log('[ADMIN PAGE] Total roles in DB:', allRoles?.length || 0);
-    if (allRoles && allRoles.length > 0) {
-      console.log('[ADMIN PAGE] Sample roles:', allRoles.slice(0, 3).map(r => ({
-        user_id: r.user_id,
-        role: r.role
-      })));
-    }
-    
-    // Now get roles for this specific user
-    const { data: roles, error } = await adminClient
-      .from('user_roles')
-      .select('role, user_id')
-      .eq('user_id', user.id);
-    
-    console.log('[ADMIN PAGE] Query error:', error?.message || 'none');
-    console.log('[ADMIN PAGE] Roles for this user:', JSON.stringify(roles, null, 2));
-    console.log('[ADMIN PAGE] Number of roles found:', roles?.length || 0);
-    
-    // Check each role
-    if (roles && roles.length > 0) {
-      roles.forEach((r, i) => {
-        console.log(`[ADMIN PAGE] Role ${i + 1}: "${r.role}" (user_id: ${r.user_id})`);
-        console.log(`[ADMIN PAGE] Role ${i + 1} is admin? ${r.role === 'admin'}`);
-        console.log(`[ADMIN PAGE] Role ${i + 1} user_id matches? ${r.user_id === user.id}`);
-      });
-    }
-    
-    const hasAdmin = roles && roles.length > 0 && roles.some(r => r.role === 'admin');
-    console.log('[ADMIN PAGE] Final check - Has admin role?', hasAdmin);
-    console.log('[ADMIN PAGE] ========== END ==========');
-    console.log('='.repeat(80));
-
-    if (!hasAdmin) {
-      console.log('[ADMIN PAGE] ❌ ACCESS DENIED - No admin role found');
-      redirect('/cp/login?error=unauthorized');
-    }
-
-    console.log('[ADMIN PAGE] ✅ ACCESS GRANTED');
-    return <AdminDashboard />;
-  } catch (error: any) {
-    console.error('[ADMIN PAGE] ❌ EXCEPTION:', error.message);
-    console.error('[ADMIN PAGE] Stack:', error.stack);
-    redirect('/cp/login?error=unauthorized');
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    );
   }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">{error}</p>
+          <button onClick={() => router.push('/cp/login')} className="btn">
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasAccess) {
+    return <AdminDashboard />;
+  }
+
+  return null;
 }
