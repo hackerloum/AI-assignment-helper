@@ -99,13 +99,13 @@ export async function calculateSubmissionCredits(
   credits = Math.floor(credits * qualityMultiplier);
 
   // Word count bonus (individual only)
-  if (submissionType === 'individual' && wordCount >= rules.wordCountBonus.threshold) {
-    credits += rules.wordCountBonus.bonus;
+  if (submissionType === 'individual' && wordCount >= CREDIT_REWARD_RULES.individual.wordCountBonus.threshold) {
+    credits += CREDIT_REWARD_RULES.individual.wordCountBonus.bonus;
   }
 
   // Group member bonus
   if (submissionType === 'group' && memberCount) {
-    credits += rules.memberCountMultiplier * memberCount;
+    credits += CREDIT_REWARD_RULES.group.memberCountMultiplier * memberCount;
   }
 
   // Training data bonus (10% extra)
