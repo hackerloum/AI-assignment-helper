@@ -212,7 +212,8 @@ export function TemplateSelector({
           template={previewTemplate}
           onClose={() => setPreviewTemplate(null)}
           onSelect={() => {
-            onSelect(previewTemplate.id)
+            const templateId = previewTemplate.id || `${previewTemplate.code}_${previewTemplate.type || previewTemplate.template_type}`
+            onSelect(templateId)
             setPreviewTemplate(null)
           }}
         />
