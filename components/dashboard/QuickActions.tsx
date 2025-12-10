@@ -1,10 +1,17 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Zap, FileText, Presentation, Clock } from 'lucide-react'
+import { Zap, FileText, Presentation, Clock, Upload } from 'lucide-react'
 import Link from 'next/link'
 
 const actions = [
+  {
+    name: 'Submit Assignment',
+    description: 'Earn credits & rewards',
+    href: '/submissions',
+    icon: Upload,
+    color: 'from-purple-500 to-violet-500',
+  },
   {
     name: 'Start Research',
     description: 'Get AI-powered answers',
@@ -24,7 +31,7 @@ const actions = [
     description: 'Continue where you left',
     href: '/history',
     icon: Clock,
-    color: 'from-purple-500 to-indigo-500',
+    color: 'from-indigo-500 to-purple-500',
   },
 ]
 
@@ -36,7 +43,7 @@ export function QuickActions() {
         <h2 className="text-xl font-bold text-white">Quick Actions</h2>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {actions.map((action, index) => {
           const Icon = action.icon
           return (
