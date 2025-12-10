@@ -226,7 +226,7 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
                   </div>
                   <p className="text-sm text-muted-foreground">
                     By checking this box, you agree to let us use your assignment (anonymized) to improve our AI models. 
-                    You'll receive a <span className="font-semibold text-blue-600 dark:text-blue-400">10% bonus credits</span> for helping us improve!
+                    You&apos;ll receive a <span className="font-semibold text-blue-600 dark:text-blue-400">10% bonus credits</span> for helping us improve!
                   </p>
                 </div>
               </div>
@@ -240,7 +240,7 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
               <ul className="list-disc list-inside space-y-1">
                 <li>Your submission will be reviewed within 24-48 hours</li>
                 <li>Credits are awarded based on quality (25-100+ credits)</li>
-                <li>You'll receive a notification when reviewed</li>
+                <li>You&apos;ll receive a notification when reviewed</li>
               </ul>
             </div>
           </div>
