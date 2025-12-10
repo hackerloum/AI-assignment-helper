@@ -74,20 +74,27 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Protect admin control panel routes (/cp) except login page
-  // Admin authentication is handled by the page itself to check roles
+  // Don't protect /cp routes in middleware - let the page handle authentication
+  // This prevents cookie timing issues. The page will check admin role server-side.
+  // We only redirect if there's absolutely no auth cookies at all
   if (
     request.nextUrl.pathname.startsWith("/cp") &&
     !request.nextUrl.pathname.startsWith("/cp/login") &&
-    !request.nextUrl.pathname.startsWith("/api")
+    !request.nextUrl.pathname.startsWith("/api") &&
+    !request.nextUrl.pathname.startsWith("/cp/debug")
   ) {
-    // If no user, redirect to admin login
-    if (!user && !hasAuthCookies) {
+    // Only redirect if there are NO auth cookies at all (not even partial)
+    // If cookies exist, let the page handle the admin check
+    const hasAnyAuthCookie = request.cookies.getAll().some(
+      cookie => cookie.name.includes('sb-')
+    );
+    
+    if (!hasAnyAuthCookie) {
       const url = request.nextUrl.clone();
       url.pathname = "/cp/login";
       return NextResponse.redirect(url);
     }
-    // Role check is done in the page component/server action
+    // Otherwise, allow through - page will check admin role
   }
   
   // If user exists OR auth cookies exist, allow access to dashboard

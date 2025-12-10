@@ -90,11 +90,26 @@ export default function ControlPanelLoginPage() {
         return;
       }
 
-      // Redirect to control panel dashboard
-      // Use window.location.href for a full page reload to ensure cookies are available
-      setTimeout(() => {
+      // Show success message
+      setError(null);
+      
+      // Wait longer for cookies to be fully set
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Use server action for reliable redirect (like regular login)
+      try {
+        const { handleAdminLoginRedirect } = await import('@/app/actions/admin-actions');
+        await handleAdminLoginRedirect();
+      } catch (redirectError: any) {
+        // NEXT_REDIRECT is expected when redirect() is called
+        if (redirectError?.digest?.includes('NEXT_REDIRECT')) {
+          // Redirect happened, this is expected
+          return;
+        }
+        // Fallback to client-side redirect if server action fails
+        console.error('Server redirect failed, using client redirect:', redirectError);
         window.location.href = '/cp';
-      }, 300);
+      }
     } catch (err: any) {
       console.error('Admin login error:', err);
       setError('An unexpected error occurred. Please try again.');
