@@ -146,7 +146,7 @@ export default function PowerPointPage() {
       }
 
       // Update loading message
-      toast.loading('Creating presentation with SlidesGPT...', { id: loadingToast })
+      toast.loading('Creating PowerPoint file...', { id: loadingToast })
 
       const response = await fetch('/api/ai/powerpoint', {
         method: 'POST',

@@ -5,6 +5,8 @@ export const CREDIT_COSTS = {
   citation: 2,
   summarizer: 4,
   powerpoint: 20,
+  plagiarism: 3,
+  humanize: 6,
 } as const;
 
 export const FREE_CREDITS_ON_SIGNUP = 50;
@@ -46,6 +48,11 @@ export const TOOL_DESCRIPTIONS = {
     title: "PowerPoint Maker",
     description: "Create professional presentations with AI",
     icon: "📊",
+  },
+  humanize: {
+    title: "Content Humanizer",
+    description: "Transform AI-generated text into natural, human-written content",
+    icon: "✨",
   },
 } as const;
 

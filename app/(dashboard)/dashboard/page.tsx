@@ -11,7 +11,8 @@ import {
   Zap,
   Clock,
   ArrowRight,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { CreditCounter } from '@/components/dashboard/CreditCounter'
@@ -84,6 +85,16 @@ const tools = [
     textColor: 'text-pink-400',
     bgColor: 'bg-pink-500/10',
     toolType: 'summarizer' as const,
+  },
+  {
+    name: 'Content Humanizer',
+    description: 'Transform AI-generated text into natural, human-written content',
+    href: '/humanize',
+    icon: Sparkles,
+    color: 'from-violet-500 to-purple-500',
+    textColor: 'text-violet-400',
+    bgColor: 'bg-violet-500/10',
+    toolType: 'humanize' as const,
   },
 ]
 

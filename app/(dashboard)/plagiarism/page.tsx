@@ -62,10 +62,11 @@ export default function PlagiarismPage() {
       const similarityScore = data.similarityScore || 0
       setScanResult({
         similarityScore,
-        isPlagiarized: similarityScore > 15,
-        totalWords: text.split(/\s+/).length,
-        uniquePercentage: 100 - similarityScore,
+        isPlagiarized: data.isPlagiarized !== undefined ? data.isPlagiarized : similarityScore > 15,
+        totalWords: data.wordCount || text.split(/\s+/).length,
+        uniquePercentage: data.uniquePercentage || (100 - similarityScore),
         sources: data.sources || [],
+        analysis: data.analysis || null,
       })
 
       toast.success('Scan completed!')
@@ -226,9 +227,14 @@ export default function PlagiarismPage() {
                           {source.url}
                         </a>
                       )}
-                      {source.matches && (
-                        <p className="text-xs text-slate-600 mt-1">
-                          {source.matches} matching phrases found
+                      {source.reason && (
+                        <p className="text-xs text-slate-400 mt-1">
+                          {source.reason}
+                        </p>
+                      )}
+                      {source.matches !== undefined && source.matches > 0 && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          {source.matches} matching phrase{source.matches !== 1 ? 's' : ''} found
                         </p>
                       )}
                     </div>
@@ -317,6 +323,52 @@ export default function PlagiarismPage() {
                 </div>
               </motion.div>
 
+              {/* Analysis Details */}
+              {scanResult.analysis && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6"
+                >
+                  <h3 className="font-semibold text-white mb-4">Analysis Details</h3>
+                  <div className="space-y-4">
+                    {scanResult.analysis.commonPhrases !== undefined && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">Common Phrases Found</span>
+                        <span className="font-semibold text-white">{scanResult.analysis.commonPhrases}</span>
+                      </div>
+                    )}
+                    {scanResult.analysis.suspiciousPatterns && scanResult.analysis.suspiciousPatterns.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-amber-400 mb-2">Suspicious Patterns</h4>
+                        <ul className="space-y-1">
+                          {scanResult.analysis.suspiciousPatterns.map((pattern: string, idx: number) => (
+                            <li key={idx} className="text-xs text-amber-300 flex items-start gap-2">
+                              <AlertTriangle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                              <span>{pattern}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {scanResult.analysis.originalityIndicators && scanResult.analysis.originalityIndicators.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-semibold text-emerald-400 mb-2">Originality Indicators</h4>
+                        <ul className="space-y-1">
+                          {scanResult.analysis.originalityIndicators.map((indicator: string, idx: number) => (
+                            <li key={idx} className="text-xs text-emerald-300 flex items-start gap-2">
+                              <CheckCircle className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                              <span>{indicator}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Recommendations */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -326,7 +378,23 @@ export default function PlagiarismPage() {
               >
                 <h3 className="font-semibold text-white mb-4">Recommendations</h3>
                 <div className="space-y-3">
-                  {scanResult.isPlagiarized ? (
+                  {scanResult.analysis?.recommendations && scanResult.analysis.recommendations.length > 0 ? (
+                    scanResult.analysis.recommendations.map((rec: string, idx: number) => (
+                      <div
+                        key={idx}
+                        className={`flex items-start gap-2 text-sm ${
+                          scanResult.isPlagiarized ? 'text-amber-400' : 'text-emerald-400'
+                        }`}
+                      >
+                        {scanResult.isPlagiarized ? (
+                          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        )}
+                        <p>{rec}</p>
+                      </div>
+                    ))
+                  ) : scanResult.isPlagiarized ? (
                     <>
                       <div className="flex items-start gap-2 text-sm text-amber-400">
                         <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />

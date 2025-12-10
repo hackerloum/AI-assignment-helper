@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { 
             error: error.message || "Failed to generate PowerPoint file",
-            suggestion: "The SlidesGPT API may be experiencing issues. Please check your API configuration or try downloading as Text/JSON format instead."
+            suggestion: "The PowerPoint generation service may be experiencing issues. Please check your API configuration or try downloading as Text/JSON format instead."
           },
           { status: 500 }
         );
@@ -119,8 +119,8 @@ export async function POST(request: NextRequest) {
         console.error("PowerPoint file generation failed - no fileBlob returned");
         return NextResponse.json(
           { 
-            error: "Failed to generate PowerPoint file. The SlidesGPT API may have returned an error. Please check the server logs for details.",
-            suggestion: "Try downloading as Text or JSON format instead, or ensure SLIDESGPT_API_KEY is configured correctly."
+            error: "Failed to generate PowerPoint file. The PowerPoint generation service may have returned an error. Please check the server logs for details.",
+            suggestion: "Try downloading as Text or JSON format instead, or check your API configuration."
           },
           { status: 500 }
         );
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
             { 
               error: "Invalid PowerPoint file received from API. The API may have returned an error instead of a file.",
               details: text.substring(0, 200),
-              suggestion: "The SlidesGPT API may be experiencing issues. Please check your API configuration."
+              suggestion: "The PowerPoint generation service may be experiencing issues. Please check your API configuration."
             },
             { status: 500 }
           );

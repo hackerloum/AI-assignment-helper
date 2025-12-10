@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { deductCredits, addCredits } from "@/lib/credits";
-import { checkPlagiarism } from "@/lib/ai-service";
+import { humanizeContent, HumanizeOptions } from "@/lib/ai-service";
 
 export async function POST(request: NextRequest) {
   try {
-    // Get access token from Authorization header
+    // Get access token from Authorization header (more reliable than cookies)
     const authHeader = request.headers.get('authorization');
     const accessToken = authHeader?.replace('Bearer ', '');
     
+    // Get cookies as fallback
     const cookieStore = await cookies();
     
+    // Create Supabase client
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,7 +27,9 @@ export async function POST(request: NextRequest) {
               cookiesToSet.forEach(({ name, value, options }) => {
                 cookieStore.set(name, value, options);
               });
-            } catch {}
+            } catch {
+              // Cookie setting might fail in API routes
+            }
           },
         },
         global: {
@@ -36,6 +40,7 @@ export async function POST(request: NextRequest) {
       }
     );
     
+    // Get authenticated user (will use the access token if provided)
     const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined);
 
     if (authError || !user) {
@@ -47,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { text } = body;
+    const { text, options } = body;
 
     if (!text || typeof text !== "string" || !text.trim()) {
       return NextResponse.json(
@@ -56,34 +61,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (text.length < 50) {
-      return NextResponse.json(
-        { error: "Text must be at least 50 characters" },
-        { status: 400 }
-      );
-    }
-
-    // Deduct credits - use correct tool type "plagiarism"
-    const creditResult = await deductCredits(user.id, "plagiarism", supabase);
+    // Deduct credits
+    const creditResult = await deductCredits(user.id, "humanize", supabase);
     if (!creditResult.success) {
       return NextResponse.json(
         {
-          error: `Insufficient credits. You need 3 credits but only have ${creditResult.remainingCredits}.`,
+          error: `Insufficient credits. You need 6 credits but only have ${creditResult.remainingCredits}.`,
         },
         { status: 402 }
       );
     }
 
-    // Perform AI-powered plagiarism check
+    // Humanize content
     let result;
     try {
-      result = await checkPlagiarism(text);
+      result = await humanizeContent(text, options || {});
     } catch (error: any) {
       // If it's a quota error, refund credits and return specific error
       if (error.isQuotaError) {
+        // Refund the credits that were deducted
         await addCredits(
           user.id,
-          3,
+          6,
           "Refunded due to API quota limit",
           supabase
         );
@@ -103,26 +102,40 @@ export async function POST(request: NextRequest) {
     }
 
     // Save assignment
-    await supabase.from("assignments").insert({
-      user_id: user.id,
-      tool_type: "plagiarism",
-      input_text: text,
-      output_text: `Plagiarism check completed. Similarity score: ${result.similarityScore}%. ${result.isPlagiarized ? 'Plagiarism detected.' : 'No significant plagiarism found.'}`,
-      credits_used: 3,
-    });
+    const { data: assignment } = await supabase
+      .from("assignments")
+      .insert({
+        user_id: user.id,
+        tool_type: "humanize",
+        input_text: text,
+        output_text: result.humanized,
+        credits_used: 6,
+      })
+      .select()
+      .single();
 
     return NextResponse.json({ 
-      similarityScore: result.similarityScore,
-      sources: result.sources,
-      wordCount: result.wordCount,
-      uniquePercentage: result.uniquePercentage,
-      isPlagiarized: result.isPlagiarized,
-      analysis: result.analysis
+      result,
+      assignmentId: assignment?.id 
     });
   } catch (error: any) {
-    console.error("Error in plagiarism API:", error);
+    console.error("Error in humanize API:", error);
+    
+    // Check if it's a quota error that wasn't caught earlier
+    if (error.isQuotaError) {
+      return NextResponse.json(
+        {
+          error: "API quota limit reached",
+          quotaError: true,
+          retryAfter: error.retryAfter,
+          message: error.message || "The AI service has reached its rate limit. Please try again in a few moments.",
+        },
+        { status: 429 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: error.message || "Failed to check plagiarism" },
+      { error: error.message || "Failed to humanize content" },
       { status: 500 }
     );
   }

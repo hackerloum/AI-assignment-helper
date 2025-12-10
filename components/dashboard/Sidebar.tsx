@@ -61,6 +61,13 @@ const navigation = [
         badge: 'AI',
       },
       {
+        name: 'Content Humanizer',
+        href: '/humanize',
+        icon: Sparkles,
+        color: 'text-violet-400',
+        badge: 'NEW',
+      },
+      {
         name: 'Plagiarism Check',
         href: '/plagiarism',
         icon: Shield,
