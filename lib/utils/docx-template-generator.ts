@@ -144,7 +144,7 @@ function prepareTemplateData(data: AssignmentData): any {
     group_members: (data.group_members || []).map((member, index) => ({
       sn: index + 1,
       name: member.name || '',
-      registration_no: member.registration_no || member.registration_number || '',
+      registration_no: member.registration_no || '',
       phone_number: member.phone_number || '',
     })),
     
