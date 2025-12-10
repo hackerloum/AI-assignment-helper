@@ -34,72 +34,54 @@ export default function ControlPanelLoginPage() {
     setIsLoading(true);
     setError(null);
 
-    console.log('=== Admin Login Start ===');
-
     try {
       const supabase = createClient();
       
       // Login
-      console.log('Logging in...');
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (loginError || !data?.user) {
-        console.error('Login failed:', loginError);
         setError('Invalid credentials. Please try again.');
         setIsLoading(false);
         return;
       }
 
-      console.log('Login successful. User ID:', data.user.id);
-      console.log('Waiting for cookies...');
-      
-      // Wait for cookies
+      // Wait for cookies to be set
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      console.log('Checking admin access...');
       
-      // Check admin
+      // Check admin access
       const response = await fetch('/api/admin/check-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: data.user.id }),
       });
 
-      console.log('Check access response status:', response.status);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Check access failed:', response.status, errorText);
-        setError('Failed to verify admin access. Check server logs.');
+        setError('Failed to verify admin access. Please try again.');
         setIsLoading(false);
         return;
       }
 
       const result = await response.json();
-      console.log('Check access result:', result);
 
       if (!result.hasAccess) {
         await supabase.auth.signOut();
-        setError('Access denied. You do not have admin role. Check server console for details.');
+        setError('Access denied. You do not have admin permissions. Please verify you have been granted admin role in the database.');
         setIsLoading(false);
         return;
       }
 
-      console.log('Admin access granted! Preparing redirect...');
-      
       // Wait for cookies and verify session is ready
       for (let i = 0; i < 5; i++) {
         await new Promise(resolve => setTimeout(resolve, 500));
         
         // Verify session is available
         const { data: { user: verifyUser } } = await supabase.auth.getUser();
-        console.log(`Session check attempt ${i + 1}:`, verifyUser ? 'User found' : 'No user');
         
         if (verifyUser && verifyUser.id === data.user.id) {
-          console.log('Session verified! Redirecting...');
           // Double-check admin access one more time
           const verifyResponse = await fetch('/api/admin/check-access', {
             method: 'POST',
@@ -108,24 +90,21 @@ export default function ControlPanelLoginPage() {
           });
           
           const verifyResult = await verifyResponse.json();
-          console.log('Final admin check:', verifyResult);
           
           if (verifyResult.hasAccess) {
             // Session is ready and admin verified - redirect now
             window.location.replace('/cp');
-            return; // Exit the function
+            return;
           }
         }
       }
       
       // If we get here, session wasn't ready in time
-      console.error('Session not ready after waiting');
       setError('Session not ready. Please try refreshing the page.');
       setIsLoading(false);
       
     } catch (err: any) {
-      console.error('Login error:', err);
-      setError('An unexpected error occurred. Check console logs.');
+      setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
   };
@@ -199,7 +178,6 @@ export default function ControlPanelLoginPage() {
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             <p>This is a restricted area. Unauthorized access is prohibited.</p>
-            <p className="mt-2 text-xs">Check server console for detailed logs</p>
           </div>
         </CardContent>
       </Card>

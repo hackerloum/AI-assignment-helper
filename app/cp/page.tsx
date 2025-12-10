@@ -14,18 +14,13 @@ export default function ControlPanelPage() {
   useEffect(() => {
     async function checkAdminAccess() {
       try {
-        console.log('[CP PAGE CLIENT] Starting admin check...');
-        
         const supabase = createClient();
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
         if (userError || !user) {
-          console.log('[CP PAGE CLIENT] No user found:', userError?.message);
           router.push('/cp/login');
           return;
         }
-
-        console.log('[CP PAGE CLIENT] User found:', user.email, user.id);
 
         // Check admin access via API
         const response = await fetch('/api/admin/check-access', {
@@ -35,24 +30,19 @@ export default function ControlPanelPage() {
         });
 
         if (!response.ok) {
-          console.error('[CP PAGE CLIENT] Check access failed:', response.status);
           router.push('/cp/login?error=unauthorized');
           return;
         }
 
         const result = await response.json();
-        console.log('[CP PAGE CLIENT] Check result:', result);
 
         if (result.hasAccess) {
-          console.log('[CP PAGE CLIENT] ✅ Access granted');
           setHasAccess(true);
           setIsChecking(false);
         } else {
-          console.log('[CP PAGE CLIENT] ❌ Access denied');
           router.push('/cp/login?error=unauthorized');
         }
       } catch (err: any) {
-        console.error('[CP PAGE CLIENT] Error:', err);
         setError(err.message);
         router.push('/cp/login?error=unauthorized');
       }
