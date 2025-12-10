@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DollarSign, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { DollarSign, CheckCircle2, XCircle, Clock, CreditCard, TrendingUp } from 'lucide-react';
 
 interface Payment {
   id: string;
@@ -44,104 +42,176 @@ export function AdminPaymentsManagement() {
       case 'completed':
       case 'success':
         return (
-          <Badge variant="outline" className="text-green-600">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <CheckCircle2 className="w-3 h-3" />
             Completed
-          </Badge>
+          </span>
         );
       case 'pending':
         return (
-          <Badge variant="outline" className="text-yellow-600">
-            <Clock className="h-3 w-3 mr-1" />
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <Clock className="w-3 h-3" />
             Pending
-          </Badge>
+          </span>
         );
       case 'failed':
       case 'cancelled':
         return (
-          <Badge variant="outline" className="text-red-600">
-            <XCircle className="h-3 w-3 mr-1" />
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+            <XCircle className="w-3 h-3" />
             {status.charAt(0).toUpperCase() + status.slice(1)}
-          </Badge>
+          </span>
         );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-slate-500/20 text-slate-400 border border-slate-500/30">
+            {status}
+          </span>
+        );
     }
   };
 
-  const totalRevenue = payments
-    .filter((p) => p.payment_status === 'completed' || p.payment_status === 'success')
-    .reduce((sum, p) => sum + p.amount, 0);
+  const completedPayments = payments.filter(
+    (p) => p.payment_status === 'completed' || p.payment_status === 'success'
+  );
+  const totalRevenue = completedPayments.reduce((sum, p) => sum + (p.amount / 100), 0);
+  const pendingPayments = payments.filter((p) => p.payment_status === 'pending').length;
+
+  const stats = [
+    {
+      name: 'Total Revenue',
+      value: `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      icon: DollarSign,
+      color: 'from-emerald-500 to-teal-500',
+      textColor: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+    },
+    {
+      name: 'Total Payments',
+      value: payments.length.toString(),
+      icon: CreditCard,
+      color: 'from-blue-500 to-cyan-500',
+      textColor: 'text-blue-400',
+      bgColor: 'bg-blue-500/10',
+    },
+    {
+      name: 'Pending',
+      value: pendingPayments.toString(),
+      icon: Clock,
+      color: 'from-amber-500 to-orange-500',
+      textColor: 'text-amber-400',
+      bgColor: 'bg-amber-500/10',
+    },
+    {
+      name: 'Success Rate',
+      value: payments.length > 0
+        ? `${Math.round((completedPayments.length / payments.length) * 100)}%`
+        : '0%',
+      icon: TrendingUp,
+      color: 'from-purple-500 to-pink-500',
+      textColor: 'text-purple-400',
+      bgColor: 'bg-purple-500/10',
+    },
+  ];
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Payment Management</CardTitle>
-            <CardDescription>
-              View and manage all payment transactions
-            </CardDescription>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-green-600">
-              ${totalRevenue.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </div>
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-          </div>
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.name}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="relative bg-dashboard-elevated border border-dashboard-border rounded-xl p-6 overflow-hidden group hover:border-amber-500/30 transition-all duration-300"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 ${stat.bgColor} rounded-xl`}>
+                    <Icon className={`w-6 h-6 ${stat.textColor}`} />
+                  </div>
+                </div>
+                <h3 className="text-3xl font-bold text-white mb-1">{stat.value}</h3>
+                <p className="text-sm text-slate-400">{stat.name}</p>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Payments Table */}
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-white">Payment Transactions</h2>
+          <p className="text-sm text-slate-400 mt-1">All payment records and transactions</p>
         </div>
-      </CardHeader>
-      <CardContent>
+
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading payments...</div>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-amber-400 border-t-transparent"></div>
+            <p className="text-slate-400 mt-4">Loading payments...</p>
+          </div>
+        ) : payments.length === 0 ? (
+          <div className="text-center py-12">
+            <CreditCard className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400">No payments found</p>
+          </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payments.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No payments found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  payments.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="font-mono text-sm">{payment.order_id}</TableCell>
-                      <TableCell>{payment.user_email}</TableCell>
-                      <TableCell>
-                        ${payment.amount.toLocaleString('en-US', {
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-dashboard-border">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Order ID</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">User</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Amount</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Method</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment, index) => (
+                  <motion.tr
+                    key={payment.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="border-b border-dashboard-border hover:bg-white/5 transition-colors"
+                  >
+                    <td className="py-4 px-4">
+                      <span className="text-white font-mono text-sm">{payment.order_id}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-white">{payment.user_email}</span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-white font-semibold">
+                        ${((payment.amount || 0) / 100).toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
-                      </TableCell>
-                      <TableCell>{payment.payment_method || 'N/A'}</TableCell>
-                      <TableCell>{getStatusBadge(payment.payment_status)}</TableCell>
-                      <TableCell>
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className="text-slate-400">{payment.payment_method || 'N/A'}</span>
+                    </td>
+                    <td className="py-4 px-4">{getStatusBadge(payment.payment_status)}</td>
+                    <td className="py-4 px-4">
+                      <span className="text-slate-400 text-sm">
                         {new Date(payment.created_at).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
-

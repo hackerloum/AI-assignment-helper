@@ -1,12 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Search, CheckCircle2, XCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Shield, Search, CheckCircle2, XCircle, Users, Mail, Calendar, CreditCard } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -22,7 +19,6 @@ export function AdminUsersManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -37,6 +33,7 @@ export function AdminUsersManagement() {
       }
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -56,14 +53,14 @@ export function AdminUsersManagement() {
 
       const result = await response.json();
       if (result.success) {
-        alert('Admin role granted successfully');
+        toast.success('Admin role granted successfully');
         fetchUsers();
       } else {
-        alert(result.error || 'Failed to grant admin role');
+        toast.error(result.error || 'Failed to grant admin role');
       }
     } catch (error) {
       console.error('Error granting admin role:', error);
-      alert('Failed to grant admin role');
+      toast.error('Failed to grant admin role');
     }
   };
 
@@ -81,14 +78,14 @@ export function AdminUsersManagement() {
 
       const result = await response.json();
       if (result.success) {
-        alert('Admin role revoked successfully');
+        toast.success('Admin role revoked successfully');
         fetchUsers();
       } else {
-        alert(result.error || 'Failed to revoke admin role');
+        toast.error(result.error || 'Failed to revoke admin role');
       }
     } catch (error) {
       console.error('Error revoking admin role:', error);
-      alert('Failed to revoke admin role');
+      toast.error('Failed to revoke admin role');
     }
   };
 
@@ -98,104 +95,183 @@ export function AdminUsersManagement() {
       user.id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const stats = {
+    total: users.length,
+    admins: users.filter(u => u.role === 'admin').length,
+    paid: users.filter(u => u.has_paid_one_time_fee).length,
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Management</CardTitle>
-        <CardDescription>
-          Manage user accounts, roles, and permissions
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-dashboard-elevated border border-dashboard-border rounded-xl p-6"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 mb-1">Total Users</p>
+              <p className="text-3xl font-bold text-white">{stats.total}</p>
+            </div>
+            <div className="p-3 bg-blue-500/10 rounded-xl">
+              <Users className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-dashboard-elevated border border-dashboard-border rounded-xl p-6"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 mb-1">Administrators</p>
+              <p className="text-3xl font-bold text-white">{stats.admins}</p>
+            </div>
+            <div className="p-3 bg-red-500/10 rounded-xl">
+              <Shield className="w-6 h-6 text-red-400" />
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-dashboard-elevated border border-dashboard-border rounded-xl p-6"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-400 mb-1">Paid Users</p>
+              <p className="text-3xl font-bold text-white">{stats.paid}</p>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-xl">
+              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Search and Users Table */}
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-white mb-4">User Management</h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <input
+              type="text"
               placeholder="Search by email or user ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-dashboard-border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 transition-colors"
             />
           </div>
         </div>
 
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading users...</div>
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-amber-400 border-t-transparent"></div>
+            <p className="text-slate-400 mt-4">Loading users...</p>
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-400">No users found</p>
+          </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Payment Status</TableHead>
-                  <TableHead>Credits</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No users found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role || 'user'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {user.has_paid_one_time_fee ? (
-                          <Badge variant="outline" className="text-green-600">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Paid
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-red-600">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Unpaid
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{user.balance || 0}</TableCell>
-                      <TableCell>
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {user.role !== 'admin' ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleGrantAdmin(user.id)}
-                          >
-                            <Shield className="h-3 w-3 mr-1" />
-                            Grant Admin
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRevokeAdmin(user.id)}
-                          >
-                            Revoke Admin
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-dashboard-border">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Email</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Role</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Payment</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Credits</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Joined</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user, index) => (
+                  <motion.tr
+                    key={user.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="border-b border-dashboard-border hover:bg-white/5 transition-colors"
+                  >
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-slate-500" />
+                        <span className="text-white font-medium">{user.email}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${
+                        user.role === 'admin'
+                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                      }`}>
+                        {user.role === 'admin' && <Shield className="w-3 h-3" />}
+                        {user.role || 'user'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4">
+                      {user.has_paid_one_time_fee ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
+                          <XCircle className="w-3 h-3" />
+                          Unpaid
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-slate-500" />
+                        <span className="text-white">{user.balance || 0}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-slate-500" />
+                        <span className="text-slate-400 text-sm">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      {user.role !== 'admin' ? (
+                        <button
+                          onClick={() => handleGrantAdmin(user.id)}
+                          className="px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold hover:bg-amber-500/30 transition-colors flex items-center gap-1"
+                        >
+                          <Shield className="w-3 h-3" />
+                          Grant Admin
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleRevokeAdmin(user.id)}
+                          className="px-3 py-1.5 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-xs font-semibold hover:bg-red-500/30 transition-colors"
+                        >
+                          Revoke Admin
+                        </button>
+                      )}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
-
