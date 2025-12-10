@@ -56,21 +56,44 @@ export function CoverPageBuilder({
 
   const loadTemplate = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('assignment_templates')
-        .select('*')
-        .eq('id', templateId)
-        .single()
+      // Check if templateId is in CODE_TYPE format (DOCX template) or UUID (Supabase template)
+      const templateIdMatch = templateId?.match(/^([A-Z0-9]+)_(individual|group)$/)
+      
+      if (templateIdMatch) {
+        // DOCX template format: CODE_TYPE
+        const code = templateIdMatch[1]
+        const type = templateIdMatch[2]
+        
+        // For DOCX templates, we don't need to load from Supabase
+        // Just set the template with the code information
+        setTemplate({
+          college_code: code,
+          template_type: type,
+          // DOCX templates don't have cover_page_format from Supabase
+          // They use the actual DOCX file structure
+        })
+      } else {
+        // Legacy Supabase template (UUID format)
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('assignment_templates')
+          .select('*')
+          .eq('id', templateId)
+          .single()
 
-      if (error) throw error
-      setTemplate(data)
+        if (error) {
+          console.error('Error loading template:', error)
+          // Don't throw, just log - template might not exist in Supabase
+          return
+        }
+        setTemplate(data)
+      }
     } catch (error: any) {
       console.error('Error loading template:', error)
     }
   }
 
-  const isLGTI = template?.college_code === 'LGTI'
+  const isLGTI = template?.college_code === 'LGTI' || templateId?.startsWith('LGTI_')
 
   useEffect(() => {
     onChange(formData)
