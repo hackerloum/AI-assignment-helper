@@ -90,11 +90,22 @@ export default function ControlPanelLoginPage() {
 
       console.log('Admin access granted! Redirecting...');
       
-      // Wait longer for cookies to fully propagate
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Force a hard redirect with full page reload
-      window.location.replace('/cp');
+      // Use server action for redirect (more reliable)
+      try {
+        const { handleAdminLoginRedirect } = await import('@/app/actions/admin-actions');
+        console.log('Calling server action for redirect...');
+        await handleAdminLoginRedirect();
+      } catch (redirectError: any) {
+        // NEXT_REDIRECT is expected - it throws to redirect
+        if (redirectError?.digest?.includes('NEXT_REDIRECT') || redirectError?.message?.includes('NEXT_REDIRECT')) {
+          console.log('Server redirect initiated (expected)');
+          return; // Redirect is happening
+        }
+        // If server action fails, fallback to client redirect
+        console.log('Server redirect failed, using client redirect:', redirectError);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        window.location.href = '/cp';
+      }
       
     } catch (err: any) {
       console.error('Login error:', err);
