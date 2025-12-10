@@ -78,6 +78,15 @@ export async function generateFromTemplate(
     // Prepare data for template
     const templateData = prepareTemplateData(data)
     
+    // Debug: Log template data to help troubleshoot
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Template data being set:', JSON.stringify(templateData, null, 2))
+      console.log('Group members count:', templateData.group_members?.length || 0)
+      if (templateData.group_members?.length > 0) {
+        console.log('First group member:', templateData.group_members[0])
+      }
+    }
+    
     // Set data and render
     doc.setData(templateData)
     
@@ -141,12 +150,16 @@ function prepareTemplateData(data: AssignmentData): any {
     
     // Group members table (for LGTI format)
     // Format: Array of objects with sn, name, registration_no, phone_number
-    group_members: (data.group_members || []).map((member, index) => ({
-      sn: index + 1,
-      name: member.name || '',
-      registration_no: member.registration_no || '',
-      phone_number: member.phone_number || '',
-    })),
+    group_members: (data.group_members || []).map((member: any, index: number) => {
+      // Handle both object format and ensure all fields are strings
+      const memberData = typeof member === 'object' ? member : {}
+      return {
+        sn: index + 1,
+        name: memberData.name || memberData.name || '',
+        registration_no: memberData.registration_no || memberData.registration_number || '',
+        phone_number: memberData.phone_number || memberData.phone || '',
+      }
+    }),
     
     // Group representatives
     group_representatives: (data.group_representatives || []).map((rep) => ({
