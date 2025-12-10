@@ -5,8 +5,8 @@
  * Route: /cp/login (not /admin/login to avoid obvious admin access)
  */
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,10 +17,23 @@ import { AlertCircle, Loader2, Shield } from 'lucide-react';
 
 export default function ControlPanelLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for error parameter in URL
+  useEffect(() => {
+    try {
+      const errorParam = searchParams?.get('error');
+      if (errorParam === 'unauthorized') {
+        setError('Access denied. You do not have admin permissions. Please verify you have been granted admin role in the database.');
+      }
+    } catch (e) {
+      // Ignore errors if searchParams is not available
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +91,10 @@ export default function ControlPanelLoginPage() {
       }
 
       // Redirect to control panel dashboard
-      window.location.href = '/cp';
+      // Use window.location.href for a full page reload to ensure cookies are available
+      setTimeout(() => {
+        window.location.href = '/cp';
+      }, 300);
     } catch (err: any) {
       console.error('Admin login error:', err);
       setError('An unexpected error occurred. Please try again.');
