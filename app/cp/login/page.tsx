@@ -48,26 +48,37 @@ export default function ControlPanelLoginPage() {
         return;
       }
 
-      // Verify admin role
+      // Wait a moment for cookies to be set
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Verify admin role - pass userId directly
       const response = await fetch('/api/admin/check-access', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: data.user.id }),
       });
 
-      const { hasAccess } = await response.json();
+      if (!response.ok) {
+        console.error('Check access failed:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.error || 'Failed to verify admin access. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await response.json();
+      const { hasAccess, error: accessError } = result;
 
       if (!hasAccess) {
         // Sign out if not admin
         await supabase.auth.signOut();
-        setError('Access denied. You do not have permission to access this area.');
+        setError(accessError || 'Access denied. You do not have permission to access this area. Make sure you have been granted admin role.');
         setIsLoading(false);
         return;
       }
 
       // Redirect to control panel dashboard
-      router.push('/cp');
-      router.refresh();
+      window.location.href = '/cp';
     } catch (err: any) {
       console.error('Admin login error:', err);
       setError('An unexpected error occurred. Please try again.');
