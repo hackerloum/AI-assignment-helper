@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { DollarSign, CheckCircle2, XCircle, Clock, CreditCard, TrendingUp } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface Payment {
   id: string;
@@ -26,8 +27,19 @@ export function AdminPaymentsManagement() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
+      
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/admin/payments', {
-        credentials: 'include',
+        headers,
       });
       
       if (!response.ok) {

@@ -21,6 +21,7 @@ import { AdminPaymentsManagement } from './AdminPaymentsManagement';
 import { AdminSubmissionsManagement } from './AdminSubmissionsManagement';
 import { AdminSettings } from './AdminSettings';
 import { useUser } from '@/hooks/useUser';
+import { createClient } from '@/lib/supabase/client';
 
 export function AdminDashboard() {
   const { user } = useUser();
@@ -44,8 +45,19 @@ export function AdminDashboard() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
+      
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/admin/analytics', {
-        credentials: 'include',
+        headers,
       });
       
       if (!response.ok) {

@@ -1,32 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is admin - get user from request
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get access token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
     
-    if (!user) {
+    // Get cookies as fallback
+    const cookieStore = await cookies();
+    
+    // Create Supabase client with both token and cookies support
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {
+            // Cookie setting in API routes
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
+      }
+    );
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined);
+    
+    console.log('[Admin Analytics API] Auth check:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      error: authError?.message 
+    });
+    
+    if (authError || !user) {
+      console.error('[Admin Analytics API] No authenticated user:', authError);
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Please log in' },
         { status: 401 }
       );
     }
 
     // Check admin role
     const adminClient = createAdminClient();
-    const { data: roleData } = await adminClient
+    const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
 
-    const hasAdminRole = roleData && roleData.some(r => r.role === 'admin');
+    console.log('[Admin Analytics API] Role check:', { 
+      roleData, 
+      error: roleError?.message 
+    });
+
+    const hasAdminRole = roleData && roleData.length > 0 && roleData.some(r => r.role === 'admin');
     
     if (!hasAdminRole) {
+      console.error('[Admin Analytics API] User does not have admin role:', { userId: user.id, roles: roleData });
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Admin access required' },
         { status: 403 }
       );
     }

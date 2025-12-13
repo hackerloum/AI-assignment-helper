@@ -27,8 +27,19 @@ export function AdminUsersManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/admin/users', {
-        credentials: 'include',
+        headers,
       });
       
       if (!response.ok) {
@@ -67,9 +78,19 @@ export function AdminUsersManagement() {
     }
 
     try {
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/admin/grant-role', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId, role: 'admin' }),
       });
 
@@ -92,10 +113,19 @@ export function AdminUsersManagement() {
     }
 
     try {
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/admin/revoke-role', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers,
         body: JSON.stringify({ userId }),
       });
 

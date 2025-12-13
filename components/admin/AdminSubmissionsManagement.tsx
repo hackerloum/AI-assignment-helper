@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FileText, CheckCircle2, XCircle, AlertCircle, Clock, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { createClient } from '@/lib/supabase/client';
 
 interface Submission {
   id: string;
@@ -41,8 +42,19 @@ export function AdminSubmissionsManagement() {
   const fetchPendingSubmissions = async () => {
     try {
       setLoading(true);
+      
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = {};
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/submissions/admin/pending', {
-        credentials: 'include',
+        headers,
       });
       
       if (!response.ok) {
@@ -83,10 +95,19 @@ export function AdminSubmissionsManagement() {
         reviewData.academicRigor
       ) / 4;
 
+      // Get access token from Supabase
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      }
+      
       const response = await fetch('/api/submissions/review', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers,
         body: JSON.stringify({
           submissionId: selectedSubmission.id,
           status: reviewData.status,

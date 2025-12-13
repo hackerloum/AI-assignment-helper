@@ -1,12 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is admin - get user from request
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get access token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
+    
+    // Get cookies as fallback
+    const cookieStore = await cookies();
+    
+    // Create Supabase client with both token and cookies support
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {
+            // Cookie setting in API routes
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
+      }
+    );
+    
+    const { data: { user } } = await supabase.auth.getUser(accessToken || undefined);
     
     if (!user) {
       return NextResponse.json(

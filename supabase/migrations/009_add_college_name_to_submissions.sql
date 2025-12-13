@@ -11,3 +11,5 @@ CREATE INDEX IF NOT EXISTS idx_submissions_college_name ON assignment_submission
 -- Add comment
 COMMENT ON COLUMN assignment_submissions.college_name IS 'College/University name for filtering and categorization';
 
+
+
