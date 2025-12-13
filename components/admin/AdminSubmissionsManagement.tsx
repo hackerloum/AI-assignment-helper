@@ -40,15 +40,32 @@ export function AdminSubmissionsManagement() {
 
   const fetchPendingSubmissions = async () => {
     try {
-      const response = await fetch('/api/submissions/admin/pending');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSubmissions(data.submissions || []);
+      setLoading(true);
+      const response = await fetch('/api/submissions/admin/pending', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          toast.error('Unauthorized: You do not have admin permissions');
+          setSubmissions([]);
+          setLoading(false);
+          return;
         }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.success) {
+        setSubmissions(data.submissions || []);
+      } else {
+        console.error('Failed to fetch submissions:', data.error);
+        setSubmissions([]);
       }
     } catch (error) {
       console.error('Error fetching submissions:', error);
+      toast.error('Failed to load submissions');
+      setSubmissions([]);
     } finally {
       setLoading(false);
     }
@@ -69,6 +86,7 @@ export function AdminSubmissionsManagement() {
       const response = await fetch('/api/submissions/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           submissionId: selectedSubmission.id,
           status: reviewData.status,

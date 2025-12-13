@@ -44,7 +44,27 @@ export function AdminDashboard() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/analytics');
+      const response = await fetch('/api/admin/analytics', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          console.error('Unauthorized access to analytics');
+          setAnalytics({
+            totalUsers: 0,
+            totalPayments: 0,
+            totalRevenue: 0,
+            pendingSubmissions: 0,
+            approvedSubmissions: 0,
+            activeUsers: 0,
+          });
+          setLoading(false);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       if (result.success) {
         setAnalytics(result.data);

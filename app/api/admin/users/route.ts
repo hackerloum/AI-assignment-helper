@@ -6,27 +6,40 @@ export async function GET(request: NextRequest) {
   try {
     // Check if user is admin - get user from request
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
-    if (!user) {
+    console.log('[Admin Users API] User check:', { 
+      hasUser: !!user, 
+      userId: user?.id,
+      error: userError?.message 
+    });
+    
+    if (userError || !user) {
+      console.error('[Admin Users API] No authenticated user:', userError);
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Please log in' },
         { status: 401 }
       );
     }
 
     // Check admin role
     const adminClient = createAdminClient();
-    const { data: roleData } = await adminClient
+    const { data: roleData, error: roleError } = await adminClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
 
-    const hasAdminRole = roleData && roleData.some(r => r.role === 'admin');
+    console.log('[Admin Users API] Role check:', { 
+      roleData, 
+      error: roleError?.message 
+    });
+
+    const hasAdminRole = roleData && roleData.length > 0 && roleData.some(r => r.role === 'admin');
     
     if (!hasAdminRole) {
+      console.error('[Admin Users API] User does not have admin role:', { userId: user.id, roles: roleData });
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Admin access required' },
         { status: 403 }
       );
     }

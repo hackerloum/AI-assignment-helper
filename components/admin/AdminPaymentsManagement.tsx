@@ -26,7 +26,20 @@ export function AdminPaymentsManagement() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/payments');
+      const response = await fetch('/api/admin/payments', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          toast.error('Unauthorized: You do not have admin permissions');
+          setPayments([]);
+          setLoading(false);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       if (result.success) {
         setPayments(result.payments || []);
@@ -39,6 +52,7 @@ export function AdminPaymentsManagement() {
       }
     } catch (error) {
       console.error('Error fetching payments:', error);
+      toast.error('Failed to load payments. Please check your connection.');
       setPayments([]);
     } finally {
       setLoading(false);

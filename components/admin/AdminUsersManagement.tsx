@@ -27,7 +27,20 @@ export function AdminUsersManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/users');
+      const response = await fetch('/api/admin/users', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          toast.error('Unauthorized: You do not have admin permissions');
+          setUsers([]);
+          setLoading(false);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       if (result.success) {
         setUsers(result.users || []);
@@ -82,6 +95,7 @@ export function AdminUsersManagement() {
       const response = await fetch('/api/admin/revoke-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ userId }),
       });
 
