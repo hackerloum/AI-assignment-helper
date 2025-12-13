@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   Clock,
   Zap,
-  ArrowRight
+  ArrowRight,
+  LogOut,
+  User
 } from 'lucide-react';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminUsersManagement } from './AdminUsersManagement';
@@ -23,12 +25,24 @@ import { AdminSettings } from './AdminSettings';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export function AdminDashboard() {
   const { user } = useUser();
+  const router = useRouter();
+  const supabase = createClient();
   const [activeTab, setActiveTab] = useState('overview');
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+  
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success('Logged out successfully');
+    router.push('/cp/login');
+    setProfileOpen(false);
+  };
 
   useEffect(() => {
     fetchAnalytics();
@@ -175,21 +189,78 @@ export function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-8">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="mb-2">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-              Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'Admin'}! 👋
-            </h1>
+    <div className="min-h-screen space-y-6 md:space-y-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sticky top-0 z-40 bg-dashboard-bg/80 backdrop-blur-xl border-b border-dashboard-border -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 py-4 md:py-6"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                Admin Control Panel
+              </h1>
+              <p className="text-sm text-slate-400 mt-0.5">
+                Manage your platform and monitor activity
+              </p>
+            </div>
           </div>
-          <p className="text-lg md:text-xl text-slate-400 font-medium">
-            Manage your platform and monitor system activity
-          </p>
-        </motion.div>
+          
+          {/* User Menu */}
+          <div className="relative">
+            <motion.button
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-3 px-4 py-2.5 bg-dashboard-elevated border border-dashboard-border rounded-xl hover:border-amber-500/30 transition-all group"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center">
+                <User className="w-5 h-5 text-white" />
+              </div>
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-semibold text-white">
+                  {user?.user_metadata?.full_name || 'Admin'}
+                </p>
+                <p className="text-xs text-slate-400">{user?.email}</p>
+              </div>
+            </motion.button>
+
+            {/* Profile Dropdown */}
+            {profileOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute right-0 mt-2 w-64 bg-dashboard-elevated border border-dashboard-border rounded-xl shadow-xl overflow-hidden z-50"
+              >
+                <div className="p-4 border-b border-dashboard-border">
+                  <p className="text-sm font-semibold text-white">
+                    {user?.user_metadata?.full_name || 'Admin'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">{user?.email}</p>
+                  <span className="inline-flex items-center gap-1 mt-2 px-2 py-1 bg-red-500/20 text-red-400 text-xs font-semibold rounded">
+                    <Shield className="w-3 h-3" />
+                    Administrator
+                  </span>
+                </div>
+                <div className="p-2">
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </motion.header>
 
       {/* Stats Cards */}
       {!loading && analytics && (
@@ -237,38 +308,65 @@ export function AdminDashboard() {
       )}
 
       {/* Tabs */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
-        <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-3 scrollbar-hide border-b border-dashboard-border">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                type="button"
-                className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium ${
-                  isActive
-                    ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border border-amber-500/40 shadow-lg shadow-amber-500/10'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
-                }`}
-              >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-amber-400' : ''}`} />
-                <span className="text-sm font-semibold">{tab.label}</span>
-              </button>
-            );
-          })}
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl shadow-xl overflow-hidden">
+        {/* Tab Navigation */}
+        <div className="bg-dashboard-surface/50 border-b border-dashboard-border px-4 md:px-6 py-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => handleTabChange(tab.id)}
+                  type="button"
+                  className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium ${
+                    isActive
+                      ? 'text-amber-400'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-amber-500/20 rounded-xl border border-amber-500/40"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
+                  <span className="text-sm font-semibold relative z-10">{tab.label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Tab Content */}
-        <div className="mt-6">
-          {activeTab === 'overview' && <AdminAnalytics />}
-          {activeTab === 'users' && <AdminUsersManagement />}
-          {activeTab === 'payments' && <AdminPaymentsManagement />}
-          {activeTab === 'submissions' && <AdminSubmissionsManagement />}
-          {activeTab === 'settings' && <AdminSettings />}
+        <div className="p-6 md:p-8">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {activeTab === 'overview' && <AdminAnalytics />}
+            {activeTab === 'users' && <AdminUsersManagement />}
+            {activeTab === 'payments' && <AdminPaymentsManagement />}
+            {activeTab === 'submissions' && <AdminSubmissionsManagement />}
+            {activeTab === 'settings' && <AdminSettings />}
+          </motion.div>
         </div>
       </div>
+      
+      {/* Click outside to close profile dropdown */}
+      {profileOpen && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => setProfileOpen(false)}
+        />
+      )}
     </div>
   );
 }
