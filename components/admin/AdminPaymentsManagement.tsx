@@ -25,13 +25,21 @@ export function AdminPaymentsManagement() {
 
   const fetchPayments = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/admin/payments');
       const result = await response.json();
       if (result.success) {
         setPayments(result.payments || []);
+        if (!result.payments || result.payments.length === 0) {
+          console.warn('No payments found in response');
+        }
+      } else {
+        console.error('Failed to fetch payments:', result.error);
+        setPayments([]);
       }
     } catch (error) {
       console.error('Error fetching payments:', error);
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -115,9 +123,9 @@ export function AdminPaymentsManagement() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
@@ -144,7 +152,7 @@ export function AdminPaymentsManagement() {
       </div>
 
       {/* Payments Table */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white">Payment Transactions</h2>
           <p className="text-sm text-slate-400 mt-1">All payment records and transactions</p>

@@ -53,10 +53,10 @@ export default function ControlPanelPage() {
 
   if (isChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-dashboard-bg">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verifying admin access...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Verifying admin access...</p>
         </div>
       </div>
     );
@@ -64,10 +64,13 @@ export default function ControlPanelPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-dashboard-bg">
         <div className="text-center">
-          <p className="text-destructive mb-4">{error}</p>
-          <button onClick={() => router.push('/cp/login')} className="btn">
+          <p className="text-red-400 mb-4">{error}</p>
+          <button 
+            onClick={() => router.push('/cp/login')} 
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-semibold transition-colors"
+          >
             Go to Login
           </button>
         </div>

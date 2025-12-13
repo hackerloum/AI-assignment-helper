@@ -16,9 +16,9 @@ export function AdminSettings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Admin Access URL */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white mb-1">Admin Access URL</h2>
           <p className="text-sm text-slate-400">The URL for accessing the admin control panel</p>
@@ -54,7 +54,7 @@ export function AdminSettings() {
       </div>
 
       {/* Security Recommendations */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <h2 className="text-xl font-bold text-white mb-4">Security Recommendations</h2>
         <div className="space-y-4">
           {[
@@ -80,7 +80,7 @@ export function AdminSettings() {
       </div>
 
       {/* System Information */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <h2 className="text-xl font-bold text-white mb-4">System Information</h2>
         <div className="space-y-3">
           <div className="flex items-center justify-between py-2 border-b border-dashboard-border">

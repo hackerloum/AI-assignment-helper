@@ -43,13 +43,32 @@ export function AdminDashboard() {
 
   const fetchAnalytics = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/admin/analytics');
       const result = await response.json();
       if (result.success) {
         setAnalytics(result.data);
+      } else {
+        console.error('Failed to fetch analytics:', result.error);
+        setAnalytics({
+          totalUsers: 0,
+          totalPayments: 0,
+          totalRevenue: 0,
+          pendingSubmissions: 0,
+          approvedSubmissions: 0,
+          activeUsers: 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setAnalytics({
+        totalUsers: 0,
+        totalPayments: 0,
+        totalRevenue: 0,
+        pendingSubmissions: 0,
+        approvedSubmissions: 0,
+        activeUsers: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -124,18 +143,20 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-          Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'Admin'}! 👋
-        </h1>
-        <p className="text-lg text-slate-400">
-          Manage your platform and monitor system activity
-        </p>
-      </motion.div>
+        {/* Welcome Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="mb-2">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+              Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || 'Admin'}! 👋
+            </h1>
+          </div>
+          <p className="text-lg md:text-xl text-slate-400 font-medium">
+            Manage your platform and monitor system activity
+          </p>
+        </motion.div>
 
       {/* Stats Cards */}
       {!loading && analytics && (
@@ -146,7 +167,7 @@ export function AdminDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="relative bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 overflow-hidden group hover:border-amber-500/30 transition-all duration-300"
+              className="relative bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-7 overflow-hidden group hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/5 transition-all duration-300 backdrop-blur-sm"
             >
               {/* Background gradient */}
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity`} />
@@ -175,7 +196,7 @@ export function AdminDashboard() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 animate-pulse">
               <div className="h-4 bg-white/5 rounded w-32 mb-4" />
-              <div className="h-8 bg-white/5 rounded w-24 mb-2" />
+              <div className="h-10 bg-white/5 rounded w-24 mb-2" />
               <div className="h-3 bg-white/5 rounded w-20" />
             </div>
           ))}
@@ -183,8 +204,8 @@ export function AdminDashboard() {
       )}
 
       {/* Tabs */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
+        <div className="flex items-center gap-3 mb-8 overflow-x-auto pb-3 scrollbar-hide border-b border-dashboard-border">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -193,14 +214,14 @@ export function AdminDashboard() {
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
                 type="button"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium ${
                   isActive
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                    ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-400 border border-amber-500/40 shadow-lg shadow-amber-500/10'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <Icon className={`w-5 h-5 ${isActive ? 'text-amber-400' : ''}`} />
+                <span className="text-sm font-semibold">{tab.label}</span>
               </button>
             );
           })}

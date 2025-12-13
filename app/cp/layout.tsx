@@ -13,6 +13,13 @@ export default function ControlPanelLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
+  
+  // Don't show sidebar/topbar on login page
+  const isLoginPage = pathname === '/cp/login';
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-dashboard-bg">

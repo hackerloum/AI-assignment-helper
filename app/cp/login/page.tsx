@@ -110,77 +110,89 @@ export default function ControlPanelLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="rounded-full bg-primary/10 p-3">
-              <Shield className="h-6 w-6 text-primary" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-12">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10"></div>
+      
+      <div className="relative w-full max-w-md">
+        <Card className="bg-slate-800/90 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+          <CardHeader className="space-y-4 text-center pb-6">
+            <div className="flex justify-center mb-2">
+              <div className="rounded-full bg-amber-500/20 p-4 ring-4 ring-amber-500/10">
+                <Shield className="h-8 w-8 text-amber-400" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-2xl font-bold">Control Panel Access</CardTitle>
-          <CardDescription>
-            Enter your credentials to access the system control panel
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-                autoComplete="current-password"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Authenticating...
-                </>
-              ) : (
-                'Access Control Panel'
+            <CardTitle className="text-3xl font-bold text-white">Admin Control Panel</CardTitle>
+            <CardDescription className="text-slate-400 text-base">
+              Enter your credentials to access the system administration panel
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <Alert variant="destructive" className="bg-red-500/10 border-red-500/50 text-red-400">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">{error}</AlertDescription>
+                </Alert>
               )}
-            </Button>
-          </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>This is a restricted area. Unauthorized access is prohibited.</p>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-slate-300 font-medium">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  autoComplete="email"
+                  className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-amber-500/50 focus:ring-amber-500/20 h-12"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-slate-300 font-medium">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 focus:border-amber-500/50 focus:ring-amber-500/20 h-12"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold h-12 text-base shadow-lg shadow-amber-500/25 transition-all"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="mr-2 h-5 w-5" />
+                    Access Control Panel
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="pt-4 border-t border-slate-700/50">
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                <AlertCircle className="h-3 w-3" />
+                <p>Restricted access. Authorized personnel only.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

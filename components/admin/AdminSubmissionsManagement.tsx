@@ -115,9 +115,9 @@ export function AdminSubmissionsManagement() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
       {/* Submissions List */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white">Pending Reviews</h2>
           <p className="text-sm text-slate-400 mt-1">
@@ -165,7 +165,7 @@ export function AdminSubmissionsManagement() {
       </div>
 
       {/* Review Panel */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white">Review Submission</h2>
           <p className="text-sm text-slate-400 mt-1">

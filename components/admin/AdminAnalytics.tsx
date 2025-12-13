@@ -38,13 +38,32 @@ export function AdminAnalytics() {
 
   const fetchAnalytics = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/admin/analytics');
       const result = await response.json();
       if (result.success) {
         setData(result.data);
+      } else {
+        console.error('Failed to fetch analytics:', result.error);
+        setData({
+          totalUsers: 0,
+          totalPayments: 0,
+          totalRevenue: 0,
+          pendingSubmissions: 0,
+          approvedSubmissions: 0,
+          activeUsers: 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setData({
+        totalUsers: 0,
+        totalPayments: 0,
+        totalRevenue: 0,
+        pendingSubmissions: 0,
+        approvedSubmissions: 0,
+        activeUsers: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -109,9 +128,9 @@ export function AdminAnalytics() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Additional Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

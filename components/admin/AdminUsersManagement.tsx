@@ -26,14 +26,23 @@ export function AdminUsersManagement() {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       const response = await fetch('/api/admin/users');
       const result = await response.json();
       if (result.success) {
         setUsers(result.users || []);
+        if (!result.users || result.users.length === 0) {
+          console.warn('No users found in response');
+        }
+      } else {
+        console.error('Failed to fetch users:', result.error);
+        toast.error(result.error || 'Failed to load users');
+        setUsers([]);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error('Failed to load users');
+      toast.error('Failed to load users. Please check your connection.');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -102,9 +111,9 @@ export function AdminUsersManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,7 +166,7 @@ export function AdminUsersManagement() {
       </div>
 
       {/* Search and Users Table */}
-      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6 md:p-8 shadow-xl">
         <div className="mb-6">
           <h2 className="text-xl font-bold text-white mb-4">User Management</h2>
           <div className="relative">
