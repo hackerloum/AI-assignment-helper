@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { 
   Users, 
   DollarSign, 
@@ -50,6 +50,7 @@ export function AdminDashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -339,6 +340,7 @@ export function AdminDashboard() {
                 return (
                   <motion.button
                     key={tab.id}
+                    ref={(el) => (tabRefs.current[tab.id] = el)}
                     onClick={() => handleTabChange(tab.id)}
                     type="button"
                     className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium z-10 ${
@@ -356,20 +358,9 @@ export function AdminDashboard() {
               })}
             </div>
             {/* Sliding indicator */}
-            <motion.div
-              layoutId="activeTabIndicator"
-              className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10"
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 30,
-                mass: 0.5
-              }}
-              style={{
-                width: `${100 / tabs.length}%`,
-                left: `${(tabs.findIndex(t => t.id === activeTab) / tabs.length) * 100}%`,
-              }}
-            />
+            {tabRefs.current[activeTab] && (
+              <SlidingIndicator activeTabId={activeTab} tabRefs={tabRefs.current} />
+            )}
           </div>
         </div>
 
