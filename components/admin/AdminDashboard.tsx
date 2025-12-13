@@ -19,7 +19,11 @@ import {
   Activity,
   FileText as FileTextIcon,
   Download,
-  Bell
+  Bell,
+  FileCheck,
+  Heart,
+  Settings,
+  LayoutTemplate
 } from 'lucide-react';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminUsersManagement } from './AdminUsersManagement';
@@ -27,6 +31,11 @@ import { AdminPaymentsManagement } from './AdminPaymentsManagement';
 import { AdminSubmissionsManagement } from './AdminSubmissionsManagement';
 import { AdminSettings } from './AdminSettings';
 import { AdminActivityLogs } from './AdminActivityLogs';
+import { AdminTemplatesManagement } from './AdminTemplatesManagement';
+import { AdminReportsExport } from './AdminReportsExport';
+import { AdminAnnouncements } from './AdminAnnouncements';
+import { AdminSystemHealth } from './AdminSystemHealth';
+import { AdminContentManagement } from './AdminContentManagement';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
@@ -176,7 +185,12 @@ export function AdminDashboard() {
     { id: 'users', label: 'Users', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'submissions', label: 'Submissions', icon: FileText },
+    { id: 'content', label: 'Content', icon: FileCheck },
+    { id: 'templates', label: 'Templates', icon: LayoutTemplate },
+    { id: 'reports', label: 'Reports', icon: Download },
+    { id: 'announcements', label: 'Announcements', icon: Bell },
     { id: 'activity', label: 'Activity Logs', icon: Activity },
+    { id: 'health', label: 'System Health', icon: Heart },
     { id: 'settings', label: 'Settings', icon: Shield },
   ];
 
@@ -361,7 +375,12 @@ export function AdminDashboard() {
             {activeTab === 'users' && <AdminUsersManagement />}
             {activeTab === 'payments' && <AdminPaymentsManagement />}
             {activeTab === 'submissions' && <AdminSubmissionsManagement />}
+            {activeTab === 'content' && <AdminContentManagement />}
+            {activeTab === 'templates' && <AdminTemplatesManagement />}
+            {activeTab === 'reports' && <AdminReportsExport />}
+            {activeTab === 'announcements' && <AdminAnnouncements />}
             {activeTab === 'activity' && <AdminActivityLogs />}
+            {activeTab === 'health' && <AdminSystemHealth />}
             {activeTab === 'settings' && <AdminSettings />}
           </motion.div>
         </div>
