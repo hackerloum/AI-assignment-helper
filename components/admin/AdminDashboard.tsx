@@ -394,17 +394,35 @@ export function AdminDashboard() {
         {/* Tab Navigation */}
         <div className="bg-dashboard-surface/50 border-b border-dashboard-border px-4 md:px-6 py-4">
           <div className="relative">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <div 
+              className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'rgba(245, 158, 11, 0.3) transparent',
+              }}
+            >
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <motion.button
                     key={tab.id}
-                    ref={(el) => { tabRefs.current[tab.id] = el; }}
+                    ref={(el) => { 
+                      tabRefs.current[tab.id] = el;
+                      // Auto-scroll to active tab when it changes
+                      if (isActive && el) {
+                        setTimeout(() => {
+                          el.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'nearest',
+                            inline: 'center'
+                          });
+                        }, 100);
+                      }
+                    }}
                     onClick={() => handleTabChange(tab.id)}
                     type="button"
-                    className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium z-10 ${
+                    className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium z-10 flex-shrink-0 ${
                       isActive
                         ? 'text-amber-400'
                         : 'text-slate-400 hover:text-white'
@@ -412,7 +430,7 @@ export function AdminDashboard() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <Icon className={`w-5 h-5 relative z-10 flex-shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
                     <span className="text-sm font-semibold relative z-10">{tab.label}</span>
                   </motion.button>
                 );
