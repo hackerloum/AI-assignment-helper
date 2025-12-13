@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
 
-    const { data: submissions, error } = await supabase
+    // Use admin client to fetch submissions (bypasses RLS)
+    const { data: submissions, error } = await adminClient
       .from('assignment_submissions')
       .select('*')
       .in('status', ['pending', 'under_review'])
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching pending submissions:', error);
       return NextResponse.json(
-        { error: "Failed to fetch submissions" },
+        { error: "Failed to fetch submissions", details: error.message },
         { status: 500 }
       );
     }
