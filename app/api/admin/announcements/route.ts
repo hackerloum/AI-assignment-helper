@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     if (body.target_audience === 'all') {
       targetUserIds = allUsers?.users.map(u => u.id) || [];
     } else if (body.target_audience === 'students') {
-      const { data: roles } = await adminClient.from('user_roles').select('user_id');
+      const { data: roles } = await adminClient.from('user_roles').select('user_id, role');
       const adminIds = new Set(roles?.filter(r => r.role === 'admin' || r.role === 'moderator').map(r => r.user_id) || []);
       targetUserIds = allUsers?.users.filter(u => !adminIds.has(u.id)).map(u => u.id) || [];
     } else {
