@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { reportId: string } }
+  { params }: { params: Promise<{ reportId: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -14,6 +14,7 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('start');
     const endDate = searchParams.get('end');
+    const { reportId } = await params;
     
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,7 +52,6 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 });
     }
 
-    const reportId = params.reportId;
     let csv = '';
 
     switch (reportId) {
