@@ -42,6 +42,50 @@ import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
+// Sliding indicator component
+function SlidingIndicator({ 
+  activeTabId, 
+  tabRefs 
+}: { 
+  activeTabId: string; 
+  tabRefs: { [key: string]: HTMLButtonElement | null } 
+}) {
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    const activeTab = tabRefs[activeTabId];
+    if (activeTab) {
+      const container = activeTab.parentElement;
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const tabRect = activeTab.getBoundingClientRect();
+        setIndicatorStyle({
+          left: tabRect.left - containerRect.left,
+          width: tabRect.width,
+        });
+      }
+    }
+  }, [activeTabId, tabRefs]);
+
+  return (
+    <motion.div
+      layoutId="activeTabIndicator"
+      className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 pointer-events-none"
+      initial={false}
+      animate={{
+        left: indicatorStyle.left,
+        width: indicatorStyle.width,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 300,
+        damping: 30,
+        mass: 0.5
+      }}
+    />
+  );
+}
+
 export function AdminDashboard() {
   const { user } = useUser();
   const router = useRouter();
