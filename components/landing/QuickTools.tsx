@@ -92,7 +92,7 @@ export function QuickTools() {
             <span className="text-blue-600">when you need it</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-            Get professional assignments done quickly, whether you're running late or just want to save time. 
+            Get professional assignments done quickly, whether you&apos;re running late or just want to save time. 
             Our Assignment Writer delivers results fast. Plus, explore other tools that make student life easier.
           </p>
         </motion.div>

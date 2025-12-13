@@ -54,7 +54,7 @@ export function HeroSection() {
               <span className="text-white">Running Late on Your Assignment?</span>
               <br />
               <span className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 bg-clip-text text-transparent">
-                We've Got Your Back
+                We&apos;ve Got Your Back
               </span>
             </h1>
 
