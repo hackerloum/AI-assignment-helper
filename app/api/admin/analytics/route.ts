@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total users from auth.users
-    const { data: authUsers, error: authError } = await adminClient.auth.admin.listUsers();
+    const { data: authUsers, error: listUsersError } = await adminClient.auth.admin.listUsers();
     const totalUsers = authUsers?.users.length || 0;
 
     // Get total payments and revenue
