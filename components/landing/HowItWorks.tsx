@@ -9,7 +9,7 @@ export function HowItWorks() {
       number: "01",
       icon: UserPlus,
       title: "Sign Up & Pay Registration Fee",
-      description: "Create your account and pay a one-time 3,000 TZS registration fee to access the dashboard. No recurring charges—just one-time access fee.",
+      description: "Create your account and pay a one-time 3,000 TZS registration fee to access the dashboard. No recurring charges, just one-time access fee.",
       color: "blue"
     },
     {
@@ -84,7 +84,7 @@ export function HowItWorks() {
             <span className="text-blue-600">4 simple steps</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-            From signup to success—here&apos;s how AI Assignment Helper makes your academic life easier.
+            From signup to success, here&apos;s how AI Assignment Helper makes your academic life easier.
           </p>
         </motion.div>
 

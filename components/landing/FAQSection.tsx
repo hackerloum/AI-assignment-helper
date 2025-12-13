@@ -30,7 +30,7 @@ export function FAQSection() {
     },
     {
       question: 'Do you offer refunds?',
-      answer: 'Yes, we offer a 100% satisfaction guarantee. If you&apos;re not happy with the results within 24 hours of purchase, contact our support team for a full refund—no questions asked.'
+      answer: 'Yes, we offer a 100% satisfaction guarantee. If you&apos;re not happy with the results within 24 hours of purchase, contact our support team for a full refund, no questions asked.'
     },
     {
       question: 'How accurate is the APA referencing?',
@@ -38,7 +38,7 @@ export function FAQSection() {
     },
     {
       question: 'Can multiple people use one account?',
-      answer: 'Each account is for individual use only. Account sharing violates our terms of service and may result in suspension. We offer student discounts for group purchases—contact us for details.'
+      answer: 'Each account is for individual use only. Account sharing violates our terms of service and may result in suspension. We offer student discounts for group purchases, contact us for details.'
     },
     {
       question: 'What languages do you support?',

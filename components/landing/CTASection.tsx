@@ -45,41 +45,41 @@ export function CTASection() {
           >
             <Sparkles className="w-4 h-4 text-white" />
             <span className="text-sm text-white font-medium">
-              Join 10,000+ Students Today
+              Trusted by 10,000+ Students
             </span>
           </motion.div>
 
           {/* Heading */}
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-            Ready to ace your next assignment?
+            Get your assignment done fast
           </h2>
           
           <p className="text-xl md:text-2xl text-white/90 mb-12 leading-relaxed max-w-3xl mx-auto">
-            Use tools without signing up, or create an account with a one-time 3,000 TZS registration fee. 
-            Then subscribe for unlimited access or use pay-per-use pricing.
+            Create professional assignments in minutes, even with tight deadlines. Our AI Assignment Writer delivers results fast. 
+            Join thousands of students who get their assignments done quickly.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <motion.a
-              href="#quick-tools"
-              className="group px-10 py-5 bg-white hover:bg-slate-100 text-blue-600 font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-2xl text-lg"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Try Tools Now (No Signup)
-              <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-            </motion.a>
-            
             <Link href="/auth/signup">
-              <motion.button
-                className="px-10 py-5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border-2 border-white/30 backdrop-blur-sm transition-all duration-300 text-lg"
+              <motion.a
+                className="group px-10 py-5 bg-white hover:bg-slate-100 text-blue-600 font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-2xl text-lg"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Create Account
-              </motion.button>
+                Get My Assignment Done Now
+                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </motion.a>
             </Link>
+            
+            <motion.a
+              href="#quick-tools"
+              className="px-10 py-5 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border-2 border-white/30 backdrop-blur-sm transition-all duration-300 text-lg flex items-center justify-center"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              See How It Works
+            </motion.a>
           </div>
 
           {/* Trust indicators */}
@@ -106,7 +106,7 @@ export function CTASection() {
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clipRule="evenodd" />
               </svg>
-              <span className="font-semibold">Pay Per Use Available</span>
+              <span className="font-semibold">Works Anytime, Even at 2 AM</span>
             </div>
           </motion.div>
         </motion.div>

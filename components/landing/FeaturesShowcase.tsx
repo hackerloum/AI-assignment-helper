@@ -19,20 +19,20 @@ export function FeaturesShowcase() {
             <span className="text-sm font-semibold text-blue-700">Features</span>
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-navy-950 mb-6 leading-tight">
-            Everything you need to{' '}
-            <span className="text-blue-600">excel academically</span>
+            Fast tools for{' '}
+            <span className="text-blue-600">tight deadlines</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-            Five powerful AI tools designed specifically for college students. 
-            No more late nights struggling with assignments.
+            Get professional assignments done quickly, even when time is running out. Our tools work fast and deliver results. 
+            Start with Assignment Writer, then explore everything else.
           </p>
         </motion.div>
 
         {/* Bento Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 auto-rows-[minmax(280px,auto)]">
-          {/* Large Feature Card (spans 2x2) - AI Research Assistant */}
+          {/* Large Feature Card (spans 2x2) - Assignment Writer */}
           <motion.div
-            className="lg:col-span-2 lg:row-span-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-8 text-white relative overflow-hidden group cursor-pointer"
+            className="lg:col-span-2 lg:row-span-2 bg-gradient-to-br from-amber-500 to-orange-500 rounded-3xl p-8 text-white relative overflow-hidden group cursor-pointer"
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.02 }}
@@ -41,10 +41,10 @@ export function FeaturesShowcase() {
           >
             <div className="relative z-10 h-full flex flex-col">
               <FileText className="w-14 h-14 mb-6 opacity-90" />
-              <h3 className="text-3xl lg:text-4xl font-bold mb-4">AI Research Assistant</h3>
+              <h3 className="text-3xl lg:text-4xl font-bold mb-4">AI Assignment Writer</h3>
               <p className="text-lg text-white/90 mb-8 max-w-md leading-relaxed">
-                Get comprehensive, academic-grade answers to any research question. 
-                Our AI understands context and provides well-structured responses with examples.
+                Create professional assignments in minutes, even late at night. Perfect formatting, citations, and structure. 
+                Works fast when you need it most.
               </p>
               
               {/* Mock interface */}

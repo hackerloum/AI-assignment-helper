@@ -39,37 +39,37 @@ export function HeroSection() {
           >
             {/* Announcement Badge */}
             <motion.div 
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full mb-6"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-6"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
             >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span className="text-sm text-amber-400 font-medium">
-                Trusted by 10,000+ Tanzanian Students
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm text-emerald-400 font-medium">
+                ✨ Your Late-Night Assignment Savior - Trusted by 10,000+ Students
               </span>
             </motion.div>
 
             {/* Main Headline */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1]">
-              <span className="text-white">Your AI-Powered</span>
+              <span className="text-white">Running Late on Your Assignment?</span>
               <br />
               <span className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 bg-clip-text text-transparent">
-                Academic Assistant
+                We've Got Your Back
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-2xl leading-relaxed">
-              Use our AI tools instantly—no signup required! Pay per use or get unlimited access 
-              with our one-time payment. Perfect for Tanzanian students.
+              Create professional assignments in minutes, even at 2 AM. Our AI Assignment Writer delivers perfect formatting, 
+              proper citations, and academic structure. Thousands of students use it when deadlines are tight.
             </p>
 
             {/* Trust Indicators */}
             <div className="flex flex-wrap gap-6 md:gap-8 mb-10">
               {[
-                { icon: CheckCircle, text: 'Plagiarism-free' },
-                { icon: Shield, text: 'Academic-grade' },
-                { icon: Zap, text: '24/7 Available' }
+                { icon: Zap, text: 'Ready in 10 Minutes' },
+                { icon: CheckCircle, text: 'No Stress, Just Results' },
+                { icon: Shield, text: 'Academic Quality Guaranteed' }
               ].map((item, index) => (
                 <motion.div 
                   key={index}
@@ -86,32 +86,32 @@ export function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <motion.a
-                href="#quick-tools"
-                className="group px-8 py-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Try Tools Now
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
               <Link href="/auth/signup">
-                <motion.button
-                  className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 backdrop-blur-sm transition-all duration-300"
+                <motion.a
+                  className="group px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30 text-lg"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Sign Up
-                </motion.button>
+                  Get My Assignment Done Now
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </motion.a>
               </Link>
+              <motion.a
+                href="#quick-tools"
+                className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl border border-white/10 backdrop-blur-sm transition-all duration-300 flex items-center justify-center"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                See How It Works
+              </motion.a>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-8 mt-16 pt-8 border-t border-white/10">
               {[
-                { number: '10K+', label: 'Active Students' },
-                { number: '50K+', label: 'Assignments Done' },
-                { number: '4.9★', label: 'Student Rating' }
+                { number: '10K+', label: 'Students Saved' },
+                { number: '50K+', label: 'Last-Minute Wins' },
+                { number: '4.9★', label: 'Students Love It' }
               ].map((stat, index) => (
                 <div key={index}>
                   <motion.div 
@@ -206,8 +206,8 @@ export function HeroSection() {
                     <CheckCircle className="w-6 h-6 text-emerald-400" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">Grammar Fixed</div>
-                    <div className="text-xs text-slate-400">3 seconds ago</div>
+                    <div className="text-sm font-semibold text-white">Assignment Saved!</div>
+                    <div className="text-xs text-slate-400">Just now</div>
                   </div>
                 </div>
               </motion.div>
@@ -222,8 +222,8 @@ export function HeroSection() {
                     <Sparkles className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">Research Done</div>
-                    <div className="text-xs text-slate-400">5 seconds ago</div>
+                    <div className="text-sm font-semibold text-white">Deadline Met!</div>
+                    <div className="text-xs text-slate-400">2 min ago</div>
                   </div>
                 </div>
               </motion.div>

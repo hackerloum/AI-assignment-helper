@@ -7,6 +7,16 @@ import Link from 'next/link'
 export function QuickTools() {
   const tools = [
     {
+      icon: FileText,
+      name: 'Assignment Writer',
+      description: 'Create professional assignments in minutes, even at midnight. Perfect formatting, citations, and structure. Get it done fast when deadlines are tight.',
+      href: '/assignment/new',
+      price: 'Premium',
+      requiresPayment: true,
+      color: 'from-amber-500 to-orange-500',
+      featured: true
+    },
+    {
       icon: Sparkles,
       name: 'Content Humanize',
       description: 'Transform AI-generated text into natural, human-written content',
@@ -78,12 +88,12 @@ export function QuickTools() {
             <span className="text-sm font-semibold text-blue-700">Quick Tools</span>
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-navy-950 mb-6 leading-tight">
-            Use our tools{' '}
-            <span className="text-blue-600">without signing up</span>
+            Fast assignment writing{' '}
+            <span className="text-blue-600">when you need it</span>
           </h2>
           <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
-            Try our AI tools instantly. No account needed. Pay per use with mobile money. 
-            Some tools are completely free!
+            Get professional assignments done quickly, whether you're running late or just want to save time. 
+            Our Assignment Writer delivers results fast. Plus, explore other tools that make student life easier.
           </p>
         </motion.div>
 
@@ -91,43 +101,68 @@ export function QuickTools() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tools.map((tool, index) => {
             const Icon = tool.icon
+            const isFeatured = 'featured' in tool && tool.featured === true
             return (
               <motion.div
                 key={index}
-                className="group relative"
+                className={`group relative ${isFeatured ? 'md:col-span-2 lg:col-span-3' : ''}`}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
                 <Link href={tool.href}>
-                  <div className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 h-full flex flex-col">
-                    {/* Icon & Price Badge */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center shadow-lg`}>
-                        <Icon className="w-7 h-7 text-white" />
+                  <div className={`bg-white rounded-2xl p-6 border-2 transition-all duration-300 h-full flex flex-col ${
+                    isFeatured 
+                      ? 'border-amber-300 hover:border-amber-400 hover:shadow-2xl bg-gradient-to-br from-amber-50 to-orange-50' 
+                      : 'border-slate-200 hover:border-blue-300 hover:shadow-xl'
+                  }`}>
+                    <div className={`flex ${isFeatured ? 'flex-row md:flex-row items-center' : 'flex-col'} gap-4`}>
+                      {/* Icon & Price Badge */}
+                      <div className={`flex items-start ${isFeatured ? 'flex-row' : 'flex-col'} gap-4 ${isFeatured ? 'flex-shrink-0' : ''}`}>
+                        <div className={`${isFeatured ? 'w-16 h-16' : 'w-14 h-14'} rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center shadow-lg`}>
+                          <Icon className={`${isFeatured ? 'w-9 h-9' : 'w-7 h-7'} text-white`} />
+                        </div>
+                        {!isFeatured && (
+                          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            tool.requiresPayment 
+                              ? 'bg-amber-100 text-amber-700' 
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {tool.price}
+                          </div>
+                        )}
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        tool.requiresPayment 
-                          ? 'bg-amber-100 text-amber-700' 
-                          : 'bg-emerald-100 text-emerald-700'
-                      }`}>
-                        {tool.price}
+
+                      {/* Content */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className={`${isFeatured ? 'text-2xl md:text-3xl' : 'text-xl'} font-bold text-navy-950`}>
+                            {tool.name}
+                            {isFeatured && (
+                              <span className="ml-3 px-3 py-1 bg-amber-500 text-white text-sm font-semibold rounded-full">
+                                Most Popular
+                              </span>
+                            )}
+                          </h3>
+                          {isFeatured && (
+                            <div className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
+                              {tool.price}
+                            </div>
+                          )}
+                        </div>
+                        <p className={`${isFeatured ? 'text-base md:text-lg' : 'text-sm'} text-slate-600 leading-relaxed mb-4`}>
+                          {tool.description}
+                        </p>
+
+                        {/* CTA */}
+                        <div className={`flex items-center gap-2 ${isFeatured ? 'text-amber-600' : 'text-blue-600'} font-semibold ${isFeatured ? 'text-base' : 'text-sm'} group-hover:gap-3 transition-all`}>
+                          <span>{isFeatured ? 'Save My Assignment Now' : 'Try Now'}</span>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Content */}
-                    <h3 className="text-xl font-bold text-navy-950 mb-2">{tool.name}</h3>
-                    <p className="text-slate-600 text-sm leading-relaxed mb-4 flex-1">
-                      {tool.description}
-                    </p>
-
-                    {/* CTA */}
-                    <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm group-hover:gap-3 transition-all">
-                      <span>Try Now</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
                     </div>
                   </div>
                 </Link>
@@ -151,14 +186,14 @@ export function QuickTools() {
             <div>
               <h4 className="font-bold text-navy-950 mb-2">How It Works</h4>
               <p className="text-slate-700 text-sm leading-relaxed mb-3">
-                Use any tool without creating an account. For paid tools, you&apos;ll see a preview of the result, 
-                but it will be blurred until you complete payment. Free tools work immediately with full access.
+                Simple and fast: sign up once, then create assignments in minutes. No complicated process, no waiting. 
+                Get professional results quickly when you need them.
               </p>
               <ul className="text-sm text-slate-600 space-y-1">
-                <li>✓ No signup required</li>
-                <li>✓ Pay per use with mobile money</li>
-                <li>✓ Instant results after payment</li>
-                <li>✓ Some tools are completely free</li>
+                <li>✓ Works even at 2 AM</li>
+                <li>✓ Ready in 10 minutes or less</li>
+                <li>✓ Professional quality guaranteed</li>
+                <li>✓ Thousands of students use it</li>
               </ul>
             </div>
           </div>
