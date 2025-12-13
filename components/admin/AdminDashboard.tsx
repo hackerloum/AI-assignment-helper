@@ -52,10 +52,10 @@ function SlidingIndicator({
 }) {
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
-  useEffect(() => {
+  const updateIndicator = () => {
     const activeTab = tabRefs[activeTabId];
     if (activeTab) {
-      const container = activeTab.parentElement;
+      const container = activeTab.closest('.relative');
       if (container) {
         const containerRect = container.getBoundingClientRect();
         const tabRect = activeTab.getBoundingClientRect();
@@ -65,22 +65,39 @@ function SlidingIndicator({
         });
       }
     }
+  };
+
+  useEffect(() => {
+    updateIndicator();
+    
+    // Update on window resize
+    window.addEventListener('resize', updateIndicator);
+    return () => window.removeEventListener('resize', updateIndicator);
+  }, [activeTabId]);
+
+  // Update when tabs are rendered (after a small delay to ensure DOM is ready)
+  useEffect(() => {
+    const timer = setTimeout(updateIndicator, 0);
+    return () => clearTimeout(timer);
   }, [activeTabId, tabRefs]);
 
   return (
     <motion.div
       layoutId="activeTabIndicator"
-      className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 pointer-events-none"
+      className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 pointer-events-none z-0"
       initial={false}
       animate={{
-        left: indicatorStyle.left,
+        x: indicatorStyle.left,
         width: indicatorStyle.width,
       }}
       transition={{
         type: "spring",
-        stiffness: 300,
-        damping: 30,
+        stiffness: 350,
+        damping: 35,
         mass: 0.5
+      }}
+      style={{
+        left: 0,
       }}
     />
   );
