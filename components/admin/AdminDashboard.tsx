@@ -22,6 +22,7 @@ import { AdminSubmissionsManagement } from './AdminSubmissionsManagement';
 import { AdminSettings } from './AdminSettings';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
+import { formatCurrency } from '@/lib/utils';
 
 export function AdminDashboard() {
   const { user } = useUser();
@@ -119,7 +120,7 @@ export function AdminDashboard() {
     },
     {
       name: 'Total Revenue',
-      value: `$${((analytics.totalRevenue || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: formatCurrency(analytics.totalRevenue || 0),
       change: `${analytics.totalPayments || 0} payments`,
       trend: 'up' as const,
       icon: DollarSign,

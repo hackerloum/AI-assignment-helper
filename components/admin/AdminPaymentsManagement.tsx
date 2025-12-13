@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { DollarSign, CheckCircle2, XCircle, Clock, CreditCard, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { formatCurrency } from '@/lib/utils';
 
 interface Payment {
   id: string;
@@ -109,13 +110,13 @@ export function AdminPaymentsManagement() {
   const completedPayments = payments.filter(
     (p) => p.payment_status === 'completed' || p.payment_status === 'success'
   );
-  const totalRevenue = completedPayments.reduce((sum, p) => sum + (p.amount / 100), 0);
+  const totalRevenue = completedPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const pendingPayments = payments.filter((p) => p.payment_status === 'pending').length;
 
   const stats = [
     {
       name: 'Total Revenue',
-      value: `$${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: formatCurrency(totalRevenue),
       icon: DollarSign,
       color: 'from-emerald-500 to-teal-500',
       textColor: 'text-emerald-400',
@@ -225,10 +226,7 @@ export function AdminPaymentsManagement() {
                     </td>
                     <td className="py-4 px-4">
                       <span className="text-white font-semibold">
-                        ${((payment.amount || 0) / 100).toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        {formatCurrency(payment.amount || 0)}
                       </span>
                     </td>
                     <td className="py-4 px-4">

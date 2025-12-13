@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { formatCurrency } from '@/lib/utils';
 
 interface AnalyticsData {
   totalUsers: number;
@@ -150,7 +151,7 @@ export function AdminAnalytics() {
     },
     {
       title: 'View Payments',
-      description: `$${((data.totalRevenue || 0) / 100).toLocaleString()} revenue`,
+      description: `${formatCurrency(data.totalRevenue || 0)} revenue`,
       icon: CreditCard,
       color: 'from-emerald-500 to-teal-500',
       textColor: 'text-emerald-400',
