@@ -331,35 +331,45 @@ export function AdminDashboard() {
       <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl shadow-xl overflow-hidden">
         {/* Tab Navigation */}
         <div className="bg-dashboard-surface/50 border-b border-dashboard-border px-4 md:px-6 py-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <motion.button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id)}
-                  type="button"
-                  className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium ${
-                    isActive
-                      ? 'text-amber-400'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-amber-500/20 rounded-xl border border-amber-500/40"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
-                  <span className="text-sm font-semibold relative z-10">{tab.label}</span>
-                </motion.button>
-              );
-            })}
+          <div className="relative">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <motion.button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    type="button"
+                    className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium z-10 ${
+                      isActive
+                        ? 'text-amber-400'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Icon className={`w-5 h-5 relative z-10 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <span className="text-sm font-semibold relative z-10">{tab.label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+            {/* Sliding indicator */}
+            <motion.div
+              layoutId="activeTabIndicator"
+              className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10"
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+                mass: 0.5
+              }}
+              style={{
+                width: `${100 / tabs.length}%`,
+                left: `${(tabs.findIndex(t => t.id === activeTab) / tabs.length) * 100}%`,
+              }}
+            />
           </div>
         </div>
 
