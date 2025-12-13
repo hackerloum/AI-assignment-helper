@@ -2,7 +2,8 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { 
   LayoutDashboard, 
   Users, 
@@ -65,12 +66,32 @@ const navigation = [
 export function AdminSidebar({ open, onToggle }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+  const [currentTab, setCurrentTab] = useState('overview');
+
+  useEffect(() => {
+    const tab = searchParams?.get('tab') || 'overview';
+    setCurrentTab(tab);
+  }, [searchParams]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success('Logged out successfully');
     router.push('/cp/login');
+  };
+  
+  const isItemActive = (item: any) => {
+    // For Overview and Analytics, check if no tab (they're both part of overview)
+    if (item.name === 'Overview' || item.name === 'Analytics') {
+      return !searchParams?.has('tab') || currentTab === 'overview';
+    }
+    // For items with tab parameter
+    if (item.href.includes('tab=')) {
+      const tabParam = item.href.split('tab=')[1]?.split('&')[0];
+      return currentTab === tabParam;
+    }
+    return false;
   };
 
   return (
@@ -87,15 +108,15 @@ export function AdminSidebar({ open, onToggle }: AdminSidebarProps) {
           {/* Logo & Toggle */}
           <div className="flex items-center justify-between p-4 border-b border-dashboard-border">
             {open ? (
-              <Link href="/cp" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-rose-500 rounded-lg flex items-center justify-center">
+              <Link href="/cp" className="flex items-center gap-3 group">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:shadow-red-500/30 transition-shadow">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-bold text-white text-lg">Control Panel</span>
+                <span className="font-bold text-white text-lg tracking-tight">Control Panel</span>
               </Link>
             ) : (
-              <Link href="/cp" className="flex items-center justify-center w-full">
-                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-rose-500 rounded-lg flex items-center justify-center">
+              <Link href="/cp" className="flex items-center justify-center w-full group">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-rose-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/20 group-hover:shadow-red-500/30 transition-shadow">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
               </Link>
@@ -104,20 +125,21 @@ export function AdminSidebar({ open, onToggle }: AdminSidebarProps) {
             {open && (
               <button
                 onClick={onToggle}
-                className="p-1.5 hover:bg-white/5 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors group"
+                aria-label="Collapse sidebar"
               >
-                <ChevronLeft className="w-5 h-5 text-slate-400" />
+                <ChevronLeft className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
               </button>
             )}
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav className="flex-1 overflow-y-auto p-3 space-y-1.5 scrollbar-hide">
             {navigation.map((item) => (
               <NavItem
                 key={item.href}
                 item={item}
-                isActive={pathname === item.href || (item.href === '/cp' && pathname === '/cp')}
+                isActive={isItemActive(item)}
                 collapsed={!open}
               />
             ))}
@@ -127,12 +149,12 @@ export function AdminSidebar({ open, onToggle }: AdminSidebarProps) {
           <div className="p-4 border-t border-dashboard-border">
             <button
               onClick={handleLogout}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors ${
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all group ${
                 !open && 'justify-center'
               }`}
             >
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              {open && <span className="text-sm font-medium">Logout</span>}
+              <LogOut className="w-5 h-5 flex-shrink-0 transition-transform group-hover:-translate-x-1" />
+              {open && <span className="text-sm font-semibold">Logout</span>}
             </button>
           </div>
         </div>
@@ -164,33 +186,38 @@ function NavItem({ item, isActive, collapsed }: NavItemProps) {
   return (
     <Link href={item.href}>
       <motion.div
-        className={`flex items-center gap-3 py-2 rounded-lg transition-colors relative group ${
+        className={`flex items-center gap-3 py-3 px-3 rounded-xl transition-all relative group ${
           isActive
-            ? 'bg-sidebar-item-active text-amber-400 pl-4 pr-3'
-            : 'text-slate-400 hover:bg-sidebar-item-hover hover:text-white px-3'
-        } ${collapsed && 'justify-center px-3'}`}
-        whileHover={{ scale: 1.02 }}
+            ? 'bg-amber-500/20 text-amber-400 shadow-lg shadow-amber-500/5'
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+        } ${collapsed && 'justify-center'}`}
+        whileHover={{ scale: collapsed ? 1 : 1.02, x: collapsed ? 0 : 2 }}
         whileTap={{ scale: 0.98 }}
       >
-        {/* Active indicator */}
+        {/* Active indicator - left border */}
         {isActive && (
           <motion.div
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-amber-500 rounded-r-full"
+            className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500 rounded-r-full"
             layoutId="activeIndicator"
+            initial={false}
           />
         )}
-        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-amber-400' : item.color}`} />
         
+        {/* Icon */}
+        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'} transition-colors`} />
+        
+        {/* Label */}
         {!collapsed && (
-          <span className={`text-sm font-medium flex-1 ${isActive ? 'text-amber-400' : ''}`}>
+          <span className={`text-sm font-semibold flex-1 transition-colors ${isActive ? 'text-amber-400' : 'text-slate-400 group-hover:text-white'}`}>
             {item.name}
           </span>
         )}
 
         {/* Tooltip for collapsed state */}
         {collapsed && (
-          <div className="absolute left-full ml-2 px-3 py-2 bg-dashboard-elevated border border-dashboard-border rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-            <span className="text-sm text-white">{item.name}</span>
+          <div className="absolute left-full ml-3 px-3 py-2 bg-dashboard-elevated border border-dashboard-border rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-xl">
+            <span className="text-sm text-white font-medium">{item.name}</span>
+            <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-t-transparent border-r-4 border-r-dashboard-border border-b-4 border-b-transparent"></div>
           </div>
         )}
       </motion.div>
