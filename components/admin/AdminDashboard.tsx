@@ -15,13 +15,18 @@ import {
   Zap,
   ArrowRight,
   LogOut,
-  User
+  User,
+  Activity,
+  FileText as FileTextIcon,
+  Download,
+  Bell
 } from 'lucide-react';
 import { AdminAnalytics } from './AdminAnalytics';
 import { AdminUsersManagement } from './AdminUsersManagement';
 import { AdminPaymentsManagement } from './AdminPaymentsManagement';
 import { AdminSubmissionsManagement } from './AdminSubmissionsManagement';
 import { AdminSettings } from './AdminSettings';
+import { AdminActivityLogs } from './AdminActivityLogs';
 import { useUser } from '@/hooks/useUser';
 import { createClient } from '@/lib/supabase/client';
 import { formatCurrency } from '@/lib/utils';
@@ -171,6 +176,7 @@ export function AdminDashboard() {
     { id: 'users', label: 'Users', icon: Users },
     { id: 'payments', label: 'Payments', icon: CreditCard },
     { id: 'submissions', label: 'Submissions', icon: FileText },
+    { id: 'activity', label: 'Activity Logs', icon: Activity },
     { id: 'settings', label: 'Settings', icon: Shield },
   ];
 
@@ -355,6 +361,7 @@ export function AdminDashboard() {
             {activeTab === 'users' && <AdminUsersManagement />}
             {activeTab === 'payments' && <AdminPaymentsManagement />}
             {activeTab === 'submissions' && <AdminSubmissionsManagement />}
+            {activeTab === 'activity' && <AdminActivityLogs />}
             {activeTab === 'settings' && <AdminSettings />}
           </motion.div>
         </div>
