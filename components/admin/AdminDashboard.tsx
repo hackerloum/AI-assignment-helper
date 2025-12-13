@@ -419,9 +419,7 @@ export function AdminDashboard() {
               })}
             </div>
             {/* Sliding indicator */}
-            {tabRefs.current[activeTab] && (
-              <SlidingIndicator activeTabId={activeTab} tabRefs={tabRefs.current} />
-            )}
+            <SlidingIndicator activeTabId={activeTab} tabRefs={tabRefs.current} />
           </div>
         </div>
 
