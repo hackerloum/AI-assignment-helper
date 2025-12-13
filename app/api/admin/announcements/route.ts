@@ -118,13 +118,31 @@ export async function POST(request: NextRequest) {
       targetUserIds = roles?.map(r => r.user_id) || [];
     }
 
-    // Create notifications for each target user
-    // Note: This would use your notification system
-    // For now, just return success
+    // Create notifications for each target user using the notification system
+    const notificationsCreated = [];
+    for (const userId of targetUserIds) {
+      const { data: notification, error: notifError } = await adminClient
+        .rpc('create_intelligent_notification', {
+          p_user_id: userId,
+          p_type: 'system_announcement',
+          p_title: body.title,
+          p_message: body.message,
+          p_priority: body.priority,
+          p_action_url: null,
+          p_action_label: null,
+          p_metadata: { created_by: user.id, target_audience: body.target_audience },
+          p_should_show_immediately: body.priority === 'urgent' || body.priority === 'high',
+        });
+
+      if (!notifError && notification) {
+        notificationsCreated.push(notification);
+      }
+    }
     
     return NextResponse.json({
       success: true,
-      message: `Announcement sent to ${targetUserIds.length} users`,
+      message: `Announcement sent to ${notificationsCreated.length} users`,
+      notificationsCreated: notificationsCreated.length,
     });
   } catch (error: any) {
     console.error('[Admin Announcements] Error:', error);
