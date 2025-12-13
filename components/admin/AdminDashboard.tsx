@@ -384,7 +384,7 @@ export function AdminDashboard() {
                 return (
                   <motion.button
                     key={tab.id}
-                    ref={(el) => (tabRefs.current[tab.id] = el)}
+                    ref={(el) => { tabRefs.current[tab.id] = el; }}
                     onClick={() => handleTabChange(tab.id)}
                     type="button"
                     className={`relative flex items-center gap-2.5 px-5 py-3 rounded-xl transition-all whitespace-nowrap cursor-pointer font-medium z-10 ${
