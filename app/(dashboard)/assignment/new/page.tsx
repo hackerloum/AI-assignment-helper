@@ -271,6 +271,7 @@ export default function NewAssignmentPage() {
               assignmentType={assignmentData.type!}
               content={assignmentData.content}
               references={assignmentData.references}
+              question={assignmentData.coverPageData?.task || assignmentData.coverPageData?.question || ''}
               onChange={(content, references) => {
                 setAssignmentData({ ...assignmentData, content, references })
               }}

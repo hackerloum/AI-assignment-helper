@@ -38,13 +38,15 @@ interface ContentEditorProps {
   assignmentType: 'individual' | 'group'
   content: string
   references: Reference[]
+  question?: string // The assignment question/task
   onChange: (content: string, references: Reference[]) => void
 }
 
 export function ContentEditor({ 
   assignmentType, 
   content, 
-  references, 
+  references,
+  question,
   onChange 
 }: ContentEditorProps) {
   const [sections, setSections] = useState<Section[]>([
@@ -97,12 +99,12 @@ export function ContentEditor({
     setLocalReferences(references)
   }, [references])
 
-  const handleGenerateContent = async (sectionId: string) => {
-    const section = sections.find(s => s.id === sectionId)
-    if (!section) return
-
-    if (!aiPrompt.trim()) {
-      toast.error('Please describe what you want to generate')
+  const handleGenerateFullAssignment = async () => {
+    // Use question if provided, otherwise use aiPrompt
+    const finalQuestion = question || aiPrompt.trim()
+    
+    if (!finalQuestion) {
+      toast.error('Please provide the assignment question or describe what you want to generate')
       return
     }
 
@@ -127,8 +129,8 @@ export function ContentEditor({
         },
         credentials: 'include',
         body: JSON.stringify({
-          section: section.title,
-          prompt: aiPrompt,
+          // No section - this will trigger full assignment generation
+          prompt: finalQuestion,
           assignment_type: assignmentType,
           wordCount: wordCount,
         }),
@@ -141,20 +143,72 @@ export function ContentEditor({
 
       const data = await response.json()
       
-      setSections(prev => prev.map(s => 
-        s.id === sectionId 
-          ? { ...s, content: data.content }
-          : s
-      ))
+      // Parse the generated content into sections
+      const generatedContent = data.content || ''
+      parseContentIntoSections(generatedContent)
       
       handleContentUpdate()
-      toast.success('Content generated successfully!')
+      toast.success('Full assignment generated successfully!')
       setAiPrompt('')
     } catch (error: any) {
       toast.error(error.message)
     } finally {
       setGenerating(false)
     }
+  }
+
+  const parseContentIntoSections = (content: string) => {
+    // Split content into paragraphs
+    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+    
+    if (paragraphs.length === 0) {
+      // If no paragraphs, put all content in body
+      setSections([
+        { id: '1', title: 'Introduction', content: '', order: 1 },
+        { id: '2', title: 'Body', content: content, order: 2 },
+        { id: '3', title: 'Conclusion', content: '', order: 3 },
+      ])
+      return
+    }
+
+    // Heuristic: First 1-2 paragraphs are introduction, last 1-2 are conclusion, rest is body
+    const totalParagraphs = paragraphs.length
+    let introEnd = Math.min(2, Math.floor(totalParagraphs * 0.2)) // First 20% or max 2 paragraphs
+    let conclusionStart = Math.max(totalParagraphs - 2, Math.floor(totalParagraphs * 0.8)) // Last 20% or max 2 paragraphs
+    
+    // Ensure we have at least one paragraph for each section
+    if (totalParagraphs <= 3) {
+      introEnd = 1
+      conclusionStart = totalParagraphs
+    } else if (totalParagraphs <= 5) {
+      introEnd = 1
+      conclusionStart = totalParagraphs - 1
+    }
+
+    const introParagraphs = paragraphs.slice(0, introEnd)
+    const bodyParagraphs = paragraphs.slice(introEnd, conclusionStart)
+    const conclusionParagraphs = paragraphs.slice(conclusionStart)
+
+    setSections([
+      { 
+        id: '1', 
+        title: 'Introduction', 
+        content: introParagraphs.join('\n\n'), 
+        order: 1 
+      },
+      { 
+        id: '2', 
+        title: 'Body', 
+        content: bodyParagraphs.join('\n\n'), 
+        order: 2 
+      },
+      { 
+        id: '3', 
+        title: 'Conclusion', 
+        content: conclusionParagraphs.join('\n\n'), 
+        order: 3 
+      },
+    ])
   }
 
   const addSection = () => {
@@ -305,26 +359,34 @@ export function ContentEditor({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => handleGenerateContent(section.id)}
-                    disabled={generating || !aiPrompt.trim()}
-                    className="px-4 py-2 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-400 text-sm font-medium rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {generating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-4 h-4" />
-                    )}
-                    Generate for {section.title}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-slate-500">
-                💡 Tip: Be specific about what you want. Include keywords, concepts, or specific points to cover.
-              </p>
+              {question && (
+                <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4">
+                  <p className="text-sm font-semibold text-indigo-400 mb-2">Assignment Question:</p>
+                  <p className="text-sm text-slate-300">{question}</p>
+                </div>
+              )}
+              <button
+                onClick={handleGenerateFullAssignment}
+                disabled={generating || (!question && !aiPrompt.trim())}
+                className="w-full px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/30"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Generating Full Assignment...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    Generate Full Assignment
+                  </>
+                )}
+              </button>
+              {!question && (
+                <p className="text-xs text-slate-500">
+                  💡 Tip: Enter the assignment question or describe what you want to write about. The AI will automatically structure it with introduction, body paragraphs, and conclusion.
+                </p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

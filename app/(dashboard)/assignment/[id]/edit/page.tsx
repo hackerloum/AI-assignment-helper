@@ -377,6 +377,7 @@ export default function EditAssignmentPage() {
                 assignmentType={assignmentData.type!}
                 content={assignmentData.content}
                 references={assignmentData.references}
+                question={assignmentData.coverPageData?.task || assignmentData.coverPageData?.question || ''}
                 onChange={(content, references) => {
                   setAssignmentData({ ...assignmentData, content, references })
                 }}

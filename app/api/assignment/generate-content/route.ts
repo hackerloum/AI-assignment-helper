@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
 
     // Generate content using AI
     // If section is provided, generate section-specific content ONLY
+    // If no section is provided, generate full assignment with introduction, body, and conclusion
     let content: string
     if (section) {
       // Determine section-specific instructions
@@ -207,8 +208,75 @@ CRITICAL RULES:
         }
       }
     } else {
-      // Legacy: use topic and wordCount
-      content = await generateEssay(finalPrompt, targetWordCount || 1000)
+      // Generate full assignment with introduction, body paragraphs, and conclusion
+      const fullAssignmentPrompt = `Write a complete academic assignment (${targetWordCount} words) that addresses the following question/task:
+
+"${finalPrompt}"
+
+STRUCTURE REQUIREMENTS:
+1. **Introduction Paragraph(s)**: 
+   - Start with a hook or attention-grabbing opening
+   - Provide background context on the topic
+   - Clearly state the main topic and its importance
+   - Present a thesis statement or main argument
+   - Preview what will be discussed
+
+2. **Body Paragraphs** (multiple paragraphs):
+   - Develop the main arguments and points
+   - Use clear topic sentences for each paragraph
+   - Provide evidence, examples, and explanations
+   - Use transitions between paragraphs
+   - Support the thesis statement
+   - Each paragraph should focus on a specific point or aspect
+
+3. **Conclusion Paragraph(s)**:
+   - Restate the thesis in different words
+   - Summarize the main points discussed
+   - Provide final thoughts or implications
+   - End with a strong closing statement
+
+CRITICAL FORMATTING RULES:
+- Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting
+- Use only paragraph breaks (double line breaks) to separate paragraphs
+- Write in a student-friendly, clear, and engaging style
+- Use simple language where possible, but maintain academic tone
+- Include examples and explanations to help understanding
+- Make it comprehensive and detailed - this is for a real assignment
+- Ensure the total word count is approximately ${targetWordCount} words
+- The assignment should flow naturally from introduction through body to conclusion`
+
+      const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content. Your writing should be:
+
+1. **Student-Friendly**: Clear, engaging, easy to understand, with explanations of complex concepts
+2. **Comprehensive**: Detailed and thorough, not superficial
+3. **Academic**: Professional tone, well-structured, properly formatted
+4. **Realistic**: Appropriate length and depth for actual student assignments
+
+CRITICAL RULES:
+- Do NOT use markdown formatting (no ##, **, or other markdown syntax)
+- Write plain text only with proper paragraph breaks (double line breaks between paragraphs)
+- Generate a COMPLETE assignment with introduction, body paragraphs, and conclusion
+- Make content detailed and comprehensive to look like a real assignment
+- Use ${targetWordCount} words as the target length
+- Structure the assignment naturally: introduction paragraphs first, then body paragraphs, then conclusion paragraphs
+- Each section should flow smoothly into the next`
+
+      // Call Gemini directly for full assignment generation
+      const rawContent = await callGemini(
+        fullAssignmentPrompt,
+        systemInstruction,
+        0.7,
+        Math.floor(targetWordCount * 2) // Allow more tokens for longer, detailed content
+      )
+      
+      // Strip markdown headers (double-check)
+      content = stripMarkdownHeaders(rawContent)
+      
+      // Ensure we have a complete assignment structure
+      // Remove any section headers that might have been added
+      content = content
+        .replace(/^#{1,6}\s+(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)\s*$/gmi, '')
+        .trim()
     }
 
     // Extract references from content (simple extraction - in production, use better method)
