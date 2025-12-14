@@ -52,7 +52,6 @@ async function callGemini(
         model: OPENAI_MODEL,
         input: fullPrompt,
         store: true,
-        temperature: temperature,
         max_output_tokens: maxTokens || MAX_TOKENS,
       }),
     });

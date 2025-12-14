@@ -34,7 +34,6 @@ interface OpenAIRequest {
   input: string;
   store?: boolean;
   max_output_tokens?: number;
-  temperature?: number;
 }
 
 interface OpenAIResponse {
@@ -74,7 +73,6 @@ export async function callGemini(
     model: model || MODEL_MAPPING.ASSIGNMENT, // Default to assignment model
     input: fullPrompt,
     store: true,
-    temperature: temperature,
     ...(maxOutputTokens && { max_output_tokens: maxOutputTokens }),
   };
 

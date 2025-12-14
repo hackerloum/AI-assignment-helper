@@ -78,7 +78,6 @@ const TOKEN_LIMITS = {
     "model": "gpt-5-mini",
     "input": "system instruction + user prompt",
     "store": true,
-    "temperature": 0.7,
     "max_output_tokens": 400
   }
   ```

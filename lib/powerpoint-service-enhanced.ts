@@ -111,7 +111,6 @@ Return ONLY valid JSON with exactly ${slideCount} slides in the slides array.`;
         model: OPENAI_MODEL,
         input: fullPrompt,
         store: true,
-        temperature: 0.7,
         max_output_tokens: MAX_TOKENS,
       }),
     });
