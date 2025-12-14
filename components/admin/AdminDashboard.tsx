@@ -52,39 +52,64 @@ function SlidingIndicator({
 }) {
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
-  const updateIndicator = () => {
+  const updateIndicator = useCallback(() => {
     const activeTab = tabRefs[activeTabId];
-    if (activeTab) {
-      const container = activeTab.closest('.relative');
-      if (container) {
-        const containerRect = container.getBoundingClientRect();
-        const tabRect = activeTab.getBoundingClientRect();
-        setIndicatorStyle({
-          left: tabRect.left - containerRect.left,
-          width: tabRect.width,
-        });
-      }
+    if (!activeTab) return;
+    
+    const relativeContainer = activeTab.closest('.relative') as HTMLElement;
+    
+    if (relativeContainer) {
+      // Use getBoundingClientRect() which accounts for scroll position
+      const tabRect = activeTab.getBoundingClientRect();
+      const relativeRect = relativeContainer.getBoundingClientRect();
+      
+      // Calculate position relative to the relative container
+      const left = tabRect.left - relativeRect.left;
+      const width = tabRect.width;
+      
+      setIndicatorStyle({ left, width });
     }
-  };
+  }, [activeTabId, tabRefs]);
 
   useEffect(() => {
-    updateIndicator();
+    // Initial update with a slight delay to ensure DOM is ready
+    const initialTimer = setTimeout(() => {
+      updateIndicator();
+    }, 0);
+    
+    // Find the scrollable container
+    const activeTab = tabRefs[activeTabId];
+    const scrollContainer = activeTab?.closest('.overflow-x-auto') as HTMLElement;
     
     // Update on window resize
-    window.addEventListener('resize', updateIndicator);
-    return () => window.removeEventListener('resize', updateIndicator);
-  }, [activeTabId]);
-
-  // Update when tabs are rendered (after a small delay to ensure DOM is ready)
-  useEffect(() => {
-    const timer = setTimeout(updateIndicator, 0);
-    return () => clearTimeout(timer);
-  }, [activeTabId, tabRefs]);
+    const handleResize = () => {
+      requestAnimationFrame(updateIndicator);
+    };
+    
+    // Update on scroll - this is critical for the indicator to move when tabs scroll
+    const handleScroll = () => {
+      requestAnimationFrame(updateIndicator);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    scrollContainer?.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Also update after tab change to catch any scroll animations
+    const updateTimer = setTimeout(() => {
+      requestAnimationFrame(updateIndicator);
+    }, 200);
+    
+    return () => {
+      clearTimeout(initialTimer);
+      clearTimeout(updateTimer);
+      window.removeEventListener('resize', handleResize);
+      scrollContainer?.removeEventListener('scroll', handleScroll);
+    };
+  }, [activeTabId, updateIndicator, tabRefs]);
 
   return (
     <motion.div
-      layoutId="activeTabIndicator"
-      className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 pointer-events-none z-0"
+      className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 z-0 pointer-events-none"
       initial={false}
       animate={{
         x: indicatorStyle.left,
