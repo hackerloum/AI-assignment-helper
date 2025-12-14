@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { generateAssignmentDocument } from '@/lib/utils/docx-generator'
 import { generateFromTemplate, getTemplatePath } from '@/lib/utils/docx-template-generator'
+import { deductCredits } from '@/lib/credits'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +64,67 @@ export async function POST(request: NextRequest) {
 
     if (error || !assignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
+    }
+
+    // Check if assignment was edited significantly (more than 30% content change)
+    // If so, require credits for download to prevent abuse
+    const requiresCredits = (assignment.content_changed_percentage || 0) > 30 || 
+                           (assignment.edit_count || 0) > 0
+    
+    if (requiresCredits) {
+      // Check if this is the first download after edit, or if it's been more than 24 hours
+      const lastDownload = assignment.last_downloaded_at 
+        ? new Date(assignment.last_downloaded_at)
+        : null
+      const now = new Date()
+      const hoursSinceLastDownload = lastDownload 
+        ? (now.getTime() - lastDownload.getTime()) / (1000 * 60 * 60)
+        : Infinity
+      
+      // Require credits if:
+      // 1. Content changed significantly (>30%)
+      // 2. OR it's been edited and this is not the first download
+      // 3. OR it's been less than 24 hours since last download (rate limiting)
+      const shouldChargeCredits = (assignment.content_changed_percentage || 0) > 30 ||
+                                 (assignment.download_count || 0) > 0 ||
+                                 hoursSinceLastDownload < 24
+      
+      if (shouldChargeCredits) {
+        const { CREDIT_COSTS } = await import('@/lib/constants')
+        const creditCost = CREDIT_COSTS.assignment_download
+        const creditResult = await deductCredits(user.id, 'essay', supabase, creditCost)
+        
+        if (!creditResult.success) {
+          return NextResponse.json(
+            { 
+              error: `Insufficient credits. Downloading edited assignments requires ${creditCost} credits. You have ${creditResult.remainingCredits} credits.`,
+              requiresCredits: true,
+              creditCost,
+              remainingCredits: creditResult.remainingCredits
+            },
+            { status: 402 }
+          )
+        }
+        
+        // Record download with credit charge
+        await supabase
+          .from('assignment_downloads')
+          .insert({
+            assignment_id: assignmentId,
+            user_id: user.id,
+            credits_charged: creditCost,
+            download_type: 'docx',
+          })
+        
+        // Update download count and timestamp
+        await supabase
+          .from('assignments_new')
+          .update({
+            download_count: (assignment.download_count || 0) + 1,
+            last_downloaded_at: new Date().toISOString(),
+          })
+          .eq('id', assignmentId)
+      }
     }
 
     // Try to use template-based generation if template is specified
@@ -168,6 +230,59 @@ export async function GET(request: NextRequest) {
 
     if (error || !assignment) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 })
+    }
+
+    // Check if assignment was edited significantly - require credits for download
+    const requiresCredits = (assignment.content_changed_percentage || 0) > 30 || 
+                           (assignment.edit_count || 0) > 0
+    
+    if (requiresCredits) {
+      const lastDownload = assignment.last_downloaded_at 
+        ? new Date(assignment.last_downloaded_at)
+        : null
+      const now = new Date()
+      const hoursSinceLastDownload = lastDownload 
+        ? (now.getTime() - lastDownload.getTime()) / (1000 * 60 * 60)
+        : Infinity
+      
+      const shouldChargeCredits = (assignment.content_changed_percentage || 0) > 30 ||
+                                 (assignment.download_count || 0) > 0 ||
+                                 hoursSinceLastDownload < 24
+      
+      if (shouldChargeCredits) {
+        const { CREDIT_COSTS } = await import('@/lib/constants')
+        const creditCost = CREDIT_COSTS.assignment_download
+        const creditResult = await deductCredits(user.id, 'essay', supabase, creditCost)
+        
+        if (!creditResult.success) {
+          return NextResponse.json(
+            { 
+              error: `Insufficient credits. Downloading edited assignments requires ${creditCost} credits. You have ${creditResult.remainingCredits} credits.`,
+              requiresCredits: true,
+              creditCost,
+              remainingCredits: creditResult.remainingCredits
+            },
+            { status: 402 }
+          )
+        }
+        
+        await supabase
+          .from('assignment_downloads')
+          .insert({
+            assignment_id: assignmentId,
+            user_id: user.id,
+            credits_charged: creditCost,
+            download_type: 'docx',
+          })
+        
+        await supabase
+          .from('assignments_new')
+          .update({
+            download_count: (assignment.download_count || 0) + 1,
+            last_downloaded_at: new Date().toISOString(),
+          })
+          .eq('id', assignmentId)
+      }
     }
 
     // Try to generate DOCX, fallback to text if it fails

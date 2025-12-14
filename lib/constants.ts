@@ -7,6 +7,8 @@ export const CREDIT_COSTS = {
   powerpoint: 20,
   plagiarism: 3,
   humanize: 6,
+  assignment_edit: 5, // Credits for significant content edits (>30% change)
+  assignment_download: 3, // Credits for downloading edited assignments
 } as const;
 
 export const FREE_CREDITS_ON_SIGNUP = 50;

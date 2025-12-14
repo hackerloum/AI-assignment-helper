@@ -200,10 +200,26 @@ export default function EditAssignmentPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to update assignment')
+        const errorData = await response.json()
+        
+        // Handle credit-related errors
+        if (errorData.requiresCredits || response.status === 402) {
+          toast.error(
+            errorData.error || 'Insufficient credits',
+            {
+              duration: 5000,
+              description: `You need ${errorData.creditCost || 5} credits but only have ${errorData.remainingCredits || 0} credits.`
+            }
+          )
+          return
+        }
+        
+        throw new Error(errorData.error || 'Failed to update assignment')
       }
 
+      const responseData = await response.json()
+      
+      // Check if credits were charged (would be in edit history)
       toast.success('Assignment updated successfully!')
       
       // Reload assignment data
@@ -339,14 +355,33 @@ export default function EditAssignmentPage() {
           )}
 
           {currentStep === 'content' && (
-            <ContentEditor
-              assignmentType={assignmentData.type!}
-              content={assignmentData.content}
-              references={assignmentData.references}
-              onChange={(content, references) => {
-                setAssignmentData({ ...assignmentData, content, references })
-              }}
-            />
+            <div className="space-y-4">
+              {/* Credit Warning */}
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-amber-500/20 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-amber-300 mb-1">
+                      Credit Charges for Significant Edits
+                    </h4>
+                    <p className="text-xs text-amber-200/80">
+                      If you change more than 30% of the content, <strong>5 credits will be charged</strong>. 
+                      Minor edits (cover page, formatting) are free. Downloading edited assignments costs <strong>3 credits</strong> per download.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <ContentEditor
+                assignmentType={assignmentData.type!}
+                content={assignmentData.content}
+                references={assignmentData.references}
+                onChange={(content, references) => {
+                  setAssignmentData({ ...assignmentData, content, references })
+                }}
+              />
+            </div>
           )}
 
           {currentStep === 'preview' && (
