@@ -89,7 +89,6 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[Upload API] Storage upload error:', {
         message: error.message,
-        statusCode: error.statusCode,
         error: error,
         bucket: 'submissions',
         fileName: fileName,
@@ -119,7 +118,7 @@ export async function POST(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: "Failed to upload file", details: error.message, errorCode: error.statusCode },
+        { error: "Failed to upload file", details: error.message },
         { status: 500 }
       );
     }
