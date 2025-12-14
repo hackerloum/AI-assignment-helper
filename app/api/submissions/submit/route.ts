@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,8 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If group submission, verify membership
-    // Note: We check if user created the group OR if they're a member
-    // This avoids RLS recursion issues
+    // Use admin client to bypass RLS and avoid recursion issues
     if (submissionType === 'group' && groupId) {
       // First check if user created the group (this doesn't query assignment_group_members)
       const { data: groupCheck } = await supabase
@@ -108,15 +108,15 @@ export async function POST(request: NextRequest) {
         .eq('id', groupId)
         .single();
 
-      // If user didn't create the group, check membership
-      // This query should work because users can see their own membership records
+      // If user didn't create the group, check membership using admin client to avoid RLS recursion
       if (!groupCheck || groupCheck.created_by !== user.id) {
-        const { data: memberCheck, error: memberError } = await supabase
+        const adminClient = createAdminClient();
+        const { data: memberCheck, error: memberError } = await adminClient
           .from('assignment_group_members')
           .select('id')
           .eq('group_id', groupId)
           .eq('user_id', user.id)
-          .maybeSingle(); // Use maybeSingle to avoid error if not found
+          .maybeSingle();
 
         if (memberError || !memberCheck) {
           console.error('[Submit API] Group membership check failed:', memberError);
