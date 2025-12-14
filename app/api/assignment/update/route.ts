@@ -185,18 +185,19 @@ export async function PATCH(request: NextRequest) {
       console.error('Error updating assignment:', updateError)
       console.error('Update data:', JSON.stringify(updateData, null, 2))
       
+      const error = updateError as any
       let errorMessage = 'Failed to update assignment'
-      if (updateError.code === '42703') {
+      if (error.code === '42703') {
         errorMessage = 'Database schema mismatch. Some fields may not exist.'
-      } else if (updateError.message) {
-        errorMessage = updateError.message
+      } else if (error.message) {
+        errorMessage = error.message
       }
       
       return NextResponse.json(
         { 
           error: errorMessage,
-          details: updateError.message,
-          code: updateError.code,
+          details: error.message,
+          code: error.code,
         },
         { status: 500 }
       )
@@ -207,27 +208,6 @@ export async function PATCH(request: NextRequest) {
       await supabase
         .from('assignment_edit_history')
         .insert(editHistoryData)
-    }
-
-    if (updateError) {
-      console.error('Error updating assignment:', updateError)
-      console.error('Update data:', JSON.stringify(updateData, null, 2))
-      
-      let errorMessage = 'Failed to update assignment'
-      if (updateError.code === '42703') {
-        errorMessage = 'Database schema mismatch. Some fields may not exist.'
-      } else if (updateError.message) {
-        errorMessage = updateError.message
-      }
-      
-      return NextResponse.json(
-        { 
-          error: errorMessage,
-          details: updateError.message,
-          code: updateError.code,
-        },
-        { status: 500 }
-      )
     }
 
     return NextResponse.json({ 
