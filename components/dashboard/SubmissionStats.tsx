@@ -41,7 +41,15 @@ export function SubmissionStats() {
 
   const fetchStats = async () => {
     try {
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch('/api/submissions/stats', {
+        headers: session?.access_token ? {
+          'Authorization': `Bearer ${session.access_token}`
+        } : undefined,
         credentials: 'include', // Ensure cookies are sent
       })
       const data = await response.json()

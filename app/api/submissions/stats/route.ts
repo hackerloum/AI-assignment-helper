@@ -1,31 +1,48 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Get access token from Authorization header (more reliable than cookies)
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
     
-    // Try getSession first (more reliable for API routes)
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Get cookies as fallback
+    const cookieStore = await cookies();
     
-    let user = session?.user ?? null;
-    
-    // Fallback to getUser if session didn't work
-    if (!user) {
-      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
-      user = userFromGetUser ?? null;
-      
-      if (authError) {
-        console.error('[Stats API] Auth error:', authError.message);
+    // Create Supabase client directly in API route
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              });
+            } catch {
+              // Cookie setting might fail in API routes, that's okay
+            }
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
       }
-    }
+    );
     
-    if (sessionError) {
-      console.error('[Stats API] Session error:', sessionError.message);
-    }
+    // Get authenticated user (will use the access token if provided)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined);
 
-    if (!user) {
-      console.error('[Stats API] No user found. Session:', !!session, 'Session error:', sessionError?.message);
+    if (authError || !user) {
+      console.error('[Stats API] Auth error:', authError?.message, '| Has token:', !!accessToken);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

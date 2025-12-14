@@ -66,11 +66,26 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
     setUploading(true);
 
     try {
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        alert('Session expired. Please refresh the page.');
+        setUploadedFile(null);
+        setUploading(false);
+        return;
+      }
+
       const formDataUpload = new FormData();
       formDataUpload.append('file', file);
 
       const response = await fetch('/api/submissions/upload', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
         body: formDataUpload,
         credentials: 'include', // Ensure cookies are sent
       });
@@ -136,9 +151,23 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
     setLoading(true);
 
     try {
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.access_token) {
+        alert('Session expired. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/submissions/submit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
         credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({
           submissionType,

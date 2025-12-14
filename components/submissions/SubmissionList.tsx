@@ -51,9 +51,17 @@ export function SubmissionList() {
         params.append('collegeName', collegeFilter);
       }
       
+      // Get session token for authentication
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const url = `/api/submissions/list${params.toString() ? '?' + params.toString() : ''}`;
       
       const response = await fetch(url, {
+        headers: session?.access_token ? {
+          'Authorization': `Bearer ${session.access_token}`
+        } : undefined,
         credentials: 'include', // Ensure cookies are sent
       });
       const data = await response.json();

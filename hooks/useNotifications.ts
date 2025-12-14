@@ -88,11 +88,15 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
         ...(priority && { priority }),
       })
 
+      // Get session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const response = await fetch(`/api/notifications?${params}`, {
-        credentials: 'include', // Ensure cookies are sent
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
         },
+        credentials: 'include', // Ensure cookies are sent
       })
       
       if (!response.ok) {
