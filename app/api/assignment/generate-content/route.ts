@@ -122,22 +122,32 @@ CRITICAL REQUIREMENTS:
 - Write in a student-friendly, clear, and engaging style
 - Use simple language where possible, but maintain academic tone
 - Include examples and explanations to help understanding
+- **PRIORITIZE TANZANIAN EXAMPLES**: Include relevant Tanzanian case studies, institutions, policies, organizations, or real-world examples when applicable
 - Make it comprehensive and detailed - this is for a real assignment
-- Write ONLY the ${section} section - do NOT include other sections`
+- Write ONLY the ${section} section - do NOT include other sections
+- When relevant, use Tanzanian context, institutions, or examples`
       
-      const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content. Your writing should be:
+      const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content for Tanzanian students. Your writing should be:
 
 1. **Student-Friendly**: Clear, engaging, easy to understand, with explanations of complex concepts
 2. **Comprehensive**: Detailed and thorough, not superficial
 3. **Academic**: Professional tone, well-structured, properly formatted
 4. **Realistic**: Appropriate length and depth for actual student assignments
+5. **Tanzanian Context-Focused**: Prioritize Tanzanian examples, case studies, institutions, and local context when relevant
+
+TANZANIAN CONTEXT EXPERTISE:
+- You have deep knowledge of Tanzanian institutions, policies, and context
+- You prioritize Tanzanian examples over generic international examples when relevant
+- You understand Tanzanian universities, government structure, local businesses, and NGOs
+- You can relate academic concepts to Tanzanian real-world situations
 
 CRITICAL RULES:
 - Do NOT use markdown formatting (no ##, **, or other markdown syntax)
 - Write plain text only with proper paragraph breaks
 - Write ONLY the requested section - do NOT write other sections
 - Make content detailed and comprehensive to look like a real assignment
-- Use ${targetWordCount} words as the target length`
+- Use ${targetWordCount} words as the target length
+- Include Tanzanian examples or context when relevant to the topic`
       
       // Call Gemini directly for section-specific content
       const rawContent = await callGemini(
@@ -215,9 +225,9 @@ CRITICAL RULES:
 
 STRUCTURE REQUIREMENTS:
 1. **Introduction Paragraph(s)**: 
-   - Start with a hook or attention-grabbing opening
-   - Provide background context on the topic
-   - Clearly state the main topic and its importance
+   - Start with a hook or attention-grabbing opening relevant to Tanzania
+   - Provide background context on the topic, preferably with Tanzanian context
+   - Clearly state the main topic and its importance, especially in the Tanzanian context
    - Present a thesis statement or main argument
    - Preview what will be discussed
 
@@ -225,15 +235,25 @@ STRUCTURE REQUIREMENTS:
    - Develop the main arguments and points
    - Use clear topic sentences for each paragraph
    - Provide evidence, examples, and explanations
+   - **PRIORITIZE TANZANIAN EXAMPLES**: Include relevant Tanzanian case studies, institutions, policies, organizations, or real-world examples
    - Use transitions between paragraphs
    - Support the thesis statement
    - Each paragraph should focus on a specific point or aspect
+   - Include concrete examples: Tanzanian universities, government institutions, local businesses, NGOs, policies, or case studies from Tanzania
+   - When discussing concepts, relate them to Tanzanian context where applicable
 
 3. **Conclusion Paragraph(s)**:
    - Restate the thesis in different words
    - Summarize the main points discussed
-   - Provide final thoughts or implications
+   - Provide final thoughts or implications, especially for Tanzania
    - End with a strong closing statement
+
+TANZANIAN CONTEXT REQUIREMENTS:
+- **Prioritize Tanzanian examples**: Use examples from Tanzanian institutions, policies, organizations, or case studies
+- **Relevant Tanzanian institutions**: Reference Tanzanian universities (UDSM, UDOM, SUA, etc.), government ministries, local businesses, NGOs, or Tanzanian policies when relevant
+- **Local context**: When discussing concepts, relate them to Tanzanian context, challenges, or opportunities
+- **Real-world examples**: Include specific, concrete examples from Tanzania rather than generic international examples
+- **Cultural relevance**: Consider Tanzanian cultural, social, and economic context when appropriate
 
 CRITICAL FORMATTING RULES:
 - Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting
@@ -243,14 +263,23 @@ CRITICAL FORMATTING RULES:
 - Include examples and explanations to help understanding
 - Make it comprehensive and detailed - this is for a real assignment
 - Ensure the total word count is approximately ${targetWordCount} words
-- The assignment should flow naturally from introduction through body to conclusion`
+- The assignment should flow naturally from introduction through body to conclusion
+- Include at least 2-3 concrete Tanzanian examples or case studies in the body paragraphs`
 
-      const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content. Your writing should be:
+      const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content for Tanzanian students. Your writing should be:
 
 1. **Student-Friendly**: Clear, engaging, easy to understand, with explanations of complex concepts
 2. **Comprehensive**: Detailed and thorough, not superficial
 3. **Academic**: Professional tone, well-structured, properly formatted
 4. **Realistic**: Appropriate length and depth for actual student assignments
+5. **Tanzanian Context-Focused**: Prioritize Tanzanian examples, case studies, institutions, and local context
+
+TANZANIAN CONTEXT EXPERTISE:
+- You have deep knowledge of Tanzanian institutions, policies, and context
+- You prioritize Tanzanian examples over generic international examples
+- You understand Tanzanian universities (UDSM, UDOM, SUA, MUHAS, etc.), government structure, local businesses, and NGOs
+- You can relate academic concepts to Tanzanian real-world situations
+- You include relevant Tanzanian case studies, policies, or examples when applicable
 
 CRITICAL RULES:
 - Do NOT use markdown formatting (no ##, **, or other markdown syntax)
@@ -259,14 +288,19 @@ CRITICAL RULES:
 - Make content detailed and comprehensive to look like a real assignment
 - Use ${targetWordCount} words as the target length
 - Structure the assignment naturally: introduction paragraphs first, then body paragraphs, then conclusion paragraphs
-- Each section should flow smoothly into the next`
+- Each section should flow smoothly into the next
+- **ALWAYS include Tanzanian examples, case studies, or context when relevant to the topic**
+- Include concrete, specific examples rather than vague generalizations
+- When the question relates to Tanzanian context, make it the primary focus`
 
       // Call Gemini directly for full assignment generation
+      // Using slightly higher temperature (0.75) for more creative and context-aware responses
+      // Increased token limit to allow for comprehensive content with examples
       const rawContent = await callGemini(
         fullAssignmentPrompt,
         systemInstruction,
-        0.7,
-        Math.floor(targetWordCount * 2) // Allow more tokens for longer, detailed content
+        0.75, // Slightly higher for better creativity while maintaining quality
+        Math.floor(targetWordCount * 2.5) // Allow more tokens for detailed content with examples
       )
       
       // Strip markdown headers (double-check)
