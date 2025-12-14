@@ -70,14 +70,19 @@ const TOKEN_LIMITS = {
 ```
 
 ### API Configuration
-- **Endpoint:** `https://api.openai.com/v1/responses`
+- **Endpoint:** `https://api.openai.com/v1/chat/completions`
 - **Authentication:** Bearer token with `OPENAI_API_KEY`
 - **Request Format:**
   ```json
   {
     "model": "gpt-5-mini",
-    "input": "system instruction + user prompt",
-    "store": true,
+    "messages": [
+      {
+        "role": "user",
+        "content": "system instruction + user prompt"
+      }
+    ],
+    "temperature": 0.7,
     "max_tokens": 400
   }
   ```
