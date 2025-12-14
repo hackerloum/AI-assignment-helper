@@ -5,20 +5,11 @@
 DROP POLICY IF EXISTS "Users can view group members" ON assignment_group_members;
 DROP POLICY IF EXISTS "Group leaders can add members" ON assignment_group_members;
 
--- Create a function to check group membership (avoids recursion)
-CREATE OR REPLACE FUNCTION is_group_member(p_group_id UUID, p_user_id UUID)
-RETURNS BOOLEAN AS $$
-BEGIN
-  RETURN EXISTS (
-    SELECT 1 
-    FROM assignment_group_members
-    WHERE group_id = p_group_id 
-    AND user_id = p_user_id
-  );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Drop the function if it exists (we'll use a simpler approach)
+DROP FUNCTION IF EXISTS is_group_member(UUID, UUID);
 
--- Create a new SELECT policy that uses the function (avoids recursion)
+-- Create a simpler SELECT policy that doesn't cause recursion
+-- Users can see members of groups they created
 CREATE POLICY "Users can view group members"
 ON assignment_group_members FOR SELECT
 TO authenticated
@@ -30,32 +21,24 @@ USING (
     WHERE ag.id = assignment_group_members.group_id
     AND ag.created_by = auth.uid()
   )
-  -- Or if user is a member of the group (using function to avoid recursion)
-  OR is_group_member(assignment_group_members.group_id, auth.uid())
+  -- Or if the user_id matches (user can see their own membership)
+  OR assignment_group_members.user_id = auth.uid()
 );
 
--- Create a better INSERT policy that also avoids recursion
+-- Create a simpler INSERT policy
+-- Users can add themselves to groups, or group creators can add anyone
 CREATE POLICY "Group leaders can add members"
 ON assignment_group_members FOR INSERT
 TO authenticated
 WITH CHECK (
-  -- User can add members if they created the group
-  EXISTS (
+  -- User can add themselves to any group
+  assignment_group_members.user_id = auth.uid()
+  -- Or user created the group
+  OR EXISTS (
     SELECT 1
     FROM assignment_groups ag
     WHERE ag.id = assignment_group_members.group_id
     AND ag.created_by = auth.uid()
-  )
-  -- Or if user is a leader of the group (using function)
-  OR (
-    is_group_member(assignment_group_members.group_id, auth.uid())
-    AND EXISTS (
-      SELECT 1 
-      FROM assignment_group_members agm
-      WHERE agm.group_id = assignment_group_members.group_id
-      AND agm.user_id = auth.uid()
-      AND agm.role = 'leader'
-    )
   )
 );
 
