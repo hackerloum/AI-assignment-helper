@@ -81,11 +81,14 @@ function SlidingIndicator({
       });
     };
     
+    // Immediate update
+    updateIndicator();
+    
     // Multiple update attempts to catch different timing scenarios
     const timers: NodeJS.Timeout[] = [];
     
-    // Immediate and delayed updates
-    for (let delay of [0, 50, 100, 200, 400, 600]) {
+    // Immediate and delayed updates - more aggressive timing
+    for (let delay of [10, 50, 100, 150, 250, 400]) {
       timers.push(setTimeout(forceUpdate, delay));
     }
     
@@ -111,6 +114,14 @@ function SlidingIndicator({
       });
       resizeObserver.observe(activeTab);
       resizeObserver.observe(scrollContainer);
+    }
+    
+    // Also observe all tabs for position changes
+    if (scrollContainer) {
+      const allTabs = scrollContainer.querySelectorAll('button');
+      allTabs.forEach(tab => {
+        resizeObserver?.observe(tab);
+      });
     }
     
     window.addEventListener('resize', handleResize);

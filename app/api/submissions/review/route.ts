@@ -1,11 +1,12 @@
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createAdminClient } from "@/lib/supabase/server";
 import {
   calculateSubmissionCredits,
   awardSubmissionCredits,
   checkAndAwardAchievements,
 } from "@/lib/submission-credits";
-import { isModeratorOrAdmin } from "@/lib/admin/auth";
 
 async function getGroupMemberCount(
   groupId: string | null,
@@ -23,19 +24,61 @@ async function getGroupMemberCount(
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Get access token from Authorization header
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '').trim() || undefined;
+    
+    // Get cookies as fallback
+    const cookieStore = await cookies();
+    
+    // Create Supabase client with proper cookie handling
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              });
+            } catch {
+              // Cookie setting might fail in API routes, that's okay
+            }
+          },
+        },
+      }
+    );
+    
+    // Get authenticated user - use token if provided, otherwise rely on cookies
+    const getUserResult = accessToken 
+      ? await supabase.auth.getUser(accessToken)
+      : await supabase.auth.getUser();
+    
+    const { data: { user }, error: authError } = getUserResult;
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (authError || !user) {
+      console.error('[Review API] Auth error:', authError?.message, '| Has token:', !!accessToken);
+      return NextResponse.json({ error: "Unauthorized. Please log in and try again." }, { status: 401 });
     }
 
-    // Check if user is admin or moderator
-    const hasAccess = await isModeratorOrAdmin();
+    // Check if user is admin or moderator using admin client (bypasses RLS)
+    const adminClient = createAdminClient();
+    const { data: roleData, error: roleError } = await adminClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['admin', 'moderator'])
+      .maybeSingle();
+
+    const hasAccess = roleData && ['admin', 'moderator'].includes(roleData.role);
+    
     if (!hasAccess) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      console.error('[Review API] Access denied for user:', user.id, '| Role:', roleData?.role);
+      return NextResponse.json({ error: "Forbidden. Admin or moderator access required." }, { status: 403 });
     }
 
     const body = await request.json();
