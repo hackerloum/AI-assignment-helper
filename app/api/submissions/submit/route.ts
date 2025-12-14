@@ -7,12 +7,12 @@ export async function POST(request: NextRequest) {
   try {
     // Get access token from Authorization header (more reliable than cookies)
     const authHeader = request.headers.get('authorization');
-    const accessToken = authHeader?.replace('Bearer ', '');
+    const accessToken = authHeader?.replace('Bearer ', '').trim() || undefined;
     
     // Get cookies as fallback
     const cookieStore = await cookies();
     
-    // Create Supabase client directly in API route
+    // Create Supabase client with proper cookie handling
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,20 +31,19 @@ export async function POST(request: NextRequest) {
             }
           },
         },
-        global: {
-          headers: accessToken ? {
-            Authorization: `Bearer ${accessToken}`,
-          } : undefined,
-        },
       }
     );
     
-    // Get authenticated user (will use the access token if provided)
-    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined);
+    // Get authenticated user - use token if provided, otherwise rely on cookies
+    const getUserResult = accessToken 
+      ? await supabase.auth.getUser(accessToken)
+      : await supabase.auth.getUser();
+    
+    const { data: { user }, error: authError } = getUserResult;
 
     if (authError || !user) {
       console.error('[Submit API] Auth error:', authError?.message, '| Has token:', !!accessToken);
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized. Please log in and try again." }, { status: 401 });
     }
 
     const body = await request.json();
