@@ -166,11 +166,6 @@ export async function awardSubmissionCredits(
     }
   }
 
-  if (updateError) {
-    console.error('Error updating user credits:', updateError);
-    throw updateError;
-  }
-
   // Insert credit transaction using admin client
   const { error: transactionError } = await adminClient
     .from("credit_transactions")
