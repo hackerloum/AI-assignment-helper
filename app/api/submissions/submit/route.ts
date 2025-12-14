@@ -138,7 +138,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Submission error:', error);
+      console.error('[Submit API] Submission error:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        error: error
+      });
       return NextResponse.json(
         { error: "Failed to create submission", details: error.message },
         { status: 500 }
@@ -154,7 +160,11 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Submission error:', error);
+    console.error('[Submit API] Unexpected error:', {
+      message: error.message,
+      stack: error.stack,
+      error: error
+    });
     return NextResponse.json(
       { error: "Internal server error", details: error.message },
       { status: 500 }
