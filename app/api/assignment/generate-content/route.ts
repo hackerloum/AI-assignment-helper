@@ -430,6 +430,7 @@ CRITICAL FORMATTING RULES:
 - Ensure the total word count is approximately ${targetWordCount} words
 - The assignment should flow naturally from introduction through body to conclusion
 - Include at least 2-3 concrete Tanzanian examples or case studies in the body paragraphs`
+      }
 
       const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content for Tanzanian students. Your writing should be:
 
