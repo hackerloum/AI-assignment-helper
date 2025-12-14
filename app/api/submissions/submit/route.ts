@@ -98,19 +98,33 @@ export async function POST(request: NextRequest) {
     }
 
     // If group submission, verify membership
+    // Note: We check if user created the group OR if they're a member
+    // This avoids RLS recursion issues
     if (submissionType === 'group' && groupId) {
-      const { data: memberCheck, error: memberError } = await supabase
-        .from('assignment_group_members')
-        .select('id')
-        .eq('group_id', groupId)
-        .eq('user_id', user.id)
+      // First check if user created the group (this doesn't query assignment_group_members)
+      const { data: groupCheck } = await supabase
+        .from('assignment_groups')
+        .select('id, created_by')
+        .eq('id', groupId)
         .single();
 
-      if (memberError || !memberCheck) {
-        return NextResponse.json(
-          { error: "Not a member of this group" },
-          { status: 403 }
-        );
+      // If user didn't create the group, check membership
+      // This query should work because users can see their own membership records
+      if (!groupCheck || groupCheck.created_by !== user.id) {
+        const { data: memberCheck, error: memberError } = await supabase
+          .from('assignment_group_members')
+          .select('id')
+          .eq('group_id', groupId)
+          .eq('user_id', user.id)
+          .maybeSingle(); // Use maybeSingle to avoid error if not found
+
+        if (memberError || !memberCheck) {
+          console.error('[Submit API] Group membership check failed:', memberError);
+          return NextResponse.json(
+            { error: "Not a member of this group" },
+            { status: 403 }
+          );
+        }
       }
     }
 
