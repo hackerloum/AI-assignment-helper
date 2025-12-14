@@ -29,7 +29,7 @@ The PowerPoint tool uses a two-step process:
 
 ### 1. Gemini API Key
 ```env
-GEMINI_API_KEY=your-gemini-key-here
+OPENAI_API_KEY=your-openai-key-here
 ```
 Get it from: https://makersuite.google.com/app/apikey
 

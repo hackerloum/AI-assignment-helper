@@ -1,43 +1,63 @@
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 
-interface GeminiRequest {
-  contents: Array<{
-    parts: Array<{
-      text: string;
-    }>;
-  }>;
-  generationConfig?: {
-    temperature?: number;
-    maxOutputTokens?: number;
-  };
+// Model mapping for different features
+const MODEL_MAPPING = {
+  GRAMMAR: "gpt-5-mini",
+  REWRITE: "gpt-5-mini",
+  ASSIGNMENT: "gpt-5-mini",
+  RESEARCH: "gpt-5.2",
+  PLAGIARISM: "gpt-5-mini",
+  REFERENCING: "gpt-5-mini",
+  POWERPOINT: "gpt-5-mini",
+  SUMMARIZE: "gpt-5-mini",
+  PARAPHRASE: "gpt-5-mini",
+  HUMANIZE: "gpt-5-mini",
+} as const;
+
+// Token limits for different features (max output tokens)
+const TOKEN_LIMITS = {
+  GRAMMAR: 400,        // 200-400: Enough for paragraphs or a page of text
+  REWRITE: 400,        // 200-400: Similar to grammar checking
+  ASSIGNMENT: 1500,    // 1000-1500: Multi-paragraph essays (~700-1000 words)
+  RESEARCH: 2000,      // 1500-2000: Detailed explanations with multiple sources
+  PLAGIARISM: 400,     // 200-400: Short explanation of originality
+  REFERENCING: 300,    // 150-300: Formatting 5-10 references
+  POWERPOINT: 600,     // 400-600: Slide outlines for 5-10 slides
+  SUMMARIZE: 400,      // 200-400: Concise summaries
+  PARAPHRASE: 400,     // 200-400: Paragraph-level paraphrasing
+  HUMANIZE: 400,       // 200-400: Text transformation
+} as const;
+
+interface OpenAIRequest {
+  model: string;
+  input: string;
+  store?: boolean;
+  max_tokens?: number;
 }
 
-interface GeminiResponse {
-  candidates?: Array<{
-    content?: {
-      parts?: Array<{
-        text?: string;
-      }>;
-    };
-  }>;
+interface OpenAIResponse {
+  response?: string;
+  content?: string;
+  text?: string;
   error?: {
     message?: string;
+    type?: string;
   };
 }
 
 /**
- * Helper function to call Gemini API
+ * Helper function to call OpenAI API
  */
 export async function callGemini(
   prompt: string,
   systemInstruction?: string,
   temperature: number = 0.7,
-  maxOutputTokens?: number
+  maxOutputTokens?: number,
+  model?: string
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not set in environment variables");
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set in environment variables");
   }
 
   // Combine system instruction and user prompt
@@ -45,27 +65,18 @@ export async function callGemini(
     ? `${systemInstruction}\n\n${prompt}`
     : prompt;
 
-  const requestBody: GeminiRequest = {
-    contents: [
-      {
-        parts: [
-          {
-            text: fullPrompt,
-          },
-        ],
-      },
-    ],
-    generationConfig: {
-      temperature,
-      ...(maxOutputTokens && { maxOutputTokens }),
-    },
+  const requestBody: OpenAIRequest = {
+    model: model || MODEL_MAPPING.ASSIGNMENT, // Default to assignment model
+    input: fullPrompt,
+    store: true,
+    ...(maxOutputTokens && { max_tokens: maxOutputTokens }),
   };
 
   try {
-    const response = await fetch(GEMINI_API_URL, {
+    const response = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
-        "x-goog-api-key": GEMINI_API_KEY,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
@@ -73,12 +84,12 @@ export async function callGemini(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.error?.message || `Gemini API error: ${response.status} ${response.statusText}`;
+      const errorMessage = errorData.error?.message || `OpenAI API error: ${response.status} ${response.statusText}`;
       
       // Check for quota/rate limit errors
-      if (errorMessage.includes("quota") || errorMessage.includes("Quota exceeded") || errorMessage.includes("rate limit")) {
+      if (errorMessage.includes("quota") || errorMessage.includes("Quota exceeded") || errorMessage.includes("rate limit") || errorMessage.includes("rate_limit")) {
         // Extract retry time from error message if available
-        const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i);
+        const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i) || errorMessage.match(/retry_after[:\s]+(\d+)/i);
         const retrySeconds = retryMatch ? parseFloat(retryMatch[1]) : null;
         
         const quotaError: any = new Error(errorMessage);
@@ -91,14 +102,14 @@ export async function callGemini(
       throw new Error(errorMessage);
     }
 
-    const data: GeminiResponse = await response.json();
+    const data: OpenAIResponse = await response.json();
 
     if (data.error) {
-      const errorMessage = data.error.message || "Gemini API error";
+      const errorMessage = data.error.message || "OpenAI API error";
       
       // Check for quota/rate limit errors in response
-      if (errorMessage.includes("quota") || errorMessage.includes("Quota exceeded") || errorMessage.includes("rate limit")) {
-        const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i);
+      if (errorMessage.includes("quota") || errorMessage.includes("Quota exceeded") || errorMessage.includes("rate limit") || errorMessage.includes("rate_limit")) {
+        const retryMatch = errorMessage.match(/retry in ([\d.]+)s/i) || errorMessage.match(/retry_after[:\s]+(\d+)/i);
         const retrySeconds = retryMatch ? parseFloat(retryMatch[1]) : null;
         
         const quotaError: any = new Error(errorMessage);
@@ -110,20 +121,19 @@ export async function callGemini(
       throw new Error(errorMessage);
     }
 
-    const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Error: No response from Gemini API";
+    // Try different possible response fields
+    const text = data.response || data.content || data.text || "Error: No response from OpenAI API";
 
     return text;
   } catch (error: any) {
-    console.error("Gemini API call failed:", error);
+    console.error("OpenAI API call failed:", error);
     
     // Re-throw quota errors with their special properties
     if (error.isQuotaError) {
       throw error;
     }
     
-    throw new Error(error.message || "Failed to call Gemini API");
+    throw new Error(error.message || "Failed to call OpenAI API");
   }
 }
 
@@ -139,7 +149,8 @@ export async function generateEssay(
     prompt,
     systemInstruction,
     0.7,
-    Math.floor(wordCount * 1.5)
+    TOKEN_LIMITS.ASSIGNMENT,
+    MODEL_MAPPING.ASSIGNMENT
   );
 
   // Strip any markdown headers that might have been added
@@ -172,7 +183,7 @@ export async function paraphraseText(text: string): Promise<string> {
     "You are a paraphrasing expert. Rewrite the given text in your own words while maintaining the original meaning and academic tone.";
   const prompt = `Paraphrase the following text while maintaining its meaning:\n\n${text}`;
 
-  return await callGemini(prompt, systemInstruction, 0.8);
+  return await callGemini(prompt, systemInstruction, 0.8, TOKEN_LIMITS.PARAPHRASE, MODEL_MAPPING.PARAPHRASE);
 }
 
 export async function checkGrammar(text: string): Promise<{
@@ -184,8 +195,8 @@ export async function checkGrammar(text: string): Promise<{
   const prompt = `Check and correct the following text:\n\n${text}\n\nReturn the result as a JSON object with 'corrected' and 'suggestions' fields.`;
 
   try {
-    const response = await callGemini(prompt, systemInstruction, 0.3);
-    // Try to extract JSON from the response (in case Gemini adds extra text)
+    const response = await callGemini(prompt, systemInstruction, 0.3, TOKEN_LIMITS.GRAMMAR, MODEL_MAPPING.GRAMMAR);
+    // Try to extract JSON from the response (in case AI adds extra text)
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     const jsonText = jsonMatch ? jsonMatch[0] : response;
     const result = JSON.parse(jsonText);
@@ -222,7 +233,7 @@ export async function generateCitation(
   const systemInstruction = `You are a citation expert. Generate accurate citations in ${format} format.`;
   const prompt = `Generate a ${format} citation for:\nTitle: ${source.title}\n${source.author ? `Author: ${source.author}\n` : ""}${source.year ? `Year: ${source.year}\n` : ""}${source.url ? `URL: ${source.url}\n` : ""}${source.publisher ? `Publisher: ${source.publisher}\n` : ""}\n\n${formatInstructions[format]}`;
 
-  return await callGemini(prompt, systemInstruction, 0.3);
+  return await callGemini(prompt, systemInstruction, 0.3, TOKEN_LIMITS.REFERENCING, MODEL_MAPPING.REFERENCING);
 }
 
 export async function summarizeText(
@@ -237,7 +248,8 @@ export async function summarizeText(
     prompt,
     systemInstruction,
     0.5,
-    Math.floor(maxLength * 1.5)
+    TOKEN_LIMITS.SUMMARIZE,
+    MODEL_MAPPING.SUMMARIZE
   );
 }
 
@@ -341,17 +353,14 @@ Instructions:
 
 Generate a comprehensive, student-friendly research response that will help the student fully understand this topic.`;
 
-  const maxTokens = {
-    'basic': 1500,
-    'intermediate': 2500,
-    'advanced': 4000
-  }[depth];
-
+  // Use TOKEN_LIMITS.RESEARCH (1500-2000) for all depth levels
+  // Research uses GPT-5.2 which is optimized for this token range
   return await callGemini(
     prompt,
     systemInstruction,
     0.7,
-    maxTokens
+    TOKEN_LIMITS.RESEARCH,
+    MODEL_MAPPING.RESEARCH
   );
 }
 
@@ -365,7 +374,7 @@ export async function generatePresentation(
   const prompt = `Create a ${slideCount}-slide presentation on: "${topic}". Make it ${style} in tone. Each slide should have a clear title and 3-5 bullet points of content. Format as JSON only.`;
 
   try {
-    const response = await callGemini(prompt, systemInstruction, 0.7, 2000);
+    const response = await callGemini(prompt, systemInstruction, 0.7, TOKEN_LIMITS.POWERPOINT, MODEL_MAPPING.POWERPOINT);
     
     // Try to extract JSON from response
     const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -485,7 +494,7 @@ ${text}
 Return the analysis as a JSON object following the exact structure specified in the system instructions.`;
 
   try {
-    const response = await callGemini(prompt, systemInstruction, 0.3, 2000);
+    const response = await callGemini(prompt, systemInstruction, 0.3, TOKEN_LIMITS.PLAGIARISM, MODEL_MAPPING.PLAGIARISM);
     
     // Extract JSON from response (handle cases where AI adds extra text)
     const jsonMatch = response.match(/\{[\s\S]*\}/);
@@ -793,7 +802,8 @@ Humanize this content following all the principles outlined in the system instru
       prompt,
       systemInstruction,
       0.8, // Higher temperature for more natural variation
-      Math.floor(text.length * 1.5) // Allow for length variation
+      TOKEN_LIMITS.HUMANIZE,
+      MODEL_MAPPING.HUMANIZE
     );
 
     // Analyze improvements made

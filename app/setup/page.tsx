@@ -57,9 +57,9 @@ export default function SetupPage() {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
               <div className="flex-1">
-                <h3 className="font-semibold">Gemini API Key</h3>
+                <h3 className="font-semibold">OpenAI API Key</h3>
                 <p className="text-sm text-muted-foreground">
-                  ⚠ GEMINI_API_KEY (server-side only, check server logs if missing)
+                  ⚠ OPENAI_API_KEY (server-side only, check server logs if missing)
                 </p>
               </div>
             </div>

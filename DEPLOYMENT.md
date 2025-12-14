@@ -44,7 +44,7 @@ You can leave these as default.
 | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | Supabase Dashboard → Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | Supabase Dashboard → Settings → API |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Supabase Dashboard → Settings → API |
-| `GEMINI_API_KEY` | Google Gemini API key | [makersuite.google.com/app/apikey](https://makersuite.google.com/app/apikey) |
+| `OPENAI_API_KEY` | OpenAI API key | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
 | `NEXT_PUBLIC_APP_URL` | Your Vercel deployment URL | Will be `https://your-app.vercel.app` (set after first deploy) |
 | `ZENOPAY_API_KEY` | ZenoPay API key for mobile money payments (handles M-Pesa, TigoPesa, AirtelMoney) | ZenoPay Dashboard |
 
@@ -150,7 +150,7 @@ Vercel automatically deploys:
 - Check Supabase dashboard for errors
 
 **Error: Gemini API error**
-- Verify `GEMINI_API_KEY` is correct
+- Verify `OPENAI_API_KEY` is correct
 - Check Google AI Studio account has quota/credits
 - Review Gemini API status
 

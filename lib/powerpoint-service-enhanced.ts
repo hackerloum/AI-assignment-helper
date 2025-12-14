@@ -1,11 +1,13 @@
 /**
  * Enhanced PowerPoint Service
- * Uses Gemini API for content generation and SlidesGPT API
+ * Uses OpenAI API for content generation and SlidesGPT API
  * to create actual .pptx files
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+const OPENAI_MODEL = "gpt-5-mini"; // PowerPoint uses GPT-5 mini
+const MAX_TOKENS = 600; // 400-600 tokens: Enough for 5-10 slides
 
 import { generateSlidesGPTPresentation, downloadSlidesGPTPresentation } from "./slidesgpt-service";
 
@@ -27,15 +29,15 @@ export interface Presentation {
 }
 
 /**
- * Generate presentation content using Gemini API
+ * Generate presentation content using OpenAI API
  */
 async function generatePresentationContent(
   topic: string,
   slideCount: number,
   style: string
 ): Promise<Presentation> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured");
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured");
   }
 
   // Style-specific instructions
@@ -99,40 +101,32 @@ Return ONLY valid JSON with exactly ${slideCount} slides in the slides array.`;
   try {
     const fullPrompt = `${systemInstruction}\n\n${prompt}`;
     
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: fullPrompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 4000,
-        },
+        model: OPENAI_MODEL,
+        input: fullPrompt,
+        store: true,
+        max_tokens: MAX_TOKENS,
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      throw new Error(`OpenAI API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.response || data.content || data.text;
     
     if (!content) {
-      throw new Error("No response from Gemini API");
+      throw new Error("No response from OpenAI API");
     }
 
-    // Extract JSON from response (Gemini might add extra text)
+    // Extract JSON from response (AI might add extra text)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const jsonText = jsonMatch ? jsonMatch[0] : content;
     const parsed = JSON.parse(jsonText);

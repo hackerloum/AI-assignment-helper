@@ -6,7 +6,7 @@ Add these to your `.env.local` file:
 
 ```env
 # Gemini API - For content generation (same key as other AI features)
-GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
 
 # SlidesGPT API - For .pptx file generation (optional, has default)
 SLIDESGPT_API_KEY=jm6fbznofjysacspsx653yffstgbij63

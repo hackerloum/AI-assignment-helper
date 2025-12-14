@@ -22,20 +22,40 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    - **anon/public key** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - **service_role key** → `SUPABASE_SERVICE_ROLE_KEY` (keep this secret!)
 
-### Gemini API Configuration
+### OpenAI API Configuration
 
 ```env
-GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
 ```
 
 **Where to get it:**
-1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. Go to [OpenAI Platform](https://platform.openai.com/api-keys)
 2. Create a new API key
 3. Copy the key (it's only shown once!)
 
-**Note:** The application uses Google's Gemini 2.5 Flash model for most AI features (essay writing, paraphrasing, grammar checking, citations, summarization, research).
+**Note:** The application uses OpenAI API for all AI features with intelligent model selection based on the task.
 
-**Note:** The application uses Google's Gemini 2.5 Flash model for PowerPoint presentation generation, providing high-quality presentations with speaker notes, visual suggestions, and better structure.
+**Model Mapping by Feature:**
+The application automatically selects the best model and token limit for each feature:
+
+| Feature                | Model Used  | Max Tokens | Description |
+| ---------------------- | ----------- | ---------- | ----------- |
+| Grammar / Rewrite      | GPT-5 mini  | 400        | Fast grammar checking (paragraphs) |
+| Assignment Writer      | GPT-5 mini  | 1500       | Essay generation (~700-1000 words) |
+| Research Assistant     | GPT-5.2     | 2000       | Deep research with multiple sources |
+| Plagiarism Check       | GPT-5 mini  | 400        | Similarity analysis and explanation |
+| APA Referencing        | GPT-5 mini  | 300        | Format 5-10 references |
+| PowerPoint Generation  | GPT-5 mini  | 600        | Outlines for 5-10 slides |
+| Paraphrasing           | GPT-5 mini  | 400        | Paragraph-level rephrasing |
+| Summarization          | GPT-5 mini  | 400        | Concise summaries |
+| Humanization           | GPT-5 mini  | 400        | AI content humanization |
+
+**Technical Details:**
+- API endpoint: `https://api.openai.com/v1/responses`
+- Models are automatically selected based on the feature being used
+- Token limits are optimized for each feature (200-2000 tokens)
+- GPT-5.2 with 2000 tokens for research tasks requiring deeper analysis
+- GPT-5 mini with 300-1500 tokens for other tasks for optimal performance and cost
 
 ### SlidesGPT API Configuration (for .pptx File Generation)
 
@@ -131,12 +151,13 @@ After setting up environment variables, verify they're working:
 - Verify variable names match exactly (case-sensitive)
 - Ensure no extra spaces in values
 
-### "Gemini API error"
+### "OpenAI API error"
 
-- Verify `GEMINI_API_KEY` is correct
-- Check Google AI Studio account has quota/credits
+- Verify `OPENAI_API_KEY` is correct
+- Check OpenAI account has quota/credits
 - Ensure key hasn't been revoked
-- Verify the API key has access to Gemini models
+- Verify the API key has access to both GPT-5 mini and GPT-5.2 models
+- Check your OpenAI account's model permissions
 
 
 ### Authentication not working
@@ -152,7 +173,7 @@ After setting up environment variables, verify they're working:
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | Client | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Client | Supabase anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Server | Supabase service role key |
-| `GEMINI_API_KEY` | ✅ | Server | Google Gemini API key (for all AI features including PowerPoint) |
+| `OPENAI_API_KEY` | ✅ | Server | OpenAI API key (for all AI features - auto-selects between GPT-5 mini and GPT-5.2) |
 | `SLIDESGPT_API_KEY` | ⚠️ | Server | SlidesGPT API key (for .pptx file generation, has default value) |
 | `NEXT_PUBLIC_APP_URL` | ✅ | Client | Application URL |
 | `ZENOPAY_API_KEY` | ✅ | Server | ZenoPay API key for mobile money payments (handles all providers) |

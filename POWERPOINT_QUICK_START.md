@@ -20,7 +20,7 @@ cp .env.local.example .env.local
 **Required for PowerPoint:**
 ```env
 # For AI content generation (same key as other features)
-GEMINI_API_KEY=your-gemini-key-here
+OPENAI_API_KEY=your-openai-key-here
 
 # For .pptx file generation (optional)
 PPTX_API_BEARER_TOKEN=your-bearer-token-here
@@ -197,7 +197,7 @@ Result: Engaging presentation with:
 
 ## Troubleshooting
 
-### "GEMINI_API_KEY is not configured"
+### "OPENAI_API_KEY is not configured"
 **Solution**: Add Gemini API key to `.env.local` (same key used for other AI features)
 
 ### "PowerPoint API token not configured"

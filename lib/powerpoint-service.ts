@@ -1,10 +1,12 @@
 /**
  * Enhanced PowerPoint Generation Service
- * Uses Gemini API for high-quality presentation generation
+ * Uses OpenAI API for high-quality presentation generation
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
+const OPENAI_MODEL = "gpt-5-mini"; // PowerPoint uses GPT-5 mini
+const MAX_TOKENS = 600; // 400-600 tokens: Enough for 5-10 slides
 
 interface Slide {
   title: string;
@@ -25,7 +27,7 @@ export interface Presentation {
 
 
 /**
- * Call Gemini API for presentation generation
+ * Call OpenAI API for presentation generation
  */
 async function callGemini(
   prompt: string,
@@ -33,32 +35,24 @@ async function callGemini(
   temperature: number = 0.7,
   maxTokens?: number
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not set in environment variables");
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not set in environment variables");
   }
 
   const fullPrompt = `${systemInstruction}\n\n${prompt}`;
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: fullPrompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature,
-          ...(maxTokens && { maxOutputTokens: maxTokens }),
-        },
+        model: OPENAI_MODEL,
+        input: fullPrompt,
+        store: true,
+        max_tokens: maxTokens || MAX_TOKENS,
       }),
     });
 
@@ -66,26 +60,26 @@ async function callGemini(
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         errorData.error?.message ||
-          `Gemini API error: ${response.status} ${response.statusText}`
+          `OpenAI API error: ${response.status} ${response.statusText}`
       );
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const content = data.response || data.content || data.text;
 
     if (!content) {
-      throw new Error("No response from Gemini API");
+      throw new Error("No response from OpenAI API");
     }
 
     return content;
   } catch (error: any) {
-    console.error("Gemini API call failed:", error);
-    throw new Error(error.message || "Failed to call Gemini API");
+    console.error("OpenAI API call failed:", error);
+    throw new Error(error.message || "Failed to call OpenAI API");
   }
 }
 
 /**
- * Generate a high-quality presentation using Gemini
+ * Generate a high-quality presentation using OpenAI
  */
 export async function generatePresentation(
   topic: string,
@@ -139,9 +133,9 @@ Requirements:
 - Use professional language appropriate for ${style} style`;
 
   try {
-    const response = await callGemini(prompt, systemInstruction, 0.7, 4000);
+    const response = await callGemini(prompt, systemInstruction, 0.7, MAX_TOKENS);
     
-    // Extract JSON from response (Gemini might add extra text)
+    // Extract JSON from response (AI might add extra text)
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     const jsonText = jsonMatch ? jsonMatch[0] : response;
     const parsed = JSON.parse(jsonText);

@@ -41,7 +41,7 @@ A full-stack AI-powered assignment helper web application built for Tanzanian co
 - **Next.js API Routes** (App Router `/app/api`)
 - **Server Actions** (for mutations)
 - **Supabase** (auth + database)
-- **Google Gemini API** (Gemini 2.5 Flash for AI features)
+- **OpenAI API** (for AI features)
 
 ### Database
 - **Supabase PostgreSQL**
@@ -86,8 +86,8 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-# Gemini API Configuration (REQUIRED for AI features)
-GEMINI_API_KEY=your_gemini_api_key
+# OpenAI API Configuration (REQUIRED for AI features)
+OPENAI_API_KEY=your_openai_api_key
 
 # App Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -150,7 +150,7 @@ ai-assignment-helper/
 │   └── ui/                 # ShadCN UI components
 ├── lib/
 │   ├── supabase/          # Supabase clients
-│   ├── ai-service.ts      # Gemini API service
+│   ├── ai-service.ts      # OpenAI API service
 │   ├── credits.ts         # Credit management
 │   ├── constants.ts       # App constants
 │   └── utils.ts           # Utility functions
@@ -236,7 +236,8 @@ In the Vercel project settings, add these environment variables:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-5-nano
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 ```
 
@@ -315,7 +316,7 @@ vercel --prod
 **Runtime Errors:**
 - Check Vercel function logs in dashboard
 - Verify Supabase connection and credentials
-- Ensure Gemini API key is valid and has quota/credits
+- Ensure OpenAI API key is valid and has quota/credits
 
 **Database Connection:**
 - Verify Supabase project is active
@@ -336,7 +337,7 @@ The app can be deployed to any platform supporting Next.js:
 - `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (server-side only)
-- `GEMINI_API_KEY` - Google Gemini API key for AI features
+- `OPENAI_API_KEY` - OpenAI API key (auto-selects GPT-5 mini or GPT-5.2 based on feature)
 - `NEXT_PUBLIC_APP_URL` - Your production URL
 
 **Required (for mobile money payments):**
