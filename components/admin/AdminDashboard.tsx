@@ -108,16 +108,20 @@ function SlidingIndicator({
     
     // Use ResizeObserver to detect when tab positions change
     let resizeObserver: ResizeObserver | null = null;
-    if (activeTab && scrollContainer) {
+    if (scrollContainer) {
       resizeObserver = new ResizeObserver(() => {
         forceUpdate();
       });
-      resizeObserver.observe(activeTab);
+      
+      // Observe the scroll container
       resizeObserver.observe(scrollContainer);
-    }
-    
-    // Also observe all tabs for position changes
-    if (scrollContainer) {
+      
+      // Observe the active tab if available
+      if (activeTab) {
+        resizeObserver.observe(activeTab);
+      }
+      
+      // Also observe all tabs for position changes
       const allTabs = scrollContainer.querySelectorAll('button');
       allTabs.forEach(tab => {
         resizeObserver?.observe(tab);
