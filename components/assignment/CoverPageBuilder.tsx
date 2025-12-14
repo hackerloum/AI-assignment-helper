@@ -93,6 +93,8 @@ export function CoverPageBuilder({
     }
   }
 
+  // Detect if this is an LGTI template
+  // LGTI templates use format: LGTI_individual or LGTI_group
   const isLGTI = template?.college_code === 'LGTI' || templateId?.startsWith('LGTI_')
 
   useEffect(() => {
@@ -122,7 +124,8 @@ export function CoverPageBuilder({
         </p>
       </div>
       <div className="space-y-6">
-        {/* LGTI-specific fields */}
+        {/* Template-specific fields based on college and assignment type */}
+        {/* LGTI Group Assignment - Special fields */}
         {isLGTI && assignmentType === 'group' ? (
           <>
             <div className="grid md:grid-cols-2 gap-4">
@@ -164,9 +167,51 @@ export function CoverPageBuilder({
               fullWidth
             />
           </>
+        ) : isLGTI && assignmentType === 'individual' ? (
+          <>
+            {/* LGTI Individual Assignment - Special fields (ONLY for LGTI individual) */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <FormField
+                label="Course Name"
+                icon={FileText}
+                value={formData.course_name}
+                onChange={(value) => handleChange('course_name', value)}
+                placeholder="e.g., Public Administration"
+              />
+              <FormField
+                label="Module Code"
+                icon={FileText}
+                value={formData.module_code}
+                onChange={(value) => handleChange('module_code', value)}
+                placeholder="e.g., PA101"
+              />
+              <FormField
+                label="Module Name"
+                icon={FileText}
+                value={formData.module_name}
+                onChange={(value) => handleChange('module_name', value)}
+                placeholder="e.g., Introduction to Public Administration"
+              />
+              <FormField
+                label="Type of Work"
+                icon={FileText}
+                value={formData.type_of_work}
+                onChange={(value) => handleChange('type_of_work', value)}
+                placeholder="e.g., INDIVIDUAL ASSIGNMENT"
+              />
+            </div>
+            <FormField
+              label="Question"
+              icon={FileText}
+              value={formData.task}
+              onChange={(value) => handleChange('task', value)}
+              placeholder="e.g., Explain the role of local government in community development"
+              fullWidth
+            />
+          </>
         ) : (
           <>
-            {/* Common Fields */}
+            {/* Common Fields - For all other colleges (non-LGTI) */}
             <div className="grid md:grid-cols-2 gap-4">
               <FormField
                 label="College/School"
@@ -216,7 +261,7 @@ export function CoverPageBuilder({
             className="grid md:grid-cols-2 gap-4 p-6 bg-blue-500/5 border border-blue-500/20 rounded-xl"
           >
             <FormField
-              label="Your Full Name"
+              label={isLGTI ? "Name of Student" : "Your Full Name"}
               icon={User}
               value={formData.student_name}
               onChange={(value) => handleChange('student_name', value)}
@@ -227,7 +272,7 @@ export function CoverPageBuilder({
               icon={FileText}
               value={formData.registration_number}
               onChange={(value) => handleChange('registration_number', value)}
-              placeholder="e.g., 2020-04-12345"
+              placeholder={isLGTI ? "e.g., LGTI/2024/001" : "e.g., 2020-04-12345"}
             />
           </motion.div>
         )}
@@ -269,11 +314,11 @@ export function CoverPageBuilder({
         {/* Additional Fields */}
         <div className="grid md:grid-cols-2 gap-4">
           <FormField
-            label="Instructor Name"
+            label={isLGTI && assignmentType === 'individual' ? "Lecture Name" : "Instructor Name"}
             icon={User}
             value={formData.instructor_name}
             onChange={(value) => handleChange('instructor_name', value)}
-            placeholder="e.g., Dr. Jane Smith"
+            placeholder={isLGTI && assignmentType === 'individual' ? "e.g., Dr. John Smith" : "e.g., Dr. Jane Smith"}
           />
           <FormField
             label="Submission Date"
