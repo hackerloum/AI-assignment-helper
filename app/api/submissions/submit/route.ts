@@ -128,8 +128,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create submission
-    const { data: submission, error } = await supabase
+    // Create submission using admin client to bypass RLS and avoid recursion
+    // This is safe because we've already validated the user and their permissions
+    const adminClient = createAdminClient();
+    const { data: submission, error } = await adminClient
       .from('assignment_submissions')
       .insert({
         user_id: user.id,
