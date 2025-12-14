@@ -45,30 +45,16 @@ import { useRouter } from 'next/navigation';
 // Sliding indicator component
 function SlidingIndicator({ 
   activeTabId, 
-  tabRefs 
+  getTabRef 
 }: { 
   activeTabId: string; 
-  tabRefs: { [key: string]: HTMLButtonElement | null } 
+  getTabRef: (id: string) => HTMLButtonElement | null;
 }) {
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
   const updateIndicator = useCallback(() => {
-    const activeTab = tabRefs[activeTabId];
+    const activeTab = getTabRef(activeTabId);
     if (!activeTab) {
-      // Retry after a short delay if tab ref isn't ready
-      setTimeout(() => {
-        const retryTab = tabRefs[activeTabId];
-        if (retryTab) {
-          const relativeContainer = retryTab.closest('.relative') as HTMLElement;
-          if (relativeContainer) {
-            const tabRect = retryTab.getBoundingClientRect();
-            const relativeRect = relativeContainer.getBoundingClientRect();
-            const left = tabRect.left - relativeRect.left;
-            const width = tabRect.width;
-            setIndicatorStyle({ left, width });
-          }
-        }
-      }, 50);
       return;
     }
     
@@ -85,7 +71,7 @@ function SlidingIndicator({
       
       setIndicatorStyle({ left, width });
     }
-  }, [activeTabId, tabRefs]);
+  }, [activeTabId, getTabRef]);
 
   useEffect(() => {
     // Force immediate update when activeTabId changes
@@ -95,20 +81,16 @@ function SlidingIndicator({
       });
     };
     
-    // Immediate update attempt
-    forceUpdate();
+    // Multiple update attempts to catch different timing scenarios
+    const timers: NodeJS.Timeout[] = [];
     
-    // Multiple update attempts to catch different timing scenarios (DOM rendering, scroll animations, etc.)
-    const timers = [
-      setTimeout(forceUpdate, 0),
-      setTimeout(forceUpdate, 50),
-      setTimeout(forceUpdate, 100),
-      setTimeout(forceUpdate, 200),
-      setTimeout(forceUpdate, 400),
-    ];
+    // Immediate and delayed updates
+    for (let delay of [0, 50, 100, 200, 400, 600]) {
+      timers.push(setTimeout(forceUpdate, delay));
+    }
     
     // Find the scrollable container and active tab
-    const activeTab = tabRefs[activeTabId];
+    const activeTab = getTabRef(activeTabId);
     const scrollContainer = activeTab?.closest('.overflow-x-auto') as HTMLElement;
     
     // Update on window resize
@@ -140,10 +122,11 @@ function SlidingIndicator({
       scrollContainer?.removeEventListener('scroll', handleScroll);
       resizeObserver?.disconnect();
     };
-  }, [activeTabId, updateIndicator]);
+  }, [activeTabId, updateIndicator, getTabRef]);
 
   return (
     <motion.div
+      key={activeTabId} // Force re-mount when tab changes for immediate position update
       className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 z-0 pointer-events-none"
       initial={false}
       animate={{
@@ -152,8 +135,8 @@ function SlidingIndicator({
       }}
       transition={{
         type: "spring",
-        stiffness: 350,
-        damping: 35,
+        stiffness: 400,
+        damping: 30,
         mass: 0.5
       }}
       style={{
@@ -497,7 +480,11 @@ export function AdminDashboard() {
               })}
             </div>
             {/* Sliding indicator */}
-            <SlidingIndicator activeTabId={activeTab} tabRefs={tabRefs.current} />
+            <SlidingIndicator 
+              activeTabId={activeTab} 
+              getTabRef={(id) => tabRefs.current[id] || null}
+              key={activeTab}
+            />
           </div>
         </div>
 
