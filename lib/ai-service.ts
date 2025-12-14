@@ -17,16 +17,16 @@ const MODEL_MAPPING = {
 
 // Token limits for different features (max output tokens)
 const TOKEN_LIMITS = {
-  GRAMMAR: 400,        // 200-400: Enough for paragraphs or a page of text
-  REWRITE: 400,        // 200-400: Similar to grammar checking
-  ASSIGNMENT: 1500,    // 1000-1500: Multi-paragraph essays (~700-1000 words)
-  RESEARCH: 2000,      // 1500-2000: Detailed explanations with multiple sources
-  PLAGIARISM: 400,     // 200-400: Short explanation of originality
-  REFERENCING: 300,    // 150-300: Formatting 5-10 references
-  POWERPOINT: 600,     // 400-600: Slide outlines for 5-10 slides
-  SUMMARIZE: 400,      // 200-400: Concise summaries
-  PARAPHRASE: 400,     // 200-400: Paragraph-level paraphrasing
-  HUMANIZE: 400,       // 200-400: Text transformation
+  GRAMMAR: 800,        // Increased for reasoning models
+  REWRITE: 800,        // Increased for reasoning models
+  ASSIGNMENT: 2000,    // Increased for reasoning models
+  RESEARCH: 3000,      // Increased for reasoning models
+  PLAGIARISM: 800,     // Increased for reasoning models
+  REFERENCING: 600,    // Increased for reasoning models
+  POWERPOINT: 1200,    // Increased for reasoning models
+  SUMMARIZE: 800,      // Increased for reasoning models
+  PARAPHRASE: 800,     // Increased for reasoning models
+  HUMANIZE: 1500,      // Increased significantly for text transformation
 } as const;
 
 interface OpenAIRequest {
@@ -44,6 +44,10 @@ interface OpenAIResponse {
       text?: string;
     }>;
   }>;
+  status?: string;
+  incomplete_details?: {
+    reason?: string;
+  };
   error?: {
     message?: string;
     type?: string;
@@ -126,10 +130,18 @@ export async function callGemini(
     }
 
     // Extract content from OpenAI Responses API
-    // Try multiple possible response formats
-    let text = data.output?.[0]?.content?.[0]?.text;
+    // Look for message items in the output array (skip reasoning items)
+    const messageItem = data.output?.find(item => item.type === 'message');
+    const text = messageItem?.content?.[0]?.text;
     
     if (!text) {
+      // Check if response is incomplete
+      const status = (data as any).status;
+      if (status === 'incomplete') {
+        const reason = (data as any).incomplete_details?.reason;
+        throw new Error(`Response incomplete: ${reason || 'unknown reason'}. Try with shorter input text.`);
+      }
+      
       // Log the actual response structure for debugging
       console.error("Unexpected response structure:", JSON.stringify(data, null, 2));
       throw new Error("No response from OpenAI API - check server logs for details");

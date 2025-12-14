@@ -10,15 +10,17 @@ The application automatically selects the most appropriate OpenAI model based on
 
 | Feature                | Model Used  | Max Tokens | Reasoning |
 | ---------------------- | ----------- | ---------- | --------- |
-| Grammar / Rewrite      | GPT-5 mini  | 400        | Fast, efficient for grammar corrections (paragraphs) |
-| Assignment Writer      | GPT-5 mini  | 1500       | Multi-paragraph essays (~700-1000 words) |
-| Research Assistant     | **GPT-5.2** | 2000       | Advanced reasoning for deep research with sources |
-| Plagiarism Check       | GPT-5 mini  | 400        | Short explanation of copied content/originality |
-| APA Referencing        | GPT-5 mini  | 300        | Citation formatting for 5-10 references |
-| PowerPoint Generation  | GPT-5 mini  | 600        | Slide outlines and notes for 5-10 slides |
-| Paraphrasing           | GPT-5 mini  | 400        | Text transformation at paragraph level |
-| Summarization          | GPT-5 mini  | 400        | Fast summarization for quick results |
-| Humanization           | GPT-5 mini  | 400        | Style transformation works well with mini |
+| Grammar / Rewrite      | GPT-5 mini  | 800        | Includes reasoning + output tokens |
+| Assignment Writer      | GPT-5 mini  | 2000       | Multi-paragraph essays with reasoning |
+| Research Assistant     | **GPT-5.2** | 3000       | Advanced reasoning for deep research |
+| Plagiarism Check       | GPT-5 mini  | 800        | Analysis + explanation with reasoning |
+| APA Referencing        | GPT-5 mini  | 600        | Citation formatting with reasoning |
+| PowerPoint Generation  | GPT-5 mini  | 1200       | Slide generation with reasoning |
+| Paraphrasing           | GPT-5 mini  | 800        | Text transformation with reasoning |
+| Summarization          | GPT-5 mini  | 800        | Summarization with reasoning |
+| Humanization           | GPT-5 mini  | 1500       | Complex text transformation with reasoning |
+
+**Note:** GPT-5 models use reasoning tokens before generating output. Token limits include both reasoning and output tokens.
 
 ## Key Points
 

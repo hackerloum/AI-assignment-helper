@@ -40,22 +40,23 @@ The application automatically selects the best model and token limit for each fe
 
 | Feature                | Model Used  | Max Tokens | Description |
 | ---------------------- | ----------- | ---------- | ----------- |
-| Grammar / Rewrite      | GPT-5 mini  | 400        | Fast grammar checking (paragraphs) |
-| Assignment Writer      | GPT-5 mini  | 1500       | Essay generation (~700-1000 words) |
-| Research Assistant     | GPT-5.2     | 2000       | Deep research with multiple sources |
-| Plagiarism Check       | GPT-5 mini  | 400        | Similarity analysis and explanation |
-| APA Referencing        | GPT-5 mini  | 300        | Format 5-10 references |
-| PowerPoint Generation  | GPT-5 mini  | 600        | Outlines for 5-10 slides |
-| Paraphrasing           | GPT-5 mini  | 400        | Paragraph-level rephrasing |
-| Summarization          | GPT-5 mini  | 400        | Concise summaries |
-| Humanization           | GPT-5 mini  | 400        | AI content humanization |
+| Grammar / Rewrite      | GPT-5 mini  | 800        | Grammar checking with reasoning |
+| Assignment Writer      | GPT-5 mini  | 2000       | Essay generation with reasoning |
+| Research Assistant     | GPT-5.2     | 3000       | Deep research with advanced reasoning |
+| Plagiarism Check       | GPT-5 mini  | 800        | Analysis with reasoning |
+| APA Referencing        | GPT-5 mini  | 600        | Citation formatting with reasoning |
+| PowerPoint Generation  | GPT-5 mini  | 1200       | Slide generation with reasoning |
+| Paraphrasing           | GPT-5 mini  | 800        | Text rephrasing with reasoning |
+| Summarization          | GPT-5 mini  | 800        | Summarization with reasoning |
+| Humanization           | GPT-5 mini  | 1500       | Content humanization with reasoning |
 
 **Technical Details:**
 - API endpoint: `https://api.openai.com/v1/responses`
 - Models are automatically selected based on the feature being used
-- Token limits are optimized for each feature using `max_output_tokens` (300-2000 tokens)
-- GPT-5.2 with 2000 tokens for research tasks requiring deeper analysis
-- GPT-5 mini with 300-1500 tokens for other tasks for optimal performance and cost
+- Token limits include reasoning + output tokens (600-3000 tokens)
+- GPT-5 models use reasoning before generating output
+- GPT-5.2 with 3000 tokens for research tasks requiring deeper analysis
+- GPT-5 mini with 600-2000 tokens for other tasks for optimal performance and cost
 
 ### SlidesGPT API Configuration (for .pptx File Generation)
 
