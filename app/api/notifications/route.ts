@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 /**
  * GET /api/notifications
@@ -7,12 +8,44 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    // Get access token from Authorization header (more reliable than cookies)
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
     
-    // Get user - getUser is more reliable for API routes
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Get cookies as fallback
+    const cookieStore = await cookies();
+    
+    // Create Supabase client directly in API route
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                cookieStore.set(name, value, options);
+              });
+            } catch {
+              // Cookie setting might fail in API routes, that's okay
+            }
+          },
+        },
+        global: {
+          headers: accessToken ? {
+            Authorization: `Bearer ${accessToken}`,
+          } : undefined,
+        },
+      }
+    );
+    
+    // Get authenticated user (will use the access token if provided)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken || undefined);
 
-    if (userError || !user) {
+    if (authError || !user) {
       // Return empty notifications for unauthenticated users (don't return 401 to avoid console errors)
       return NextResponse.json({
         notifications: [],
