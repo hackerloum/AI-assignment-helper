@@ -87,10 +87,17 @@ export async function POST(request: NextRequest) {
       });
 
     if (error) {
-      console.error('Storage upload error:', error);
+      console.error('[Upload API] Storage upload error:', {
+        message: error.message,
+        statusCode: error.statusCode,
+        error: error,
+        bucket: 'submissions',
+        fileName: fileName,
+        userId: user.id
+      });
       
       // If bucket doesn't exist, return helpful error
-      if (error.message.includes('Bucket not found')) {
+      if (error.message.includes('Bucket not found') || error.message.includes('not found')) {
         return NextResponse.json(
           { 
             error: "Storage bucket not configured. Please create a 'submissions' bucket in Supabase Storage.",
@@ -100,8 +107,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // If permission denied, provide helpful message
+      if (error.message.includes('permission') || error.message.includes('policy') || error.message.includes('denied')) {
+        return NextResponse.json(
+          { 
+            error: "Permission denied. Storage bucket policies need to be configured. Please set up storage policies to allow authenticated users to upload files.",
+            details: error.message 
+          },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
-        { error: "Failed to upload file", details: error.message },
+        { error: "Failed to upload file", details: error.message, errorCode: error.statusCode },
         { status: 500 }
       );
     }
