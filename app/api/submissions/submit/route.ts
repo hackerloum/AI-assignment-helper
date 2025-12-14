@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         word_count: parseInt(wordCount) || 0,
         formatting_style: formattingStyle || 'APA',
         cover_page_data: coverPageData || {},
-        assignment_content: hasContent ? assignmentContent.trim() : '',
+        assignment_content: hasContent ? assignmentContent.trim() : null,
         file_urls: Array.isArray(fileUrls) && fileUrls.length > 0 ? fileUrls : [],
         references: Array.isArray(references) ? references : [],
         status: 'pending',
