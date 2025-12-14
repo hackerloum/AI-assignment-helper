@@ -126,7 +126,6 @@ function SlidingIndicator({
 
   return (
     <motion.div
-      key={activeTabId} // Force re-mount when tab changes for immediate position update
       className="absolute bottom-2 h-10 bg-amber-500/20 rounded-xl border border-amber-500/40 shadow-lg shadow-amber-500/10 z-0 pointer-events-none"
       initial={false}
       animate={{
@@ -155,6 +154,11 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
+  
+  // Stable function to get tab refs
+  const getTabRef = useCallback((id: string) => {
+    return tabRefs.current[id] || null;
+  }, []);
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -482,8 +486,7 @@ export function AdminDashboard() {
             {/* Sliding indicator */}
             <SlidingIndicator 
               activeTabId={activeTab} 
-              getTabRef={(id) => tabRefs.current[id] || null}
-              key={activeTab}
+              getTabRef={getTabRef}
             />
           </div>
         </div>
