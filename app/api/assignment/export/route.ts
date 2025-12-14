@@ -70,14 +70,23 @@ export async function POST(request: NextRequest) {
     try {
       if (assignment.template_code && assignment.template_type) {
         // Use DOCX template
+        console.log(`Using template: ${assignment.template_code}_${assignment.template_type}`)
         const templatePath = getTemplatePath(assignment.template_code, assignment.template_type)
+        console.log(`Template path: ${templatePath}`)
+        console.log(`Assignment data keys:`, Object.keys(assignment))
         buffer = await generateFromTemplate(templatePath, assignment)
+        console.log('Template generation successful')
       } else {
+        console.warn('No template_code or template_type found, using programmatic generation')
+        console.warn('Assignment data:', JSON.stringify(assignment, null, 2))
         // Fallback to programmatic generation
         buffer = await generateAssignmentDocument(assignment)
       }
     } catch (templateError: any) {
-      console.warn('Template generation failed, falling back to programmatic:', templateError)
+      console.error('Template generation failed:', templateError)
+      console.error('Error stack:', templateError.stack)
+      console.error('Template code:', assignment.template_code)
+      console.error('Template type:', assignment.template_type)
       // Fallback to programmatic generation
       buffer = await generateAssignmentDocument(assignment)
     }

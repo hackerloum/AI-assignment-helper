@@ -63,8 +63,19 @@ export async function generateFromTemplate(
   data: AssignmentData
 ): Promise<Buffer> {
   try {
+    // Check if template file exists
+    if (!fs.existsSync(templatePath)) {
+      throw new Error(`Template file not found: ${templatePath}`)
+    }
+    
+    console.log(`Reading template from: ${templatePath}`)
+    
     // Read the template file
     const templateBuffer = fs.readFileSync(templatePath)
+    
+    if (!templateBuffer || templateBuffer.length === 0) {
+      throw new Error('Template file is empty')
+    }
     
     // Load the template into PizZip
     const zip = new PizZip(templateBuffer)
@@ -79,12 +90,11 @@ export async function generateFromTemplate(
     const templateData = prepareTemplateData(data)
     
     // Debug: Log template data to help troubleshoot
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Template data being set:', JSON.stringify(templateData, null, 2))
-      console.log('Group members count:', templateData.group_members?.length || 0)
-      if (templateData.group_members?.length > 0) {
-        console.log('First group member:', templateData.group_members[0])
-      }
+    console.log('Template data being set:', JSON.stringify(templateData, null, 2))
+    console.log('Template variables:', Object.keys(templateData))
+    console.log('Group members count:', templateData.group_members?.length || 0)
+    if (templateData.group_members?.length > 0) {
+      console.log('First group member:', templateData.group_members[0])
     }
     
     // Set data and render
@@ -94,12 +104,14 @@ export async function generateFromTemplate(
       doc.render()
     } catch (error: any) {
       // Handle rendering errors
+      console.error('Template rendering error:', error)
       if (error.properties && error.properties.errors instanceof Array) {
         const errorMessages = error.properties.errors
           .map((e: any) => {
             return `${e.name}: ${e.message}`
           })
           .join('\n')
+        console.error('Rendering errors:', errorMessages)
         throw new Error(`Template rendering error: ${errorMessages}`)
       }
       throw error
@@ -111,9 +123,13 @@ export async function generateFromTemplate(
       compression: 'DEFLATE',
     })
     
+    console.log('Template generation successful, buffer size:', buf.length)
     return Buffer.from(buf)
   } catch (error: any) {
     console.error('Error generating document from template:', error)
+    console.error('Template path:', templatePath)
+    console.error('Error message:', error.message)
+    console.error('Error stack:', error.stack)
     throw new Error(`Failed to generate document: ${error.message}`)
   }
 }
@@ -123,10 +139,26 @@ export async function generateFromTemplate(
  * Uses docxtemplater syntax: {variable_name} or {#condition}...{/condition}
  */
 function prepareTemplateData(data: AssignmentData): any {
+  // Format submission date if it exists
+  const formatDate = (date: any): string => {
+    if (!date) return ''
+    if (typeof date === 'string') {
+      // Try to parse and format
+      try {
+        const d = new Date(date)
+        if (!isNaN(d.getTime())) {
+          return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        }
+      } catch {}
+      return date
+    }
+    return String(date)
+  }
+
   const templateData: any = {
     // Basic fields
-    college_name: data.college_name || '',
-    college_code: data.college_code || '',
+    college_name: data.college_name || 'Local Government Training Institute',
+    college_code: data.college_code || 'LGTI',
     program_name: data.program_name || '',
     module_name: data.module_name || '',
     module_code: data.module_code || '',
@@ -135,12 +167,12 @@ function prepareTemplateData(data: AssignmentData): any {
     instructor_name: data.instructor_name || '',
     type_of_work: data.type_of_work || '',
     group_number: data.group_number || '',
-    submission_date: data.submission_date || '',
-    task: data.task || '',
+    submission_date: formatDate(data.submission_date),
+    task: data.task || data.title || '',
     student_name: data.student_name || '',
     registration_number: data.registration_number || '',
     group_name: data.group_name || '',
-    title: data.title || 'Untitled Assignment',
+    title: data.title || data.task || 'Untitled Assignment',
     
     // Content - split into paragraphs for better formatting
     assignment_content: formatContent(data.assignment_content || ''),
