@@ -265,23 +265,36 @@ export function listAvailableTemplates(): Array<{ code: string; type: 'individua
   const templatesDir = path.join(process.cwd(), 'templates')
   
   if (!fs.existsSync(templatesDir)) {
+    console.warn('Templates directory does not exist:', templatesDir)
     return []
   }
   
   const files = fs.readdirSync(templatesDir)
   const templates: Array<{ code: string; type: 'individual' | 'group'; path: string }> = []
   
-  for (const file of files) {
-    if (file.endsWith('.docx')) {
-      const match = file.match(/^(.+)_(individual|group)\.docx$/)
-      if (match) {
-        templates.push({
-          code: match[1],
-          type: match[2] as 'individual' | 'group',
-          path: path.join(templatesDir, file),
-        })
+  // Filter out temporary Word files (starting with ~$)
+  const docxFiles = files.filter(file => 
+    file.endsWith('.docx') && !file.startsWith('~$')
+  )
+  
+  for (const file of docxFiles) {
+    const match = file.match(/^(.+)_(individual|group)\.docx$/i) // Case-insensitive match
+    if (match) {
+      templates.push({
+        code: match[1].toUpperCase(), // Normalize to uppercase
+        type: match[2].toLowerCase() as 'individual' | 'group',
+        path: path.join(templatesDir, file),
+      })
+    } else {
+      // Debug: log files that don't match
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Template file does not match pattern:', file)
       }
     }
+  }
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Found templates:', templates.map(t => `${t.code}_${t.type}`))
   }
   
   return templates

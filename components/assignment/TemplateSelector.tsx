@@ -73,7 +73,7 @@ export function TemplateSelector({
               modified: t.modified,
               preview_url: t.preview_url,
               college_code: t.code,
-              college_name: t.code, // Will be enhanced with metadata later
+              college_name: t.college_name || t.code, // Use college_name from API if available
               template_type: t.type,
             }))
           

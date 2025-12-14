@@ -4,6 +4,17 @@ import fs from 'fs'
 import path from 'path'
 
 /**
+ * College code to name mapping
+ */
+const COLLEGE_NAMES: Record<string, string> = {
+  'LGTI': 'Local Government Training Institute',
+  'UDSM': 'University of Dar es Salaam',
+  'SUA': 'Sokoine University of Agriculture',
+  'UDOM': 'University of Dodoma',
+  // Add more as needed
+}
+
+/**
  * API route to list available DOCX templates
  * Returns template metadata including preview info
  */
@@ -20,6 +31,7 @@ export async function GET() {
         path: template.path,
         size: stats.size,
         modified: stats.mtime.toISOString(),
+        college_name: COLLEGE_NAMES[template.code] || template.code,
         // Preview will be generated on-demand
         preview_url: `/api/assignment/templates/preview?code=${template.code}&type=${template.type}`,
       }
