@@ -72,6 +72,7 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
       const response = await fetch('/api/submissions/upload', {
         method: 'POST',
         body: formDataUpload,
+        credentials: 'include', // Ensure cookies are sent
       });
 
       const data = await response.json();
@@ -138,6 +139,7 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
       const response = await fetch('/api/submissions/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // Ensure cookies are sent
         body: JSON.stringify({
           submissionType,
           ...formData,

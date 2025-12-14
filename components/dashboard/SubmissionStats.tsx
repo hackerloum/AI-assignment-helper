@@ -41,7 +41,9 @@ export function SubmissionStats() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/submissions/stats')
+      const response = await fetch('/api/submissions/stats', {
+        credentials: 'include', // Ensure cookies are sent
+      })
       const data = await response.json()
       if (data.success) {
         setStats(data.stats)
@@ -227,6 +229,7 @@ export function SubmissionStats() {
     </motion.div>
   )
 }
+
 
 
 

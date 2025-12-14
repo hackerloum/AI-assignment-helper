@@ -4,11 +4,28 @@ import { NextRequest, NextResponse } from "next/server";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    
+    // Try getSession first (more reliable for API routes)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    let user = session?.user ?? null;
+    
+    // Fallback to getUser if session didn't work
+    if (!user) {
+      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
+      user = userFromGetUser ?? null;
+      
+      if (authError) {
+        console.error('[Stats API] Auth error:', authError.message);
+      }
+    }
+    
+    if (sessionError) {
+      console.error('[Stats API] Session error:', sessionError.message);
+    }
 
     if (!user) {
+      console.error('[Stats API] No user found. Session:', !!session, 'Session error:', sessionError?.message);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

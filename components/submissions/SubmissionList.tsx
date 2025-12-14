@@ -53,7 +53,9 @@ export function SubmissionList() {
       
       const url = `/api/submissions/list${params.toString() ? '?' + params.toString() : ''}`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        credentials: 'include', // Ensure cookies are sent
+      });
       const data = await response.json();
       
       if (data.success) {

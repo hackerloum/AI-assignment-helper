@@ -79,7 +79,9 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
         ...(priority && { priority }),
       })
 
-      const response = await fetch(`/api/notifications?${params}`)
+      const response = await fetch(`/api/notifications?${params}`, {
+        credentials: 'include', // Ensure cookies are sent
+      })
       
       if (!response.ok) {
         throw new Error('Failed to fetch notifications')

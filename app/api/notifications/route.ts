@@ -8,9 +8,28 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    // Try getSession first (more reliable for API routes)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    let user = session?.user ?? null;
+    
+    // Fallback to getUser if session didn't work
+    if (!user) {
+      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
+      user = userFromGetUser ?? null;
+      
+      if (authError) {
+        console.error('[Notifications API] Auth error:', authError.message);
+      }
+    }
+    
+    if (sessionError) {
+      console.error('[Notifications API] Session error:', sessionError.message);
+    }
 
-    if (authError || !user) {
+    if (!user) {
+      console.error('[Notifications API] No user found. Session:', !!session, 'Session error:', sessionError?.message);
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -83,9 +102,28 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    // Try getSession first (more reliable for API routes)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    let user = session?.user ?? null;
+    
+    // Fallback to getUser if session didn't work
+    if (!user) {
+      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
+      user = userFromGetUser ?? null;
+      
+      if (authError) {
+        console.error('[Notifications API POST] Auth error:', authError.message);
+      }
+    }
+    
+    if (sessionError) {
+      console.error('[Notifications API POST] Session error:', sessionError.message);
+    }
 
-    if (authError || !user) {
+    if (!user) {
+      console.error('[Notifications API POST] No user found. Session:', !!session, 'Session error:', sessionError?.message);
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
