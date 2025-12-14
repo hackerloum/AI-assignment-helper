@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { CheckCircle2, XCircle, AlertCircle, Star } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Star, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Submission {
@@ -17,7 +17,8 @@ interface Submission {
   academic_level: string;
   word_count: number;
   formatting_style: string;
-  assignment_content: string;
+  assignment_content: string | null;
+  file_urls: string[] | null;
   status: string;
   quality_score: number | null;
   created_at: string;
@@ -178,10 +179,55 @@ export function AdminReviewPanel() {
               <div className="space-y-2">
                 <Label>Assignment Content Preview</Label>
                 <div className="p-4 bg-muted rounded-lg max-h-[200px] overflow-y-auto">
-                  <p className="text-sm whitespace-pre-wrap">
-                    {selectedSubmission.assignment_content.substring(0, 500)}
-                    {selectedSubmission.assignment_content.length > 500 ? '...' : ''}
-                  </p>
+                  {selectedSubmission.assignment_content ? (
+                    <p className="text-sm whitespace-pre-wrap">
+                      {selectedSubmission.assignment_content.substring(0, 500)}
+                      {selectedSubmission.assignment_content.length > 500 ? '...' : ''}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground italic">
+                        No text content available. This submission contains file attachments.
+                      </p>
+                      {selectedSubmission.file_urls && selectedSubmission.file_urls.length > 0 && (
+                        <div className="flex flex-col gap-2 mt-3">
+                          {selectedSubmission.file_urls.map((url, idx) => (
+                            <a
+                              key={idx}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/30 rounded-lg text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                            >
+                              <Download className="h-4 w-4" />
+                              {selectedSubmission.file_urls && selectedSubmission.file_urls.length > 1 
+                                ? `Download File ${idx + 1}` 
+                                : 'Download File'}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {selectedSubmission.assignment_content && selectedSubmission.file_urls && selectedSubmission.file_urls.length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs text-muted-foreground mb-2">Additional Files:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedSubmission.file_urls.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-2 py-1 bg-primary/10 border border-primary/30 rounded text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                          >
+                            <Download className="h-3 w-3" />
+                            File {idx + 1}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

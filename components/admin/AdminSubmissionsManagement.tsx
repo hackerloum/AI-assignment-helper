@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, CheckCircle2, XCircle, AlertCircle, Clock, Star } from 'lucide-react';
+import { FileText, CheckCircle2, XCircle, AlertCircle, Clock, Star, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
@@ -14,7 +14,8 @@ interface Submission {
   academic_level: string;
   word_count: number;
   formatting_style: string;
-  assignment_content: string;
+  assignment_content: string | null;
+  file_urls: string[] | null;
   status: string;
   quality_score: number | null;
   created_at: string;
@@ -216,10 +217,55 @@ export function AdminSubmissionsManagement() {
             <div className="p-4 bg-white/5 border border-dashboard-border rounded-xl">
               <h4 className="text-sm font-semibold text-slate-400 mb-2">Assignment Content Preview</h4>
               <div className="max-h-[200px] overflow-y-auto">
-                <p className="text-sm text-slate-300 whitespace-pre-wrap">
-                  {selectedSubmission.assignment_content.substring(0, 500)}
-                  {selectedSubmission.assignment_content.length > 500 ? '...' : ''}
-                </p>
+                {selectedSubmission.assignment_content ? (
+                  <p className="text-sm text-slate-300 whitespace-pre-wrap">
+                    {selectedSubmission.assignment_content.substring(0, 500)}
+                    {selectedSubmission.assignment_content.length > 500 ? '...' : ''}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-slate-400 italic">
+                      No text content available. This submission contains file attachments.
+                    </p>
+                    {selectedSubmission.file_urls && selectedSubmission.file_urls.length > 0 && (
+                      <div className="flex flex-col gap-2 mt-3">
+                        {selectedSubmission.file_urls.map((url, idx) => (
+                          <a
+                            key={idx}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-400 text-sm font-medium hover:bg-amber-500/20 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            {selectedSubmission.file_urls && selectedSubmission.file_urls.length > 1 
+                              ? `Download File ${idx + 1}` 
+                              : 'Download File'}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {selectedSubmission.assignment_content && selectedSubmission.file_urls && selectedSubmission.file_urls.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-dashboard-border">
+                    <p className="text-xs text-slate-400 mb-2">Additional Files:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSubmission.file_urls.map((url, idx) => (
+                        <a
+                          key={idx}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded text-amber-400 text-xs font-medium hover:bg-amber-500/20 transition-colors"
+                        >
+                          <Download className="w-3 h-3" />
+                          File {idx + 1}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
