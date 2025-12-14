@@ -60,10 +60,10 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Verify the assignment belongs to the user
+    // Verify the assignment belongs to the user and get full data
     const { data: existingAssignment, error: fetchError } = await supabase
       .from('assignments_new')
-      .select('user_id')
+      .select('user_id, assignment_content, original_content_hash, edit_count, download_count, content_changed_percentage')
       .eq('id', assignmentId)
       .single()
 
