@@ -145,8 +145,22 @@ export async function POST(request: NextRequest) {
         hint: error.hint,
         error: error
       });
+      
+      // Provide helpful error messages for common issues
+      let errorMessage = error.message;
+      if (error.message.includes('null value') && error.message.includes('assignment_content')) {
+        errorMessage = "Database migration required: Please run migration 018_make_assignment_content_nullable.sql to allow file-only submissions.";
+      } else if (error.message.includes('violates not-null constraint')) {
+        errorMessage = `Database constraint error: ${error.message}. Please check that all required fields are provided.`;
+      }
+      
       return NextResponse.json(
-        { error: "Failed to create submission", details: error.message },
+        { 
+          error: "Failed to create submission", 
+          details: errorMessage,
+          code: error.code,
+          hint: error.hint
+        },
         { status: 500 }
       );
     }

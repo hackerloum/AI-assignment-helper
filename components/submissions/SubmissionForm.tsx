@@ -192,7 +192,11 @@ export function SubmissionForm({ coverPageData, onSuccess }: SubmissionFormProps
           onSuccess?.();
         }, 2000);
       } else {
-        alert(data.error || 'Submission failed');
+        const errorMessage = data.details 
+          ? `${data.error}\n\nDetails: ${data.details}`
+          : data.error || 'Submission failed';
+        alert(errorMessage);
+        console.error('Submission error:', data);
       }
     } catch (error) {
       console.error('Submission error:', error);
