@@ -118,9 +118,19 @@ export default function AssignmentDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Link href={`/assignment/${assignmentId}/edit`}>
+            <motion.button
+              className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Edit className="w-4 h-4" />
+              Edit Assignment
+            </motion.button>
+          </Link>
           <motion.button
             onClick={() => handleExport('docx')}
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
