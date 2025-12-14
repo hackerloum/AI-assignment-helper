@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getUserCredits } from "./credits";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -123,28 +123,71 @@ export async function awardSubmissionCredits(
   reason: string,
   supabase?: SupabaseClient
 ): Promise<void> {
-  let client = supabase;
-  if (!client) {
-    client = await createClient();
-  }
+  // Use admin client to bypass RLS - this is necessary because we're updating
+  // credits for a different user (the submission owner) than the authenticated
+  // user (the admin/moderator reviewing the submission)
+  const adminClient = createAdminClient();
   
-  // Add credits to user account (using service client for proper transaction type)
-  const currentBalance = await getUserCredits(userId, client);
-  
-  await client
+  // Get current balance using admin client
+  const { data: creditData } = await adminClient
     .from("user_credits")
-    .update({ balance: currentBalance + credits })
-    .eq("user_id", userId);
+    .select("balance")
+    .eq("user_id", userId)
+    .maybeSingle();
+  
+  let currentBalance = creditData?.balance || 0;
+  
+  // If record doesn't exist, create it with the new credits
+  // Otherwise, update the existing record
+  if (!creditData) {
+    const { error: upsertError } = await adminClient
+      .from("user_credits")
+      .upsert({
+        user_id: userId,
+        balance: credits,
+      }, {
+        onConflict: 'user_id'
+      });
+    
+    if (upsertError) {
+      console.error('Error upserting user_credits record:', upsertError);
+      throw upsertError;
+    }
+  } else {
+    // Update user credits using admin client (bypasses RLS)
+    const { error: updateError } = await adminClient
+      .from("user_credits")
+      .update({ balance: currentBalance + credits })
+      .eq("user_id", userId);
 
-  await client.from("credit_transactions").insert({
-    user_id: userId,
-    amount: credits,
-    type: "earned", // Use "earned" for submission rewards
-    description: `Assignment submission approved: ${reason}`,
-  });
+    if (updateError) {
+      console.error('Error updating user credits:', updateError);
+      throw updateError;
+    }
+  }
 
-  // Update submission record
-  const { error } = await client
+  if (updateError) {
+    console.error('Error updating user credits:', updateError);
+    throw updateError;
+  }
+
+  // Insert credit transaction using admin client
+  const { error: transactionError } = await adminClient
+    .from("credit_transactions")
+    .insert({
+      user_id: userId,
+      amount: credits,
+      type: "earned", // Use "earned" for submission rewards
+      description: `Assignment submission approved: ${reason}`,
+    });
+
+  if (transactionError) {
+    console.error('Error inserting credit transaction:', transactionError);
+    throw transactionError;
+  }
+
+  // Update submission record using admin client
+  const { error: submissionError } = await adminClient
     .from('assignment_submissions')
     .update({
       credits_awarded: credits,
@@ -152,9 +195,9 @@ export async function awardSubmissionCredits(
     })
     .eq('id', submissionId);
 
-  if (error) {
-    console.error('Error updating submission credits:', error);
-    throw error;
+  if (submissionError) {
+    console.error('Error updating submission credits:', submissionError);
+    throw submissionError;
   }
 }
 
@@ -232,21 +275,42 @@ export async function checkAndAwardAchievements(
     });
   }
 
-  // Award achievements
+  // Award achievements using admin client to bypass RLS
+  const adminClient = createAdminClient();
+  
   for (const achievement of achievements) {
-    const { error } = await client
+    const { error } = await adminClient
       .from('user_achievements')
       .upsert(achievement, { onConflict: 'user_id,achievement_type' });
 
     if (!error && achievement.credits_bonus > 0) {
-      const currentBalance = await getUserCredits(userId, client);
-      
-      await client
+      // Get current balance using admin client
+      const { data: creditData } = await adminClient
         .from("user_credits")
-        .update({ balance: currentBalance + achievement.credits_bonus })
-        .eq("user_id", userId);
+        .select("balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+      
+      const currentBalance = creditData?.balance || 0;
+      
+      // Upsert credits using admin client (bypasses RLS)
+      // This will create the record if it doesn't exist, or update if it does
+      const { error: upsertError } = await adminClient
+        .from("user_credits")
+        .upsert({
+          user_id: userId,
+          balance: currentBalance + achievement.credits_bonus,
+        }, {
+          onConflict: 'user_id'
+        });
 
-      await client.from("credit_transactions").insert({
+      if (upsertError) {
+        console.error('Error upserting credits for achievement:', upsertError);
+        continue; // Continue with other achievements even if one fails
+      }
+
+      // Insert transaction using admin client
+      await adminClient.from("credit_transactions").insert({
         user_id: userId,
         amount: achievement.credits_bonus,
         type: "earned",
