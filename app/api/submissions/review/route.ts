@@ -100,16 +100,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get submission details
-    const { data: submission, error: fetchError } = await supabase
+    // Get submission details using admin client to bypass RLS
+    // This is safe because we've already validated the user is admin/moderator
+    const { data: submission, error: fetchError } = await adminClient
       .from('assignment_submissions')
       .select('*')
       .eq('id', submissionId)
       .single();
 
     if (fetchError || !submission) {
+      console.error('[Review API] Submission fetch error:', fetchError?.message, '| Submission ID:', submissionId);
       return NextResponse.json(
-        { error: "Submission not found" },
+        { error: "Submission not found", details: fetchError?.message },
         { status: 404 }
       );
     }
@@ -175,7 +177,7 @@ export async function POST(request: NextRequest) {
 
       // If group submission, award credits to all members
       if (submission.submission_type === 'group' && submission.group_id) {
-        const { data: members } = await supabase
+        const { data: members } = await adminClient
           .from('assignment_group_members')
           .select('user_id')
           .eq('group_id', submission.group_id);
@@ -203,7 +205,8 @@ export async function POST(request: NextRequest) {
       updateData.credits_awarded_at = new Date().toISOString();
     }
 
-    const { error: updateError } = await supabase
+    // Update submission using admin client to bypass RLS
+    const { error: updateError } = await adminClient
       .from('assignment_submissions')
       .update(updateData)
       .eq('id', submissionId);
