@@ -9,20 +9,21 @@ DROP POLICY IF EXISTS "Group leaders can add members" ON assignment_group_member
 DROP FUNCTION IF EXISTS is_group_member(UUID, UUID);
 
 -- Create a simpler SELECT policy that doesn't cause recursion
--- Users can see members of groups they created
+-- Users can see members of groups they created OR their own membership
+-- This policy ONLY checks assignment_groups (no recursion) and user_id (no query)
 CREATE POLICY "Users can view group members"
 ON assignment_group_members FOR SELECT
 TO authenticated
 USING (
-  -- User can see members if they created the group
-  EXISTS (
+  -- User can see their own membership record (no query, just direct comparison)
+  assignment_group_members.user_id = auth.uid()
+  -- OR user created the group (only queries assignment_groups, not assignment_group_members)
+  OR EXISTS (
     SELECT 1 
     FROM assignment_groups ag
     WHERE ag.id = assignment_group_members.group_id
     AND ag.created_by = auth.uid()
   )
-  -- Or if the user_id matches (user can see their own membership)
-  OR assignment_group_members.user_id = auth.uid()
 );
 
 -- Create a simpler INSERT policy
