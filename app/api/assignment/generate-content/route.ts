@@ -4,6 +4,64 @@ import { cookies } from 'next/headers'
 import { deductCredits } from '@/lib/credits'
 import { generateEssay, stripMarkdownHeaders, callGemini } from '@/lib/ai-service'
 
+/**
+ * Detect the type of assignment question
+ */
+function detectQuestionType(question: string): 'multiple' | 'describe_terms' | 'essay' {
+  const lowerQuestion = question.toLowerCase()
+  
+  // Check for "describe the following terms" or similar patterns
+  if (
+    lowerQuestion.includes('describe the following') ||
+    lowerQuestion.includes('define the following') ||
+    lowerQuestion.includes('explain the following') ||
+    lowerQuestion.includes('what is') && (lowerQuestion.includes('term') || lowerQuestion.includes('concept'))
+  ) {
+    return 'describe_terms'
+  }
+  
+  // Check for multiple questions (numbered questions, bullet points, or multiple question marks)
+  const questionCount = (question.match(/\?/g) || []).length
+  const numberedQuestions = question.match(/\d+[\.\)]\s*[A-Z]/g) || question.match(/^[a-z]\)/gim) || []
+  
+  if (questionCount >= 2 || numberedQuestions.length >= 2) {
+    return 'multiple'
+  }
+  
+  // Default to essay type
+  return 'essay'
+}
+
+/**
+ * Extract terms to describe from the question
+ */
+function extractTerms(question: string): string[] {
+  const terms: string[] = []
+  
+  // Look for patterns like "describe: term1, term2, term3" or "terms: term1, term2"
+  const colonMatch = question.match(/(?:describe|define|explain)[^:]*:\s*([^\n]+)/i)
+  if (colonMatch) {
+    const termList = colonMatch[1].split(/[,;]/).map(t => t.trim()).filter(Boolean)
+    if (termList.length > 0) {
+      return termList
+    }
+  }
+  
+  // Look for numbered or bulleted lists
+  const numberedTerms = question.match(/\d+[\.\)]\s*([^\n]+)/g)
+  if (numberedTerms && numberedTerms.length >= 2) {
+    return numberedTerms.map(t => t.replace(/^\d+[\.\)]\s*/, '').trim())
+  }
+  
+  // Look for terms in quotes
+  const quotedTerms = question.match(/"([^"]+)"/g)
+  if (quotedTerms) {
+    return quotedTerms.map(t => t.replace(/"/g, ''))
+  }
+  
+  return []
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get access token from Authorization header (more reliable than cookies)
@@ -75,7 +133,7 @@ export async function POST(request: NextRequest) {
     // Generate content using AI
     // If section is provided, generate section-specific content ONLY
     // If no section is provided, generate full assignment with introduction, body, and conclusion
-    let content: string
+    let content: string = ''
     if (section) {
       // Determine section-specific instructions
       const sectionInstructions = {
@@ -218,8 +276,115 @@ CRITICAL RULES:
         }
       }
     } else {
-      // Generate full assignment with introduction, body paragraphs, and conclusion
-      const fullAssignmentPrompt = `Write a complete academic assignment (${targetWordCount} words) that addresses the following question/task:
+      // Detect question type and generate accordingly
+      const questionType = detectQuestionType(finalPrompt)
+      const terms = extractTerms(finalPrompt)
+      
+      let fullAssignmentPrompt: string
+      
+      if (questionType === 'describe_terms' && terms.length > 0) {
+        // Handle "describe the following terms" type assignments
+        const termsList = terms.map((t, i) => `${i + 1}. ${t}`).join('\n')
+        fullAssignmentPrompt = `Write a complete academic assignment (${targetWordCount} words) that describes and explains the following terms:
+
+${termsList}
+
+STRUCTURE REQUIREMENTS:
+1. **Introduction Paragraph(s)**: 
+   - Start with a brief introduction explaining the importance of understanding these terms
+   - Provide context on how these terms relate to each other or the subject area
+   - Preview what will be discussed
+
+2. **Body Paragraphs** (one section per term):
+   - For EACH term, provide:
+     * A clear definition
+     * Detailed explanation of the concept
+     * Key characteristics or components
+     * Examples from Tanzania (institutions, policies, real-world applications)
+     * How it relates to the subject or other terms
+   - Use clear transitions between terms
+   - Each term should be explained in 1-2 paragraphs
+   - **PRIORITIZE TANZANIAN EXAMPLES**: Include relevant Tanzanian case studies, institutions, policies, or real-world examples for each term
+
+3. **Conclusion Paragraph(s)**:
+   - Summarize the key terms and their importance
+   - Explain how these terms relate to each other (if applicable)
+   - Provide final thoughts on their significance, especially in the Tanzanian context
+   - End with a strong closing statement
+
+TANZANIAN CONTEXT REQUIREMENTS:
+- For each term, include Tanzanian examples or case studies when relevant
+- Reference Tanzanian institutions, policies, or organizations
+- Relate each term to Tanzanian context, challenges, or opportunities
+
+CRITICAL FORMATTING RULES:
+- Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting
+- Use only paragraph breaks (double line breaks) to separate paragraphs
+- Write in a student-friendly, clear, and engaging style
+- Use simple language where possible, but maintain academic tone
+- Make it comprehensive and detailed - this is for a real assignment
+- Ensure the total word count is approximately ${targetWordCount} words
+- Address ALL ${terms.length} terms provided
+- The assignment should flow naturally from introduction through body to conclusion`
+      
+      } else if (questionType === 'multiple') {
+        // Handle multiple questions (2-3 questions)
+        // Extract individual questions
+        const questions = finalPrompt
+          .split(/\n+/)
+          .map((q: string) => q.trim())
+          .filter((q: string) => q.length > 0 && (q.includes('?') || /^\d+[\.\)]/.test(q) || /^[a-z]\)/.test(q)))
+        
+        const questionsList = questions.length > 0 
+          ? questions.map((q: string, i: number) => `${i + 1}. ${q.replace(/^\d+[\.\)]\s*/, '').replace(/^[a-z]\)\s*/, '')}`).join('\n')
+          : finalPrompt
+        
+        fullAssignmentPrompt = `Write a complete academic assignment (${targetWordCount} words) that answers the following ${questions.length > 0 ? questions.length : 'multiple'} questions:
+
+${questionsList}
+
+STRUCTURE REQUIREMENTS:
+1. **Introduction Paragraph(s)**: 
+   - Start with a hook or attention-grabbing opening relevant to Tanzania
+   - Provide background context on the topic, preferably with Tanzanian context
+   - Clearly state that you will address ${questions.length > 0 ? questions.length : 'multiple'} questions
+   - Preview what will be discussed
+
+2. **Body Paragraphs** (organized by question):
+   - Address EACH question separately and thoroughly
+   - For each question, provide:
+     * A clear answer with explanation
+     * Supporting evidence and examples
+     * Tanzanian examples, case studies, or context when relevant
+     * Detailed analysis and discussion
+   - Use clear transitions between questions
+   - Each question should be answered in 2-4 paragraphs depending on complexity
+   - **PRIORITIZE TANZANIAN EXAMPLES**: Include relevant Tanzanian case studies, institutions, policies, organizations, or real-world examples
+
+3. **Conclusion Paragraph(s)**:
+   - Summarize the answers to all questions
+   - Provide final thoughts or implications, especially for Tanzania
+   - Show how the answers relate to each other (if applicable)
+   - End with a strong closing statement
+
+TANZANIAN CONTEXT REQUIREMENTS:
+- For each question, include Tanzanian examples or case studies when relevant
+- Reference Tanzanian institutions, policies, or organizations
+- Relate answers to Tanzanian context, challenges, or opportunities
+
+CRITICAL FORMATTING RULES:
+- Write in plain text format - do NOT use markdown headers (##), bold (**), or any other markdown formatting
+- Use only paragraph breaks (double line breaks) to separate paragraphs
+- Write in a student-friendly, clear, and engaging style
+- Use simple language where possible, but maintain academic tone
+- Make it comprehensive and detailed - this is for a real assignment
+- Ensure the total word count is approximately ${targetWordCount} words
+- Answer ALL questions provided
+- The assignment should flow naturally from introduction through body to conclusion`
+      
+      } else {
+        // Default essay-type assignment
+        fullAssignmentPrompt = `Write a complete academic assignment (${targetWordCount} words) that addresses the following question/task:
 
 "${finalPrompt}"
 
