@@ -69,6 +69,15 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
 
   const fetchNotifications = useCallback(async (offset = 0) => {
     try {
+      // Check if user is authenticated before fetching
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setLoading(false)
+        setNotifications([])
+        setUnreadCount(0)
+        return
+      }
+
       setLoading(true)
       setError(null)
 
@@ -81,10 +90,21 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
 
       const response = await fetch(`/api/notifications?${params}`, {
         credentials: 'include', // Ensure cookies are sent
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
       
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
+        if (response.status === 401) {
+          // User is not authenticated, clear notifications
+          setNotifications([])
+          setUnreadCount(0)
+          setError(null) // Don't show error for unauthenticated users
+        } else {
+          throw new Error('Failed to fetch notifications')
+        }
+        return
       }
 
       const data = await response.json()
@@ -103,7 +123,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     } finally {
       setLoading(false)
     }
-  }, [limit, unreadOnly, priority])
+  }, [limit, unreadOnly, priority, supabase])
 
   const markAsRead = useCallback(async (notificationId: string, actionTaken = false) => {
     try {

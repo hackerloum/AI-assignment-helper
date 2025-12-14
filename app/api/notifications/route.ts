@@ -9,31 +9,16 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     
-    // Try getSession first (more reliable for API routes)
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    let user = session?.user ?? null;
-    
-    // Fallback to getUser if session didn't work
-    if (!user) {
-      const { data: { user: userFromGetUser }, error: authError } = await supabase.auth.getUser();
-      user = userFromGetUser ?? null;
-      
-      if (authError) {
-        console.error('[Notifications API] Auth error:', authError.message);
-      }
-    }
-    
-    if (sessionError) {
-      console.error('[Notifications API] Session error:', sessionError.message);
-    }
+    // Get user - getUser is more reliable for API routes
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.error('[Notifications API] No user found. Session:', !!session, 'Session error:', sessionError?.message);
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    if (userError || !user) {
+      // Return empty notifications for unauthenticated users (don't return 401 to avoid console errors)
+      return NextResponse.json({
+        notifications: [],
+        unreadCount: 0,
+        hasMore: false,
+      });
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -58,14 +43,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Only show notifications that are scheduled for now or earlier
-    query = query.or(
-      `scheduled_for.is.null,scheduled_for.lte.${new Date().toISOString()}`
-    );
+    const now = new Date().toISOString();
+    query = query.or(`scheduled_for.is.null,scheduled_for.lte.${now}`);
 
     // Only show notifications that haven't expired
-    query = query.or(
-      `expires_at.is.null,expires_at.gt.${new Date().toISOString()}`
-    );
+    query = query.or(`expires_at.is.null,expires_at.gt.${now}`);
 
     const { data: notifications, error } = await query;
 
