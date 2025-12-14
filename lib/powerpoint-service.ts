@@ -4,7 +4,7 @@
  */
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 const OPENAI_MODEL = "gpt-5-mini"; // PowerPoint uses GPT-5 mini
 const MAX_TOKENS = 600; // 400-600 tokens: Enough for 5-10 slides
 
@@ -50,14 +50,10 @@ async function callGemini(
       },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        messages: [
-          {
-            role: "user",
-            content: fullPrompt,
-          },
-        ],
+        input: fullPrompt,
+        store: true,
         temperature: temperature,
-        max_tokens: maxTokens || MAX_TOKENS,
+        max_output_tokens: maxTokens || MAX_TOKENS,
       }),
     });
 
@@ -70,7 +66,7 @@ async function callGemini(
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.output?.[0]?.content?.[0]?.text;
 
     if (!content) {
       throw new Error("No response from OpenAI API");

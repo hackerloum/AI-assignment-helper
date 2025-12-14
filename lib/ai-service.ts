@@ -1,5 +1,5 @@
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+const OPENAI_API_URL = "https://api.openai.com/v1/responses";
 
 // Model mapping for different features
 const MODEL_MAPPING = {
@@ -31,19 +31,19 @@ const TOKEN_LIMITS = {
 
 interface OpenAIRequest {
   model: string;
-  messages: Array<{
-    role: string;
-    content: string;
-  }>;
-  max_tokens?: number;
+  input: string;
+  store?: boolean;
+  max_output_tokens?: number;
   temperature?: number;
 }
 
 interface OpenAIResponse {
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
+  output?: Array<{
+    type?: string;
+    content?: Array<{
+      type?: string;
+      text?: string;
+    }>;
   }>;
   error?: {
     message?: string;
@@ -72,14 +72,10 @@ export async function callGemini(
 
   const requestBody: OpenAIRequest = {
     model: model || MODEL_MAPPING.ASSIGNMENT, // Default to assignment model
-    messages: [
-      {
-        role: "user",
-        content: fullPrompt,
-      },
-    ],
+    input: fullPrompt,
+    store: true,
     temperature: temperature,
-    ...(maxOutputTokens && { max_tokens: maxOutputTokens }),
+    ...(maxOutputTokens && { max_output_tokens: maxOutputTokens }),
   };
 
   try {
@@ -131,8 +127,8 @@ export async function callGemini(
       throw new Error(errorMessage);
     }
 
-    // Extract content from OpenAI chat completion response
-    const text = data.choices?.[0]?.message?.content || "Error: No response from OpenAI API";
+    // Extract content from OpenAI Responses API
+    const text = data.output?.[0]?.content?.[0]?.text || "Error: No response from OpenAI API";
 
     return text;
   } catch (error: any) {

@@ -51,9 +51,9 @@ The application automatically selects the best model and token limit for each fe
 | Humanization           | GPT-5 mini  | 400        | AI content humanization |
 
 **Technical Details:**
-- API endpoint: `https://api.openai.com/v1/chat/completions`
+- API endpoint: `https://api.openai.com/v1/responses`
 - Models are automatically selected based on the feature being used
-- Token limits are optimized for each feature (300-2000 tokens)
+- Token limits are optimized for each feature using `max_output_tokens` (300-2000 tokens)
 - GPT-5.2 with 2000 tokens for research tasks requiring deeper analysis
 - GPT-5 mini with 300-1500 tokens for other tasks for optimal performance and cost
 
