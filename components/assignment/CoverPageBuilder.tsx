@@ -159,12 +159,13 @@ export function CoverPageBuilder({
               />
             </div>
             <FormField
-              label="Task"
+              label="Task/Questions"
               icon={FileText}
               value={formData.task}
               onChange={(value) => handleChange('task', value)}
-              placeholder="e.g., Discuss seven (7) Entrepreneurs Myths"
+              placeholder="Enter your assignment question(s). You can enter multiple questions, one per line.&#10;Example:&#10;1. Discuss seven (7) Entrepreneurs Myths&#10;2. Explain the role of entrepreneurship in economic development&#10;3. Describe the challenges faced by entrepreneurs in Tanzania"
               fullWidth
+              multiline
             />
           </>
         ) : isLGTI && assignmentType === 'individual' ? (
@@ -201,12 +202,13 @@ export function CoverPageBuilder({
               />
             </div>
             <FormField
-              label="Question"
+              label="Question(s)"
               icon={FileText}
               value={formData.task}
               onChange={(value) => handleChange('task', value)}
-              placeholder="e.g., Explain the role of local government in community development"
+              placeholder="Enter your assignment question(s). You can enter multiple questions, one per line.&#10;Example:&#10;1. Explain the role of local government in community development&#10;2. Describe the following terms: decentralization, devolution, local autonomy&#10;3. What are the challenges facing local government in Tanzania?"
               fullWidth
+              multiline
             />
           </>
         ) : (
@@ -249,6 +251,15 @@ export function CoverPageBuilder({
               onChange={(value) => handleChange('assignment_title', value)}
               placeholder="e.g., Database Management Systems Analysis"
               fullWidth
+            />
+            <FormField
+              label="Question(s)"
+              icon={FileText}
+              value={formData.task}
+              onChange={(value) => handleChange('task', value)}
+              placeholder="Enter your assignment question(s). You can enter multiple questions, one per line.&#10;Example:&#10;1. Analyze the importance of database normalization&#10;2. Compare and contrast SQL and NoSQL databases&#10;3. Describe the following terms: ACID, transaction, concurrency control"
+              fullWidth
+              multiline
             />
           </>
         )}
@@ -342,6 +353,7 @@ interface FormFieldProps {
   placeholder?: string
   type?: string
   fullWidth?: boolean
+  multiline?: boolean
 }
 
 function FormField({ 
@@ -351,8 +363,11 @@ function FormField({
   onChange, 
   placeholder, 
   type = 'text',
-  fullWidth = false 
+  fullWidth = false,
+  multiline = false
 }: FormFieldProps) {
+  const baseInputClasses = "w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"
+  
   return (
     <div className={fullWidth ? 'col-span-full' : ''}>
       <label className="block text-sm font-semibold text-slate-300 mb-2">
@@ -361,13 +376,28 @@ function FormField({
           {label}
         </div>
       </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-      />
+      {multiline ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder?.replace(/&#10;/g, '\n')}
+          rows={6}
+          className={baseInputClasses}
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={baseInputClasses}
+        />
+      )}
+      {multiline && (
+        <p className="text-xs text-slate-500 mt-2">
+          💡 Tip: Enter each question on a new line. You can number them (1., 2., 3.) or use bullet points.
+        </p>
+      )}
     </div>
   )
 }

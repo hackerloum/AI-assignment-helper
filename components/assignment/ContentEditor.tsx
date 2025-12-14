@@ -361,8 +361,19 @@ export function ContentEditor({
               </div>
               {question && (
                 <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4">
-                  <p className="text-sm font-semibold text-indigo-400 mb-2">Assignment Question:</p>
-                  <p className="text-sm text-slate-300">{question}</p>
+                  <p className="text-sm font-semibold text-indigo-400 mb-2">
+                    Assignment Question{question.split('\n').filter(q => q.trim().length > 0).length > 1 ? 's' : ''}:
+                  </p>
+                  <div className="text-sm text-slate-300 whitespace-pre-line space-y-2">
+                    {question.split('\n').filter(q => q.trim().length > 0).map((q, index) => (
+                      <div key={index} className="flex gap-2">
+                        <span className="text-indigo-400 font-medium min-w-[24px]">
+                          {q.match(/^\d+[\.\)]/) ? '' : `${index + 1}.`}
+                        </span>
+                        <span className="flex-1">{q.trim().replace(/^\d+[\.\)]\s*/, '')}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <button
