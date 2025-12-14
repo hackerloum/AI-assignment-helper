@@ -77,6 +77,12 @@ export async function POST(request: NextRequest) {
     try {
       result = await humanizeContent(text, options || {});
     } catch (error: any) {
+      console.error("Humanize error details:", {
+        message: error.message,
+        stack: error.stack,
+        isQuotaError: error.isQuotaError
+      });
+      
       // If it's a quota error, refund credits and return specific error
       if (error.isQuotaError) {
         // Refund the credits that were deducted
@@ -97,6 +103,15 @@ export async function POST(request: NextRequest) {
           { status: 429 }
         );
       }
+      
+      // Refund credits for other errors too
+      await addCredits(
+        user.id,
+        6,
+        "Refunded due to API error",
+        supabase
+      );
+      
       // Re-throw other errors
       throw error;
     }

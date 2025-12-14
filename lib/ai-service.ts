@@ -126,7 +126,14 @@ export async function callGemini(
     }
 
     // Extract content from OpenAI Responses API
-    const text = data.output?.[0]?.content?.[0]?.text || "Error: No response from OpenAI API";
+    // Try multiple possible response formats
+    let text = data.output?.[0]?.content?.[0]?.text;
+    
+    if (!text) {
+      // Log the actual response structure for debugging
+      console.error("Unexpected response structure:", JSON.stringify(data, null, 2));
+      throw new Error("No response from OpenAI API - check server logs for details");
+    }
 
     return text;
   } catch (error: any) {
