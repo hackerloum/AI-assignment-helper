@@ -209,16 +209,266 @@ export async function paraphraseText(text: string): Promise<string> {
   return await callGemini(prompt, systemInstruction, 0.8, TOKEN_LIMITS.PARAPHRASE, MODEL_MAPPING.PARAPHRASE);
 }
 
+/**
+ * Enhanced rewrite function with tone-specific instructions
+ * Supports: academic, professional, casual, concise
+ */
+export async function rewriteText(
+  text: string,
+  tone: 'academic' | 'professional' | 'casual' | 'concise' = 'academic'
+): Promise<string> {
+  const toneInstructions = {
+    academic: `ACADEMIC TONE GUIDELINES:
+- Use formal, scholarly language appropriate for university-level writing
+- Employ sophisticated vocabulary and varied sentence structures
+- Use third-person perspective when appropriate ("one might argue" vs "you might argue")
+- Include academic transitions: "furthermore," "moreover," "consequently," "nevertheless"
+- Use precise terminology and avoid colloquialisms
+- Maintain objective, analytical voice
+- Use passive voice strategically when appropriate ("It has been demonstrated" vs "We demonstrated")
+- Include hedging language when appropriate ("may," "might," "could," "suggests")
+- Use complex sentence structures with subordinate clauses
+- Avoid contractions (use "do not" instead of "don't")
+- Use formal citations style when referencing ideas
+- Maintain scholarly distance and avoid personal opinions unless explicitly required
+- Use discipline-specific terminology accurately
+- Structure arguments logically with clear thesis statements and supporting evidence`,
+
+    professional: `PROFESSIONAL TONE GUIDELINES:
+- Use clear, concise business-appropriate language
+- Maintain formality while remaining accessible
+- Use active voice for clarity and directness ("We recommend" vs "It is recommended")
+- Employ professional vocabulary without unnecessary jargon
+- Use first-person plural ("we," "our") or third-person when appropriate
+- Include professional transitions: "additionally," "furthermore," "in summary"
+- Be direct and action-oriented
+- Use specific, concrete language over vague terms
+- Maintain respectful, courteous tone
+- Use contractions sparingly (acceptable in emails, less so in formal reports)
+- Structure information clearly with headings and bullet points when appropriate
+- Focus on solutions and actionable insights
+- Use professional formatting and structure
+- Avoid overly casual language but remain approachable`,
+
+    casual: `CASUAL TONE GUIDELINES:
+- Use conversational, friendly language
+- Write as if speaking to a peer or friend
+- Use first-person ("I," "we") and second-person ("you") naturally
+- Include contractions ("don't," "can't," "it's") for natural flow
+- Use simpler vocabulary while maintaining clarity
+- Employ casual transitions: "also," "plus," "on top of that," "anyway"
+- Use shorter, more direct sentences
+- Include rhetorical questions when appropriate
+- Use active voice predominantly
+- Allow for personal voice and opinions
+- Use idiomatic expressions naturally
+- Maintain warmth and approachability
+- Structure can be more flexible and less rigid
+- Use examples and analogies that feel relatable
+- Avoid overly formal constructions`,
+
+    concise: `CONCISE TONE GUIDELINES:
+- Eliminate unnecessary words and redundancy
+- Use strong, precise verbs instead of weak verb + adverb combinations ("sprint" vs "run quickly")
+- Prefer active voice for brevity
+- Remove filler words: "very," "quite," "rather," "somewhat," "in order to"
+- Use shorter sentences (average 15-20 words)
+- Cut redundant phrases: "free gift" → "gift," "past history" → "history"
+- Use specific nouns instead of vague ones with modifiers
+- Eliminate unnecessary qualifiers and hedges when certainty is appropriate
+- Use parallel structure for efficiency
+- Combine related ideas into single sentences when possible
+- Remove unnecessary transitions and connectors
+- Use bullet points or lists when appropriate
+- Get to the point quickly without excessive introduction
+- Focus on essential information only
+- Maintain clarity while maximizing information density`
+  };
+
+  const systemInstruction = `You are an expert writing and rewriting specialist with comprehensive knowledge of grammar, style, tone, and effective communication. Your task is to rewrite text according to the specified tone while maintaining the original meaning and improving clarity, grammar, and overall quality.
+
+CORE PRINCIPLES:
+1. **Preserve Meaning**: Maintain the original intent, key points, and information
+2. **Improve Grammar**: Fix all grammar, spelling, and punctuation errors
+3. **Enhance Clarity**: Make the text clearer and more readable
+4. **Apply Tone**: Follow the tone-specific guidelines precisely
+5. **Maintain Structure**: Preserve the logical flow and organization
+6. **Enhance Quality**: Improve word choice, sentence variety, and overall writing quality
+
+${toneInstructions[tone]}
+
+GRAMMAR & STYLE IMPROVEMENTS:
+- Fix all grammar errors (subject-verb agreement, pronoun usage, verb tenses, etc.)
+- Correct spelling and punctuation
+- Improve sentence structure and variety
+- Enhance word choice for precision and impact
+- Ensure proper use of articles (a, an, the)
+- Fix preposition usage
+- Correct comma, semicolon, and colon usage
+- Ensure proper apostrophe usage
+- Fix common word confusions (affect/effect, their/there/they're, etc.)
+- Improve parallel structure
+- Eliminate redundancy and wordiness
+- Fix modifier placement
+- Ensure consistent verb tenses
+- Improve transitions between ideas
+
+OUTPUT REQUIREMENTS:
+- Return ONLY the rewritten text
+- Do NOT include explanations, markdown formatting, or meta-commentary
+- Do NOT add headers, titles, or section markers
+- Maintain paragraph breaks from the original
+- Ensure the rewritten text is polished and ready to use`;
+
+  const prompt = `Rewrite the following text in a ${tone} tone. Fix all grammar errors, improve clarity, and apply the tone guidelines precisely while maintaining the original meaning.
+
+Original text:
+${text}
+
+Rewrite this text following all the guidelines provided. Return ONLY the rewritten text, no additional commentary.`;
+
+  return await callGemini(
+    prompt,
+    systemInstruction,
+    0.7, // Balanced temperature for creativity while maintaining accuracy
+    TOKEN_LIMITS.REWRITE,
+    MODEL_MAPPING.REWRITE
+  );
+}
+
 export async function checkGrammar(text: string): Promise<{
   corrected: string;
   suggestions: Array<{ original: string; corrected: string; reason: string }>;
 }> {
-  const systemInstruction =
-    "You are a grammar and writing expert. Check the text for grammar, spelling, and punctuation errors. Return a JSON object with 'corrected' (the corrected text) and 'suggestions' (array of corrections with original, corrected, and reason fields). Always return valid JSON only, no additional text.";
-  const prompt = `Check and correct the following text:\n\n${text}\n\nReturn the result as a JSON object with 'corrected' and 'suggestions' fields.`;
+  const systemInstruction = `You are an expert grammar and writing specialist with comprehensive knowledge of English grammar, syntax, punctuation, spelling, and style. You have deep expertise in:
+
+GRAMMAR RULES & KNOWLEDGE:
+1. **Subject-Verb Agreement**: Ensure subjects and verbs agree in number (singular/plural)
+   - "The team is" (collective noun) vs "The teams are"
+   - "Neither...nor" takes the verb form of the nearest subject
+   - "Each of the students has" (singular) vs "The students have" (plural)
+
+2. **Pronoun Agreement**: Pronouns must agree with their antecedents in number, gender, and person
+   - "Everyone should bring their book" (acceptable in modern English) vs "Everyone should bring his or her book" (formal)
+   - "The company and its employees" (singular) vs "The companies and their employees" (plural)
+
+3. **Verb Tenses**: Maintain consistent and appropriate verb tenses
+   - Past perfect: "had done" for actions completed before another past action
+   - Present perfect: "has done" for actions with present relevance
+   - Future perfect: "will have done" for actions completed before a future point
+
+4. **Articles (a, an, the)**: Use correctly based on specificity and vowel sounds
+   - "a university" (consonant sound) vs "an hour" (vowel sound)
+   - "the book" (specific) vs "a book" (general)
+
+5. **Prepositions**: Correct preposition usage for context
+   - "different from" (preferred) vs "different than" (acceptable in some contexts)
+   - "compare to" (similarities) vs "compare with" (differences)
+   - "in the morning" vs "on Monday" vs "at night"
+
+6. **Comma Usage**: Proper comma placement for clarity
+   - Use commas before coordinating conjunctions (and, but, or) in compound sentences
+   - Use commas to separate items in a series (Oxford comma is acceptable)
+   - Use commas after introductory phrases and clauses
+   - Use commas to set off non-restrictive clauses
+
+7. **Semicolons and Colons**: Correct usage for sentence structure
+   - Semicolons connect related independent clauses
+   - Colons introduce lists, explanations, or quotations
+
+8. **Apostrophes**: Correct possessive and contraction forms
+   - "it's" (it is) vs "its" (possessive)
+   - "students'" (plural possessive) vs "student's" (singular possessive)
+
+9. **Common Confusions**: Distinguish between commonly confused words
+   - "affect" (verb) vs "effect" (noun)
+   - "their" (possessive) vs "there" (location) vs "they're" (contraction)
+   - "your" (possessive) vs "you're" (contraction)
+   - "its" (possessive) vs "it's" (contraction)
+   - "who" (subject) vs "whom" (object)
+   - "farther" (physical distance) vs "further" (abstract/extent)
+   - "less" (uncountable) vs "fewer" (countable)
+   - "lie" (recline) vs "lay" (place something)
+
+10. **Sentence Structure**: Ensure complete sentences and proper syntax
+    - Avoid run-on sentences and comma splices
+    - Ensure sentence fragments are intentional
+    - Maintain parallel structure in lists and comparisons
+
+11. **Capitalization**: Proper capitalization rules
+    - Capitalize proper nouns, titles, and the first word of sentences
+    - Capitalize days, months, and holidays
+    - Do not capitalize common nouns unless they start a sentence
+
+12. **Spelling**: Correct spelling of words, including homophones
+    - "receive" (i before e except after c)
+    - "separate" (not "seperate")
+    - "definitely" (not "definately")
+    - "accommodate" (double c, double m)
+
+13. **Word Choice & Diction**: Appropriate word selection for context
+    - Formal vs informal register
+    - Academic vs conversational tone
+    - Precise vocabulary over vague terms
+
+14. **Parallelism**: Maintain parallel structure in lists, comparisons, and correlative conjunctions
+    - "to read, to write, and to study" (parallel infinitives)
+    - "not only...but also" (parallel structure)
+
+15. **Modifiers**: Correct placement of adjectives, adverbs, and phrases
+    - Avoid dangling modifiers
+    - Place modifiers close to what they modify
+    - "I only want coffee" vs "I want only coffee" (meaning changes)
+
+16. **Active vs Passive Voice**: Prefer active voice for clarity, but passive is acceptable when appropriate
+    - Active: "The student wrote the essay"
+    - Passive: "The essay was written by the student" (acceptable when focus is on the essay)
+
+17. **Redundancy & Wordiness**: Eliminate unnecessary words and phrases
+    - "very unique" (redundant - unique is absolute)
+    - "free gift" (redundant)
+    - "in order to" → "to"
+
+18. **Idioms & Collocations**: Use correct idiomatic expressions
+    - "on the other hand" (not "in the other hand")
+    - "by and large" (not "by in large")
+    - "take into account" (not "take in account")
+
+ANALYSIS APPROACH:
+- Read the entire text first to understand context
+- Check each sentence for grammar, spelling, and punctuation errors
+- Consider the intended tone and audience
+- Provide corrections that maintain the original meaning
+- Explain corrections clearly so users can learn
+
+OUTPUT FORMAT:
+Return ONLY a valid JSON object with this exact structure:
+{
+  "corrected": "<the fully corrected text>",
+  "suggestions": [
+    {
+      "original": "<the incorrect text>",
+      "corrected": "<the corrected version>",
+      "reason": "<clear explanation of the error and why it was corrected>"
+    }
+  ]
+}
+
+IMPORTANT:
+- Return ONLY valid JSON, no additional text or explanations outside the JSON
+- Include all corrections in the suggestions array
+- Provide clear, educational reasons for each correction
+- Maintain the original meaning and tone of the text`;
+
+  const prompt = `Check and correct the following text for grammar, spelling, punctuation, and style errors. Be thorough and identify all issues.
+
+Text to check:
+${text}
+
+Return the result as a JSON object with 'corrected' (the fully corrected text) and 'suggestions' (array of all corrections with original, corrected, and reason fields).`;
 
   try {
-    const response = await callGemini(prompt, systemInstruction, 0.3, TOKEN_LIMITS.GRAMMAR, MODEL_MAPPING.GRAMMAR);
+    const response = await callGemini(prompt, systemInstruction, 0.2, TOKEN_LIMITS.GRAMMAR, MODEL_MAPPING.GRAMMAR);
     // Try to extract JSON from the response (in case AI adds extra text)
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     const jsonText = jsonMatch ? jsonMatch[0] : response;

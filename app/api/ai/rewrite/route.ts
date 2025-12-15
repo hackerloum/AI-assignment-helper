@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { deductCredits } from "@/lib/credits";
-import { paraphraseText } from "@/lib/ai-service";
+import { rewriteText } from "@/lib/ai-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,9 +67,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Rewrite/paraphrase text with style
-    const styleInstruction = style ? ` Rewrite in a ${style} style.` : "";
-    const rewrittenText = await paraphraseText(text + styleInstruction);
+    // Rewrite text with tone-specific instructions
+    // Validate tone value
+    const validTones = ['academic', 'professional', 'casual', 'concise'] as const;
+    const selectedTone = (style && validTones.includes(style as typeof validTones[number])) 
+      ? (style as typeof validTones[number])
+      : 'academic'; // Default to academic if invalid or missing
+    
+    const rewrittenText = await rewriteText(text, selectedTone);
 
     // Save assignment
     await supabase.from("assignments").insert({
