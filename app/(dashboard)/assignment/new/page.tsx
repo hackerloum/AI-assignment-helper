@@ -240,8 +240,15 @@ export default function NewAssignmentPage() {
             <MethodSelector
               value={assignmentData.method}
               onChange={(method) => {
-                setAssignmentData({ ...assignmentData, method })
-                handleNext()
+                const newData = { ...assignmentData, method }
+                setAssignmentData(newData)
+                
+                // Determine next step based on method
+                if (method === 'template') {
+                  setCurrentStep('template')
+                } else if (method === 'sample' || method === 'analyze') {
+                  setCurrentStep('upload')
+                }
               }}
             />
           )}
