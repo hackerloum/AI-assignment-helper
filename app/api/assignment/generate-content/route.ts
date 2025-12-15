@@ -183,7 +183,9 @@ CRITICAL REQUIREMENTS:
 - **PRIORITIZE TANZANIAN EXAMPLES**: Include relevant Tanzanian case studies, institutions, policies, organizations, or real-world examples when applicable
 - Make it comprehensive and detailed - this is for a real assignment
 - Write ONLY the ${section} section - do NOT include other sections
-- When relevant, use Tanzanian context, institutions, or examples`
+- When relevant, use Tanzanian context, institutions, or examples
+- **DO NOT use dashes (—, –, or -) in the middle of sentences** - use commas, periods, or semicolons instead
+- Write complete sentences without breaking them with dashes or hyphens`
       
       const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content for Tanzanian students. Your writing should be:
 
