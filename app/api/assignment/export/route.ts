@@ -189,13 +189,35 @@ export async function POST(request: NextRequest) {
           ).join('\n')
         }
 
+        // Prepare assignment data with cover page data for rebuilding
+        const assignmentWithCoverPage = {
+          ...assignment,
+          coverPageData: {
+            title: assignment.title,
+            task: assignment.task,
+            student_name: assignment.student_name,
+            registration_number: assignment.registration_number,
+            college_name: assignment.college_name,
+            course_name: assignment.course_name,
+            course_code: assignment.course_code,
+            module_name: assignment.module_name,
+            module_code: assignment.module_code,
+            program_name: assignment.program_name,
+            instructor_name: assignment.instructor_name,
+            submission_date: assignment.submission_date,
+            type_of_work: assignment.type_of_work,
+            group_name: assignment.group_name,
+            group_number: assignment.group_number,
+          }
+        }
+
         // Rebuild document using analyzed format
         buffer = await rebuildDocumentFromAnalysis(
           analysisData.structure_analysis,
           generatedContent,
           analysisData.parsed_data.styles,
           analysisData.parsed_data.images || [],
-          assignment
+          assignmentWithCoverPage
         )
         console.log('Document analysis rebuild successful')
       } else if (assignment.template_code && assignment.template_type) {
