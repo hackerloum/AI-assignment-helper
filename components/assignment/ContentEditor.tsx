@@ -99,6 +99,20 @@ export function ContentEditor({
     setLocalReferences(references)
   }, [references])
 
+  // Sync sections with parent when they change (for manual edits)
+  // This ensures that when user manually edits sections, parent state is updated
+  useEffect(() => {
+    // Skip if this is the initial load (content already matches)
+    if (sections.length > 0) {
+      const combined = combineContent()
+      // Only update if content actually changed to avoid unnecessary updates
+      // Compare with current content prop to see if it's different
+      if (combined.trim() !== (content || '').trim()) {
+        onChange(combined, localReferences)
+      }
+    }
+  }, [sections, localReferences]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleGenerateFullAssignment = async () => {
     // Use question if provided, otherwise use aiPrompt
     const finalQuestion = question || aiPrompt.trim()
@@ -145,9 +159,18 @@ export function ContentEditor({
       
       // Parse the generated content into sections
       const generatedContent = data.content || ''
-      parseContentIntoSections(generatedContent)
+      const newSections = parseContentIntoSections(generatedContent)
       
-      handleContentUpdate()
+      // Update sections state
+      setSections(newSections)
+      
+      // Immediately update parent with new content (using the new sections, not state)
+      const newContent = newSections
+        .sort((a, b) => a.order - b.order)
+        .map(s => `## ${s.title}\n\n${s.content}`)
+        .join('\n\n')
+      onChange(newContent, localReferences)
+      
       toast.success('Full assignment generated successfully!')
       setAiPrompt('')
     } catch (error: any) {
@@ -157,18 +180,17 @@ export function ContentEditor({
     }
   }
 
-  const parseContentIntoSections = (content: string) => {
+  const parseContentIntoSections = (content: string): Section[] => {
     // Split content into paragraphs
     const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0)
     
     if (paragraphs.length === 0) {
       // If no paragraphs, put all content in body
-      setSections([
+      return [
         { id: '1', title: 'Introduction', content: '', order: 1 },
         { id: '2', title: 'Body', content: content, order: 2 },
         { id: '3', title: 'Conclusion', content: '', order: 3 },
-      ])
-      return
+      ]
     }
 
     // Heuristic: First 1-2 paragraphs are introduction, last 1-2 are conclusion, rest is body
@@ -189,7 +211,7 @@ export function ContentEditor({
     const bodyParagraphs = paragraphs.slice(introEnd, conclusionStart)
     const conclusionParagraphs = paragraphs.slice(conclusionStart)
 
-    setSections([
+    return [
       { 
         id: '1', 
         title: 'Introduction', 
@@ -208,7 +230,7 @@ export function ContentEditor({
         content: conclusionParagraphs.join('\n\n'), 
         order: 3 
       },
-    ])
+    ]
   }
 
   const addSection = () => {
