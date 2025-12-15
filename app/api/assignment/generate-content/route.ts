@@ -203,6 +203,8 @@ CRITICAL RULES:
 - Do NOT use markdown formatting (no ##, **, or other markdown syntax)
 - Write plain text only with proper paragraph breaks
 - Write ONLY the requested section - do NOT write other sections
+- **DO NOT use dashes (—, –, or -) in the middle of sentences** - use commas, periods, or semicolons instead
+- Write complete sentences without breaking them with dashes or hyphens
 - Make content detailed and comprehensive to look like a real assignment
 - Use ${targetWordCount} words as the target length
 - Include Tanzanian examples or context when relevant to the topic`
@@ -325,7 +327,9 @@ CRITICAL FORMATTING RULES:
 - Make it comprehensive and detailed - this is for a real assignment
 - Ensure the total word count is approximately ${targetWordCount} words
 - Address ALL ${terms.length} terms provided
-- The assignment should flow naturally from introduction through body to conclusion`
+- The assignment should flow naturally from introduction through body to conclusion
+- **DO NOT use dashes (—, –, or -) in the middle of sentences** - use commas, periods, or semicolons instead for punctuation
+- Write complete sentences without breaking them with dashes or hyphens`
       
       } else if (questionType === 'multiple') {
         // Handle multiple questions (2-3 questions)
@@ -380,7 +384,9 @@ CRITICAL FORMATTING RULES:
 - Make it comprehensive and detailed - this is for a real assignment
 - Ensure the total word count is approximately ${targetWordCount} words
 - Answer ALL questions provided
-- The assignment should flow naturally from introduction through body to conclusion`
+- The assignment should flow naturally from introduction through body to conclusion
+- **DO NOT use dashes (—, –, or -) in the middle of sentences** - use commas, periods, or semicolons instead for punctuation
+- Write complete sentences without breaking them with dashes or hyphens`
       
       } else {
         // Default essay-type assignment
@@ -429,7 +435,10 @@ CRITICAL FORMATTING RULES:
 - Make it comprehensive and detailed - this is for a real assignment
 - Ensure the total word count is approximately ${targetWordCount} words
 - The assignment should flow naturally from introduction through body to conclusion
-- Include at least 2-3 concrete Tanzanian examples or case studies in the body paragraphs`
+- Include at least 2-3 concrete Tanzanian examples or case studies in the body paragraphs
+- **DO NOT use dashes (—, –, or -) in the middle of sentences** - use commas, periods, or semicolons instead for punctuation
+- Write complete sentences without breaking them with dashes or hyphens
+- Avoid using em-dashes, en-dashes, or hyphens as sentence punctuation - use proper punctuation marks instead`
       }
 
       const systemInstruction = `You are an expert academic writer specializing in creating student-friendly, comprehensive assignment content for Tanzanian students. Your writing should be:
@@ -476,6 +485,19 @@ CRITICAL RULES:
       // Remove any section headers that might have been added
       content = content
         .replace(/^#{1,6}\s+(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)\s*$/gmi, '')
+        .trim()
+      
+      // Clean up dashes in the middle of sentences
+      // Replace em-dashes and en-dashes with commas or periods
+      content = content
+        // Replace em-dash (—) with comma and space
+        .replace(/—/g, ', ')
+        // Replace en-dash (–) with comma and space
+        .replace(/–/g, ', ')
+        // Replace dash-space patterns (likely mid-sentence dashes) with comma
+        .replace(/\s-\s/g, ', ')
+        // Fix double spaces that might result
+        .replace(/\s{2,}/g, ' ')
         .trim()
     }
 
