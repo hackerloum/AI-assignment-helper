@@ -48,7 +48,7 @@ interface HeadingInfo {
 /**
  * Image information interface
  */
-interface ImageInfo {
+export interface ImageInfo {
   data: Buffer
   format: string // 'png', 'jpeg', etc.
   width?: number

@@ -40,39 +40,7 @@ export function DocumentFormatAnalyzer({ onAnalysisComplete }: DocumentFormatAna
   const [analysisPreview, setAnalysisPreview] = useState<AnalysisPreview | null>(null)
   const [analysisId, setAnalysisId] = useState<string | null>(null)
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    const uploadedFile = acceptedFiles[0]
-    if (uploadedFile) {
-      // Validate file size (max 10MB)
-      if (uploadedFile.size > 10 * 1024 * 1024) {
-        toast.error('File size must be less than 10MB')
-        return
-      }
-
-      // Validate file type
-      const validTypes = ['.docx', '.doc', '.pdf']
-      const fileExtension = uploadedFile.name.substring(uploadedFile.name.lastIndexOf('.')).toLowerCase()
-      if (!validTypes.includes(fileExtension)) {
-        toast.error('Invalid file type. Please upload DOCX, DOC, or PDF')
-        return
-      }
-
-      setFile(uploadedFile)
-      await handleAnalyze(uploadedFile)
-    }
-  }, [])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/msword': ['.doc'],
-    },
-    maxFiles: 1,
-  })
-
-  const handleAnalyze = async (uploadFile: File) => {
+  const handleAnalyze = useCallback(async (uploadFile: File) => {
     setUploading(true)
     setAnalyzing(true)
     
@@ -128,7 +96,39 @@ export function DocumentFormatAnalyzer({ onAnalysisComplete }: DocumentFormatAna
       setUploading(false)
       setAnalyzing(false)
     }
-  }
+  }, [onAnalysisComplete])
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const uploadedFile = acceptedFiles[0]
+    if (uploadedFile) {
+      // Validate file size (max 10MB)
+      if (uploadedFile.size > 10 * 1024 * 1024) {
+        toast.error('File size must be less than 10MB')
+        return
+      }
+
+      // Validate file type
+      const validTypes = ['.docx', '.doc', '.pdf']
+      const fileExtension = uploadedFile.name.substring(uploadedFile.name.lastIndexOf('.')).toLowerCase()
+      if (!validTypes.includes(fileExtension)) {
+        toast.error('Invalid file type. Please upload DOCX, DOC, or PDF')
+        return
+      }
+
+      setFile(uploadedFile)
+      await handleAnalyze(uploadedFile)
+    }
+  }, [handleAnalyze])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/msword': ['.doc'],
+    },
+    maxFiles: 1,
+  })
 
   return (
     <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-8">
