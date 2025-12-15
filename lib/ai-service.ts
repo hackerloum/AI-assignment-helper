@@ -1253,7 +1253,14 @@ ${JSON.stringify(structuredInput, null, 2)}
 Return a JSON object with this exact structure:
 {
   "cover_page": {
-    "elements": [{"type": "string", "label": "string", "original_text": "string", "position": {}}],
+    "elements": [
+      {
+        "type": "string (e.g., 'college_name', 'module_name', 'lecturer_name', 'type_of_work', 'submission_date', etc.)",
+        "label": "string (the field label/heading like 'MODULE NAME:', 'LECTURER NAME:', etc.)",
+        "original_text": "string (the FULL original text value from the document, including both label and value, e.g., 'MODULE NAME: PERSONNEL RECORDS MANAGEMENT')",
+        "position": {}
+      }
+    ],
     "layout": "centered" | "left-aligned" | "custom",
     "logo_position": {}
   },
