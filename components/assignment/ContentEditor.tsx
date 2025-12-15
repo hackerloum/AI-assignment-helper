@@ -324,31 +324,44 @@ export function ContentEditor({
     <div className="space-y-6">
       {/* Formatting Options */}
       <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Formatting Options</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-indigo-500/10 rounded-lg">
+            <FileText className="w-5 h-5 text-indigo-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-white">Formatting Options</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-slate-300">
               Font Family
             </label>
-            <select
-              value={fontFamily}
-              onChange={(e) => handleFontChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
-            >
-              <option value="Times New Roman">Times New Roman</option>
-              <option value="Arial">Arial</option>
-              <option value="Calibri">Calibri</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Verdana">Verdana</option>
-              <option value="Cambria">Cambria</option>
-              <option value="Garamond">Garamond</option>
-            </select>
+            <div className="relative">
+              <select
+                value={fontFamily}
+                onChange={(e) => handleFontChange(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 hover:border-white/20 focus:border-indigo-500 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all appearance-none cursor-pointer pr-10"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 1rem center',
+                  backgroundSize: '12px',
+                }}
+              >
+                <option value="Times New Roman" className="bg-dashboard-elevated text-white">Times New Roman</option>
+                <option value="Arial" className="bg-dashboard-elevated text-white">Arial</option>
+                <option value="Calibri" className="bg-dashboard-elevated text-white">Calibri</option>
+                <option value="Georgia" className="bg-dashboard-elevated text-white">Georgia</option>
+                <option value="Verdana" className="bg-dashboard-elevated text-white">Verdana</option>
+                <option value="Cambria" className="bg-dashboard-elevated text-white">Cambria</option>
+                <option value="Garamond" className="bg-dashboard-elevated text-white">Garamond</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Font Size: {fontSize}pt
+          <div className="space-y-3">
+            <label className="block text-sm font-semibold text-slate-300">
+              Font Size: <span className="text-indigo-400">{fontSize}pt</span>
             </label>
-            <div className="flex items-center gap-4">
+            <div className="space-y-3">
               <input
                 type="range"
                 min="10"
@@ -356,17 +369,20 @@ export function ContentEditor({
                 step="1"
                 value={fontSize}
                 onChange={(e) => handleFontSizeChange(Number(e.target.value))}
-                className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
+                style={{
+                  background: `linear-gradient(to right, rgb(99, 102, 241) 0%, rgb(99, 102, 241) ${((fontSize - 10) / 6) * 100}%, rgba(255, 255, 255, 0.1) ${((fontSize - 10) / 6) * 100}%, rgba(255, 255, 255, 0.1) 100%)`
+                }}
               />
-              <div className="flex gap-2">
+              <div className="flex items-center justify-between gap-2">
                 {[10, 11, 12, 14, 16].map((size) => (
                   <button
                     key={size}
                     onClick={() => handleFontSizeChange(size)}
-                    className={`px-3 py-1 text-xs rounded-lg transition-all ${
+                    className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-all ${
                       fontSize === size
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     {size}
