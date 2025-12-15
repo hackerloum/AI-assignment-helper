@@ -2,6 +2,13 @@ import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
 import fs from 'fs'
 import path from 'path'
+import {
+  Document,
+  Packer,
+  Paragraph,
+  HeadingLevel,
+  AlignmentType,
+} from 'docx'
 
 interface AssignmentData {
   // Cover page fields
@@ -117,14 +124,20 @@ export async function generateFromTemplate(
       throw error
     }
     
-    // Generate the document buffer
-    const buf = doc.getZip().generate({
+    // Generate the document buffer from template
+    const templateBuf = doc.getZip().generate({
       type: 'nodebuffer',
       compression: 'DEFLATE',
     })
     
-    console.log('Template generation successful, buffer size:', buf.length)
-    return Buffer.from(buf)
+    console.log('Template generation successful, buffer size:', templateBuf.length)
+    
+    // If there's content or references, append them to the document
+    if (data.assignment_content || (data.assignment_references && data.assignment_references.length > 0)) {
+      return await appendContentToTemplate(Buffer.from(templateBuf), data)
+    }
+    
+    return Buffer.from(templateBuf)
   } catch (error: any) {
     console.error('Error generating document from template:', error)
     console.error('Template path:', templatePath)
@@ -330,5 +343,236 @@ export function listAvailableTemplates(): Array<{ code: string; type: 'individua
   }
   
   return templates
+}
+
+/**
+ * Append content and references sections to a rendered template
+ * This function merges the template with additional content sections
+ */
+async function appendContentToTemplate(
+  templateBuffer: Buffer,
+  data: AssignmentData
+): Promise<Buffer> {
+  try {
+    // Read the template document using PizZip
+    const templateZip = new PizZip(templateBuffer)
+    
+    // Create content sections using docx library
+    const additionalSections: any[] = []
+    
+    // Content Section
+    if (data.assignment_content) {
+      const contentLines = data.assignment_content.split('\n')
+      const contentParagraphs: Paragraph[] = []
+      
+      // Add page break before content
+      contentParagraphs.push(
+        new Paragraph({
+          text: '',
+          pageBreakBefore: true,
+        })
+      )
+      
+      contentLines.forEach((line: string) => {
+        const trimmed = line.trim()
+        if (!trimmed) {
+          // Empty line
+          contentParagraphs.push(
+            new Paragraph({
+              text: '',
+              spacing: { after: 200 },
+            })
+          )
+        } else if (trimmed.match(/^(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)$/i)) {
+          // Section header
+          contentParagraphs.push(
+            new Paragraph({
+              text: trimmed,
+              heading: HeadingLevel.HEADING_1,
+              spacing: { before: 400, after: 200 },
+            })
+          )
+        } else {
+          // Regular paragraph
+          contentParagraphs.push(
+            new Paragraph({
+              text: trimmed,
+              spacing: { after: 200 },
+              alignment: AlignmentType.JUSTIFIED,
+            })
+          )
+        }
+      })
+      
+      if (contentParagraphs.length > 0) {
+        additionalSections.push({
+          properties: {},
+          children: contentParagraphs,
+        })
+      }
+    }
+    
+    // References Section
+    if (data.assignment_references && data.assignment_references.length > 0) {
+      const referenceParagraphs: Paragraph[] = []
+      
+      // Add page break before references
+      referenceParagraphs.push(
+        new Paragraph({
+          text: '',
+          pageBreakBefore: true,
+        })
+      )
+      
+      // References heading
+      referenceParagraphs.push(
+        new Paragraph({
+          text: 'REFERENCES',
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 400, after: 400 },
+        })
+      )
+      
+      // Reference entries
+      data.assignment_references.forEach((ref: any) => {
+        const author = ref.authors || ref.author || 'Unknown'
+        const year = ref.year || 'n.d.'
+        const title = ref.title || ''
+        const source = ref.source || ''
+        const url = ref.url || ''
+        
+        const refText = `${author}. (${year}). ${title}. ${source}${url ? `. Retrieved from ${url}` : ''}.`
+        
+        referenceParagraphs.push(
+          new Paragraph({
+            text: refText,
+            spacing: { after: 200 },
+            indent: { left: 720, hanging: 720 },
+          })
+        )
+      })
+      
+      additionalSections.push({
+        properties: {},
+        children: referenceParagraphs,
+      })
+    }
+    
+    // If we have additional sections, we need to merge them with the template
+    // Since docxtemplater doesn't easily support appending, we'll use docx library
+    // to create a new document that combines both
+    
+    // Read the template's main document.xml to extract existing content
+    // Then create a new document with template content + additional sections
+    
+    // For now, let's use a simpler approach: create a new docx document
+    // with the template as first section and additional sections appended
+    
+    // Actually, the best approach is to modify the template's document.xml directly
+    // But that's complex. Let's use docx library to create additional sections
+    // and merge them
+    
+    // Since merging DOCX files is complex, let's create a new document
+    // that includes the template content + additional sections
+    // We'll need to extract the template's sections first
+    
+    // For simplicity, let's create a new document with all sections
+    // We'll read the template XML and extract paragraphs, then combine
+    
+    // Actually, the simplest solution is to use the docx library's Document class
+    // to create a new document with all sections combined
+    
+    // Read template document.xml
+    const templateXml = templateZip.files['word/document.xml']
+    if (!templateXml) {
+      throw new Error('Template document.xml not found')
+    }
+    
+    const templateXmlContent = templateXml.asText()
+    
+    // Parse the template XML to extract existing sections
+    // This is complex, so let's use a different approach:
+    // Create a new document with template + additional sections
+    
+    // Since we can't easily merge, let's create content/references as separate
+    // sections and append them to the template buffer
+    
+    // Actually, the best approach is to modify the template's document.xml
+    // to append the new sections before the closing </w:document> tag
+    
+    // Let's use a simpler approach: create additional sections and merge them
+    // using the docx library
+    
+    // Create a new document with additional sections
+    const additionalDoc = new Document({
+      sections: additionalSections,
+    })
+    
+    const additionalBuffer = await Packer.toBuffer(additionalDoc)
+    
+    // Merge the two documents
+    // We'll need to extract sections from both and combine them
+    const mergedZip = new PizZip(templateBuffer)
+    const additionalZip = new PizZip(additionalBuffer)
+    
+    // Read both document.xml files
+    const templateDocXml = mergedZip.files['word/document.xml']
+    const additionalDocXml = additionalZip.files['word/document.xml']
+    
+    if (!templateDocXml || !additionalDocXml) {
+      throw new Error('Could not find document.xml in one of the files')
+    }
+    
+    // Extract body content from additional document
+    const additionalBodyMatch = additionalDocXml.asText().match(/<w:body[^>]*>([\s\S]*?)<\/w:body>/)
+    if (!additionalBodyMatch) {
+      throw new Error('Could not extract body from additional document')
+    }
+    
+    const additionalBodyContent = additionalBodyMatch[1]
+    
+    // Insert additional body content before closing </w:body> in template
+    const templateDocText = templateDocXml.asText()
+    const templateBodyMatch = templateDocText.match(/(<w:body[^>]*>)([\s\S]*?)(<\/w:body>)/)
+    
+    if (!templateBodyMatch) {
+      throw new Error('Could not find body in template document')
+    }
+    
+    // Combine bodies
+    const mergedBodyContent = templateBodyMatch[2] + additionalBodyContent
+    const mergedDocXml = templateBodyMatch[1] + mergedBodyContent + templateBodyMatch[3]
+    
+    // Update the document.xml in the zip
+    mergedZip.file('word/document.xml', mergedDocXml)
+    
+    // Copy any additional files from additional document (like styles, etc.)
+    Object.keys(additionalZip.files).forEach((filename) => {
+      if (filename.startsWith('word/') && filename !== 'word/document.xml') {
+        // Only copy if it doesn't exist in template
+        if (!mergedZip.files[filename]) {
+          const file = additionalZip.files[filename]
+          // Get file content as buffer
+          const fileContent = file.asNodeBuffer ? file.asNodeBuffer() : Buffer.from(file.asArrayBuffer())
+          mergedZip.file(filename, fileContent)
+        }
+      }
+    })
+    
+    // Generate final buffer
+    const finalBuffer = mergedZip.generate({
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+    })
+    
+    console.log('Successfully appended content and references to template')
+    return Buffer.from(finalBuffer)
+  } catch (error: any) {
+    console.error('Error appending content to template:', error)
+    // If merging fails, return the template as-is
+    console.warn('Falling back to template without appended content')
+    return templateBuffer
+  }
 }
 
