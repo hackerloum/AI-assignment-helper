@@ -75,6 +75,7 @@ interface SectionInfo {
  */
 export interface ParsedDocument {
   text: string
+  coverPageText?: string // Extracted cover page content
   headings: HeadingInfo[]
   styles: {
     fonts: Record<string, FontInfo>
