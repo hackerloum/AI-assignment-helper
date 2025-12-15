@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
               if (section.type === 'references') return
               // Take a chunk of content for each section
               const estimatedWords = section.word_count_range?.[1] || 200
-              const wordsPerPart = contentParts.reduce((sum, part) => sum + part.split(/\s+/).length, 0) / contentParts.length
+              const wordsPerPart = contentParts.reduce((sum: number, part: string) => sum + part.split(/\s+/).length, 0) / contentParts.length
               const partsPerSection = Math.ceil(estimatedWords / wordsPerPart)
               const sectionParts = contentParts.slice(contentIndex, contentIndex + partsPerSection)
               generatedContent[section.type] = sectionParts.join('\n\n')
