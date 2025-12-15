@@ -39,7 +39,9 @@ interface ContentEditorProps {
   content: string
   references: Reference[]
   question?: string // The assignment question/task
-  onChange: (content: string, references: Reference[]) => void
+  fontFamily?: string // Font family (default: 'Times New Roman')
+  fontSize?: number // Font size (default: 12)
+  onChange: (content: string, references: Reference[], fontFamily?: string, fontSize?: number) => void
 }
 
 export function ContentEditor({ 
@@ -47,6 +49,8 @@ export function ContentEditor({
   content, 
   references,
   question,
+  fontFamily: initialFontFamily = 'Times New Roman',
+  fontSize: initialFontSize = 12,
   onChange 
 }: ContentEditorProps) {
   const [sections, setSections] = useState<Section[]>([
@@ -57,6 +61,8 @@ export function ContentEditor({
   const [activeSection, setActiveSection] = useState<string | null>('1')
   const [generating, setGenerating] = useState(false)
   const [aiPrompt, setAiPrompt] = useState('')
+  const [fontFamily, setFontFamily] = useState(initialFontFamily)
+  const [fontSize, setFontSize] = useState(initialFontSize)
   const [wordCount, setWordCount] = useState(500) // Default word count
   const [showAiPanel, setShowAiPanel] = useState(false)
   const [localReferences, setLocalReferences] = useState<Reference[]>(references)
@@ -108,10 +114,10 @@ export function ContentEditor({
       // Only update if content actually changed to avoid unnecessary updates
       // Compare with current content prop to see if it's different
       if (combined.trim() !== (content || '').trim()) {
-        onChange(combined, localReferences)
+        onChange(combined, localReferences, fontFamily, fontSize)
       }
     }
-  }, [sections, localReferences]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sections, localReferences, fontFamily, fontSize]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGenerateFullAssignment = async () => {
     // Use question if provided, otherwise use aiPrompt
@@ -272,7 +278,7 @@ export function ContentEditor({
     }
     const updated = [...localReferences, newRef]
     setLocalReferences(updated)
-    onChange(combineContent(), updated)
+    onChange(combineContent(), updated, fontFamily, fontSize)
   }
 
   const updateReference = (id: string, updates: Partial<Reference>) => {
@@ -280,29 +286,98 @@ export function ContentEditor({
       r.id === id ? { ...r, ...updates } : r
     )
     setLocalReferences(updated)
-    onChange(combineContent(), updated)
+    onChange(combineContent(), updated, fontFamily, fontSize)
   }
 
   const removeReference = (id: string) => {
     const updated = localReferences.filter(r => r.id !== id)
     setLocalReferences(updated)
-    onChange(combineContent(), updated)
+    onChange(combineContent(), updated, fontFamily, fontSize)
   }
 
   const combineContent = () => {
+    // Combine sections without markdown headers - just the content
     return sections
       .sort((a, b) => a.order - b.order)
-      .map(s => `## ${s.title}\n\n${s.content}`)
+      .map(s => s.content)
+      .filter(c => c.trim().length > 0)
       .join('\n\n')
   }
 
   // Update parent whenever sections change
   const handleContentUpdate = () => {
-    onChange(combineContent(), localReferences)
+    onChange(combineContent(), localReferences, fontFamily, fontSize)
+  }
+
+  // Handle font changes
+  const handleFontChange = (newFont: string) => {
+    setFontFamily(newFont)
+    onChange(combineContent(), localReferences, newFont, fontSize)
+  }
+
+  const handleFontSizeChange = (newSize: number) => {
+    setFontSize(newSize)
+    onChange(combineContent(), localReferences, fontFamily, newSize)
   }
 
   return (
     <div className="space-y-6">
+      {/* Formatting Options */}
+      <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Formatting Options</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Font Family
+            </label>
+            <select
+              value={fontFamily}
+              onChange={(e) => handleFontChange(e.target.value)}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 focus:border-indigo-500 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            >
+              <option value="Times New Roman">Times New Roman</option>
+              <option value="Arial">Arial</option>
+              <option value="Calibri">Calibri</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Verdana">Verdana</option>
+              <option value="Cambria">Cambria</option>
+              <option value="Garamond">Garamond</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Font Size: {fontSize}pt
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min="10"
+                max="16"
+                step="1"
+                value={fontSize}
+                onChange={(e) => handleFontSizeChange(Number(e.target.value))}
+                className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              />
+              <div className="flex gap-2">
+                {[10, 11, 12, 14, 16].map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => handleFontSizeChange(size)}
+                    className={`px-3 py-1 text-xs rounded-lg transition-all ${
+                      fontSize === size
+                        ? 'bg-indigo-500 text-white'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* AI Assistant Panel */}
       <div className="bg-dashboard-elevated border border-dashboard-border rounded-2xl p-6">
         <button

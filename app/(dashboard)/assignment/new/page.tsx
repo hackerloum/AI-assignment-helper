@@ -42,6 +42,8 @@ interface AssignmentData {
   coverPageData: any
   content: string
   references: any[]
+  fontFamily?: string
+  fontSize?: number
 }
 
 export default function NewAssignmentPage() {
@@ -57,6 +59,8 @@ export default function NewAssignmentPage() {
     coverPageData: {},
     content: '',
     references: [],
+    fontFamily: 'Times New Roman',
+    fontSize: 12,
   })
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedId, setGeneratedId] = useState<string | null>(null)
@@ -272,8 +276,10 @@ export default function NewAssignmentPage() {
               content={assignmentData.content}
               references={assignmentData.references}
               question={assignmentData.coverPageData?.task || assignmentData.coverPageData?.question || ''}
-              onChange={(content, references) => {
-                setAssignmentData({ ...assignmentData, content, references })
+              fontFamily={assignmentData.fontFamily || 'Times New Roman'}
+              fontSize={assignmentData.fontSize || 12}
+              onChange={(content, references, fontFamily, fontSize) => {
+                setAssignmentData({ ...assignmentData, content, references, fontFamily, fontSize })
               }}
             />
           )}

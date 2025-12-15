@@ -38,6 +38,8 @@ export default function EditAssignmentPage() {
     coverPageData: {},
     content: '',
     references: [],
+    fontFamily: 'Times New Roman',
+    fontSize: 12,
   })
 
   const steps: { id: Step; label: string; icon: any }[] = [
@@ -378,8 +380,10 @@ export default function EditAssignmentPage() {
                 content={assignmentData.content}
                 references={assignmentData.references}
                 question={assignmentData.coverPageData?.task || assignmentData.coverPageData?.question || ''}
-                onChange={(content, references) => {
-                  setAssignmentData({ ...assignmentData, content, references })
+                fontFamily={assignmentData.fontFamily || 'Times New Roman'}
+                fontSize={assignmentData.fontSize || 12}
+                onChange={(content, references, fontFamily, fontSize) => {
+                  setAssignmentData({ ...assignmentData, content, references, fontFamily, fontSize })
                 }}
               />
             </div>

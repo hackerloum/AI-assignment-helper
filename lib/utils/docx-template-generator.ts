@@ -6,6 +6,7 @@ import {
   Document,
   Packer,
   Paragraph,
+  TextRun,
   HeadingLevel,
   AlignmentType,
 } from 'docx'
@@ -47,6 +48,10 @@ interface AssignmentData {
   // Content
   title?: string
   assignment_content?: string
+  
+  // Formatting
+  font_family?: string
+  font_size?: number
   
   // References
   assignment_references?: Array<{
@@ -379,32 +384,37 @@ async function appendContentToTemplate(
         })
       )
       
-      const contentLines = data.assignment_content.split('\n')
+      // Get font settings (default to Times New Roman, 12pt)
+      const fontFamily = data.font_family || 'Times New Roman'
+      const fontSize = data.font_size || 12
+      
+      // Remove markdown headers and split into paragraphs
+      const cleanContent = data.assignment_content
+        .replace(/^##+\s*(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)\s*$/gmi, '') // Remove markdown headers
+        .replace(/^##+\s*/gm, '') // Remove any remaining markdown headers
+        .trim()
+      
+      const contentLines = cleanContent.split('\n')
       contentLines.forEach((line: string) => {
         const trimmed = line.trim()
         if (!trimmed) {
           contentParagraphs.push(
             new Paragraph({
-              text: '',
+              children: [new TextRun({ text: '', font: fontFamily, size: fontSize * 2 })], // Size in half-points
               spacing: { after: 200 },
-            })
-          )
-        } else if (trimmed.match(/^(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)$/i)) {
-          contentParagraphs.push(
-            new Paragraph({
-              text: trimmed,
-              heading: HeadingLevel.HEADING_1,
-              spacing: { before: 400, after: 200 },
             })
           )
         } else {
-          contentParagraphs.push(
-            new Paragraph({
-              text: trimmed,
-              spacing: { after: 200 },
-              alignment: AlignmentType.JUSTIFIED,
-            })
-          )
+          // Skip lines that are just section headers (without markdown)
+          if (!trimmed.match(/^(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)$/i)) {
+            contentParagraphs.push(
+              new Paragraph({
+                children: [new TextRun({ text: trimmed, font: fontFamily, size: fontSize * 2 })], // Size in half-points
+                spacing: { after: 200 },
+                alignment: AlignmentType.JUSTIFIED,
+              })
+            )
+          }
         }
       })
     }
@@ -427,6 +437,10 @@ async function appendContentToTemplate(
         })
       )
       
+      // Get font settings
+      const refFontFamily = data.font_family || 'Times New Roman'
+      const refFontSize = (data.font_size || 12) * 2 // Convert to half-points
+      
       data.assignment_references.forEach((ref: any) => {
         const author = ref.authors || ref.author || 'Unknown'
         const year = ref.year || 'n.d.'
@@ -437,7 +451,7 @@ async function appendContentToTemplate(
         
         referenceParagraphs.push(
           new Paragraph({
-            text: refText,
+            children: [new TextRun({ text: refText, font: refFontFamily, size: refFontSize })],
             spacing: { after: 200 },
             indent: { left: 720, hanging: 720 },
           })

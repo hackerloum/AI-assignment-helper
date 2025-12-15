@@ -196,32 +196,36 @@ export async function generateAssignmentDocument(assignment: any): Promise<Buffe
 
   // Content Sections
   if (assignment.assignment_content) {
-    const contentLines = assignment.assignment_content.split('\n')
+    // Get font settings (default to Times New Roman, 12pt)
+    const fontFamily = assignment.font_family || 'Times New Roman'
+    const fontSize = (assignment.font_size || 12) * 2 // Convert to half-points
+    
+    // Remove markdown headers
+    const cleanContent = assignment.assignment_content
+      .replace(/^##+\s*(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)\s*$/gmi, '') // Remove markdown headers
+      .replace(/^##+\s*/gm, '') // Remove any remaining markdown headers
+      .trim()
+    
+    const contentLines = cleanContent.split('\n')
     const contentParagraphs: Paragraph[] = []
 
     contentLines.forEach((line: string) => {
-      if (line.startsWith('## ')) {
-        contentParagraphs.push(
-          new Paragraph({
-            text: line.replace('## ', ''),
-            heading: HeadingLevel.HEADING_1,
-            spacing: { before: 400, after: 200 },
-          })
-        )
-      } else if (line.trim()) {
-        contentParagraphs.push(
-          new Paragraph({
-            text: line,
-            spacing: { after: 150 },
-            alignment: AlignmentType.JUSTIFIED,
-          })
-        )
-      } else {
+      const trimmed = line.trim()
+      if (!trimmed) {
         // Empty line
         contentParagraphs.push(
           new Paragraph({
-            text: '',
+            children: [new TextRun({ text: '', font: fontFamily, size: fontSize })],
             spacing: { after: 150 },
+          })
+        )
+      } else if (!trimmed.match(/^(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)$/i)) {
+        // Skip section header lines, only include actual content
+        contentParagraphs.push(
+          new Paragraph({
+            children: [new TextRun({ text: trimmed, font: fontFamily, size: fontSize })],
+            spacing: { after: 150 },
+            alignment: AlignmentType.JUSTIFIED,
           })
         )
       }
