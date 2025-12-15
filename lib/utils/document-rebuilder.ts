@@ -49,7 +49,7 @@ export async function rebuildDocumentFromAnalysis(
   // Convert margins from inches to twentieths of a point (Word unit)
   const marginInTwips = (inches: number) => Math.round(inches * 1440)
 
-  // Build cover page if present
+  // Build cover page if present - use structure but fill with assignment data
   if (structure.cover_page && structure.cover_page.elements.length > 0) {
     const coverPageParagraphs: Paragraph[] = []
 
@@ -63,57 +63,114 @@ export async function rebuildDocumentFromAnalysis(
       console.log('Logo detected but image insertion skipped (to be implemented)')
     }
 
-    // Add cover page elements
+    // Get cover page data from assignment (which should contain user-edited data)
+    const coverPageData = assignmentData?.coverPageData || assignmentData || {}
+    
+    // Add cover page elements in the order they appear in the structure
+    // This preserves the layout from the original document
     structure.cover_page.elements.forEach((element) => {
       const alignment = structure.cover_page.layout === 'centered' 
         ? AlignmentType.CENTER 
         : AlignmentType.LEFT
 
       let text = ''
-      if (assignmentData) {
-        // Map element types to assignment data fields
-        switch (element.type) {
-          case 'title':
-            text = assignmentData.title || assignmentData.task || ''
-            break
-          case 'student_name':
-            text = assignmentData.student_name || ''
-            break
-          case 'registration_number':
-            text = assignmentData.registration_number || ''
-            break
-          case 'college_name':
-            text = assignmentData.college_name || ''
-            break
-          case 'course_name':
-            text = assignmentData.course_name || ''
-            break
-          case 'instructor_name':
-            text = assignmentData.instructor_name || ''
-            break
-          case 'submission_date':
-            text = assignmentData.submission_date || ''
-            break
-          default:
-            text = element.label || ''
-        }
-      } else {
-        text = element.label || ''
+      // Map element types to assignment/cover page data fields
+      // Try multiple possible field names for flexibility
+      switch (element.type) {
+        case 'title':
+        case 'assignment_title':
+        case 'task':
+          text = coverPageData.assignment_title || 
+                 coverPageData.title || 
+                 coverPageData.task || 
+                 assignmentData?.title || 
+                 assignmentData?.task || 
+                 ''
+          break
+        case 'student_name':
+        case 'name':
+          text = coverPageData.student_name || 
+                 coverPageData.studentName || 
+                 assignmentData?.student_name || 
+                 ''
+          break
+        case 'registration_number':
+        case 'reg_number':
+        case 'registrationNumber':
+          text = coverPageData.registration_number || 
+                 coverPageData.registrationNumber || 
+                 assignmentData?.registration_number || 
+                 ''
+          break
+        case 'college_name':
+        case 'college':
+          text = coverPageData.college_name || 
+                 coverPageData.collegeName || 
+                 assignmentData?.college_name || 
+                 ''
+          break
+        case 'course_name':
+        case 'course':
+          text = coverPageData.course_name || 
+                 coverPageData.courseName || 
+                 assignmentData?.course_name || 
+                 ''
+          break
+        case 'course_code':
+        case 'module_code':
+          text = coverPageData.course_code || 
+                 coverPageData.courseCode || 
+                 coverPageData.module_code || 
+                 assignmentData?.course_code || 
+                 ''
+          break
+        case 'instructor_name':
+        case 'instructor':
+          text = coverPageData.instructor_name || 
+                 coverPageData.instructor || 
+                 assignmentData?.instructor_name || 
+                 ''
+          break
+        case 'submission_date':
+        case 'date':
+          text = coverPageData.submission_date || 
+                 coverPageData.submissionDate || 
+                 assignmentData?.submission_date || 
+                 ''
+          break
+        case 'program_name':
+          text = coverPageData.program_name || assignmentData?.program_name || ''
+          break
+        case 'module_name':
+          text = coverPageData.module_name || assignmentData?.module_name || ''
+          break
+        default:
+          // Try to find by label or use label as-is
+          const labelKey = element.label?.toLowerCase().replace(/\s+/g, '_') || ''
+          text = coverPageData[labelKey] || element.label || ''
       }
 
-      if (text) {
+      // Only add paragraph if text exists or element is required
+      if (text || element.label) {
+        const displayText = text || element.label || ''
+        // Determine font size - titles are larger
+        const elementFontSize = element.type === 'title' ? fontSize + 4 : fontSize
+        
         coverPageParagraphs.push(
           new Paragraph({
             children: [
               new TextRun({
-                text: text,
+                text: displayText,
                 font: fontName,
-                size: fontSize,
+                size: elementFontSize * 2, // Convert to half-points
                 bold: element.type === 'title',
               }),
             ],
             alignment,
-            spacing: { after: 300 },
+            spacing: { 
+              after: element.type === 'title' ? 400 : 300,
+              before: coverPageParagraphs.length === 0 ? 600 : 0, // Extra space at top
+            },
           })
         )
       }

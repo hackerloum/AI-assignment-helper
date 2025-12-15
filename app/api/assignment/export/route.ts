@@ -148,14 +148,45 @@ export async function POST(request: NextRequest) {
           throw new Error('Document analysis not found')
         }
 
-        // Organize generated content by section type
-        const generatedContent: Record<string, string> = {
-          introduction: assignment.assignment_content || '',
-          body: assignment.assignment_content || '',
-          conclusion: assignment.assignment_content || '',
-          references: assignment.assignment_references?.map((ref: any) => 
+        // Parse content by sections if it contains section markers
+        // Format: [SECTION:type]content[/SECTION]
+        const generatedContent: Record<string, string> = {}
+        
+        if (assignment.assignment_content) {
+          const sectionRegex = /\[SECTION:(\w+)\]([\s\S]*?)\[\/SECTION\]/g
+          let match
+          while ((match = sectionRegex.exec(assignment.assignment_content)) !== null) {
+            const sectionType = match[1]
+            const sectionContent = match[2].trim()
+            generatedContent[sectionType] = sectionContent
+          }
+          
+          // If no section markers found, try to parse by structure sections
+          if (Object.keys(generatedContent).length === 0) {
+            // Split content by section structure from analysis
+            const sections = analysisData.structure_analysis.sections || []
+            const contentParts = assignment.assignment_content.split(/\n\s*\n/)
+            
+            // Try to distribute content to sections (simple approach)
+            let contentIndex = 0
+            sections.forEach((section: any) => {
+              if (section.type === 'references') return
+              // Take a chunk of content for each section
+              const estimatedWords = section.word_count_range?.[1] || 200
+              const wordsPerPart = contentParts.reduce((sum, part) => sum + part.split(/\s+/).length, 0) / contentParts.length
+              const partsPerSection = Math.ceil(estimatedWords / wordsPerPart)
+              const sectionParts = contentParts.slice(contentIndex, contentIndex + partsPerSection)
+              generatedContent[section.type] = sectionParts.join('\n\n')
+              contentIndex += partsPerSection
+            })
+          }
+        }
+        
+        // Add references
+        if (assignment.assignment_references && assignment.assignment_references.length > 0) {
+          generatedContent.references = assignment.assignment_references.map((ref: any) => 
             `${ref.authors || ref.author || 'Unknown'}. (${ref.year || 'n.d.'}). ${ref.title || ''}. ${ref.source || ''}`
-          ).join('\n') || '',
+          ).join('\n')
         }
 
         // Rebuild document using analyzed format

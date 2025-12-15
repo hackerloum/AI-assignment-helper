@@ -331,10 +331,19 @@ CRITICAL RULES:
         }
       }
       
-      // Combine sections into full content
-      content = Object.values(generatedSections).join('\n\n')
+      // Combine sections into full content with section markers
+      // Format: [SECTION:type]content[/SECTION] to preserve section boundaries
+      const sectionMarkers: string[] = []
+      documentStructure.sections.forEach((sectionInfo: any) => {
+        if (sectionInfo.type === 'references') return
+        const sectionContent = generatedSections[sectionInfo.type]
+        if (sectionContent) {
+          sectionMarkers.push(`[SECTION:${sectionInfo.type}]${sectionContent}[/SECTION]`)
+        }
+      })
+      content = sectionMarkers.join('\n\n')
       
-      // Clean up dashes in the middle of sentences
+      // Clean up dashes in the middle of sentences (but preserve section markers)
       content = content
         .replace(/—/g, ', ')
         .replace(/–/g, ', ')
