@@ -1222,6 +1222,7 @@ CRITICAL REQUIREMENTS:
   // Prepare structured input for AI
   const structuredInput = {
     document_type: "academic_assignment",
+    cover_page_text: parsedDocument.coverPageText || "", // Include cover page text for analysis
     sections: parsedDocument.sections.map((section: any) => ({
       title: section.title || "Untitled Section",
       type: section.type,
@@ -1252,7 +1253,7 @@ ${JSON.stringify(structuredInput, null, 2)}
 Return a JSON object with this exact structure:
 {
   "cover_page": {
-    "elements": [{"type": "string", "label": "string", "position": {}}],
+    "elements": [{"type": "string", "label": "string", "original_text": "string", "position": {}}],
     "layout": "centered" | "left-aligned" | "custom",
     "logo_position": {}
   },

@@ -99,6 +99,18 @@ export async function parseDOCX(fileBuffer: Buffer): Promise<ParsedDocument> {
     // Use mammoth for text extraction (preserves formatting structure)
     const mammothResult = await mammoth.extractRawText({ buffer: fileBuffer })
     const text = mammothResult.value
+    
+    // Extract cover page content (typically first page before first major heading or content section)
+    // Split by double newlines and take first few paragraphs as cover page
+    const paragraphs = text.split(/\n\s*\n/).filter(p => p.trim().length > 0)
+    let coverPageText = ''
+    // Look for cover page - usually first 5-10 paragraphs or until we hit a section like "QUESTION", "INTRODUCTION", etc.
+    const contentStarters = /^(QUESTION|INTRODUCTION|CONTENT|BODY|ABSTRACT|ACKNOWLEDGMENTS)/i
+    let coverPageEndIndex = paragraphs.findIndex(p => contentStarters.test(p.trim()))
+    if (coverPageEndIndex === -1) {
+      coverPageEndIndex = Math.min(8, paragraphs.length) // Default to first 8 paragraphs if no clear break
+    }
+    coverPageText = paragraphs.slice(0, coverPageEndIndex).join('\n\n')
 
     // Use PizZip to read DOCX structure directly
     const zip = new PizZip(fileBuffer)
@@ -222,6 +234,7 @@ export async function parseDOCX(fileBuffer: Buffer): Promise<ParsedDocument> {
 
     return {
       text,
+      coverPageText: coverPageText || undefined,
       headings,
       styles: {
         fonts,

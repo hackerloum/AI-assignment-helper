@@ -68,75 +68,86 @@ export async function rebuildDocumentFromAnalysis(
     
     // Add cover page elements in the order they appear in the structure
     // This preserves the layout from the original document
-    structure.cover_page.elements.forEach((element) => {
+    structure.cover_page.elements.forEach((element: any) => {
       const alignment = structure.cover_page.layout === 'centered' 
         ? AlignmentType.CENTER 
         : AlignmentType.LEFT
 
-      let text = ''
+      // Use original text/label from the document, but replace with user data if provided
+      let text = element.original_text || element.label || ''
+      
       // Map element types to assignment/cover page data fields
-      // Try multiple possible field names for flexibility
+      // Only replace if user has provided new data, otherwise keep original
+      const coverPageData = assignmentData?.coverPageData || assignmentData || {}
+      
       switch (element.type) {
         case 'title':
         case 'assignment_title':
         case 'task':
-          text = coverPageData.assignment_title || 
-                 coverPageData.title || 
-                 coverPageData.task || 
-                 assignmentData?.title || 
-                 assignmentData?.task || 
-                 ''
+          // Only replace if user provided new data, otherwise keep original
+          const newTitle = coverPageData.assignment_title || 
+                          coverPageData.title || 
+                          coverPageData.task || 
+                          assignmentData?.title || 
+                          assignmentData?.task
+          if (newTitle) text = newTitle
           break
         case 'student_name':
         case 'name':
-          text = coverPageData.student_name || 
-                 coverPageData.studentName || 
-                 assignmentData?.student_name || 
-                 ''
+          const newStudentName = coverPageData.student_name || 
+                                coverPageData.studentName || 
+                                assignmentData?.student_name
+          if (newStudentName) text = newStudentName
           break
         case 'registration_number':
         case 'reg_number':
         case 'registrationNumber':
-          text = coverPageData.registration_number || 
-                 coverPageData.registrationNumber || 
-                 assignmentData?.registration_number || 
-                 ''
+          const newRegNumber = coverPageData.registration_number || 
+                              coverPageData.registrationNumber || 
+                              assignmentData?.registration_number
+          if (newRegNumber) text = newRegNumber
           break
         case 'college_name':
         case 'college':
-          text = coverPageData.college_name || 
-                 coverPageData.collegeName || 
-                 assignmentData?.college_name || 
-                 ''
+          const newCollegeName = coverPageData.college_name || 
+                                coverPageData.collegeName || 
+                                assignmentData?.college_name
+          if (newCollegeName) text = newCollegeName
           break
         case 'course_name':
         case 'course':
-          text = coverPageData.course_name || 
-                 coverPageData.courseName || 
-                 assignmentData?.course_name || 
-                 ''
+        case 'module_name':
+          const newCourseName = coverPageData.course_name || 
+                               coverPageData.courseName || 
+                               coverPageData.module_name ||
+                               assignmentData?.course_name || 
+                               assignmentData?.module_name
+          if (newCourseName) text = newCourseName
           break
         case 'course_code':
         case 'module_code':
-          text = coverPageData.course_code || 
-                 coverPageData.courseCode || 
-                 coverPageData.module_code || 
-                 assignmentData?.course_code || 
-                 ''
+          const newModuleCode = coverPageData.course_code || 
+                               coverPageData.courseCode || 
+                               coverPageData.module_code || 
+                               assignmentData?.course_code ||
+                               assignmentData?.module_code
+          if (newModuleCode) text = newModuleCode
           break
         case 'instructor_name':
         case 'instructor':
-          text = coverPageData.instructor_name || 
-                 coverPageData.instructor || 
-                 assignmentData?.instructor_name || 
-                 ''
+        case 'lecturer_name':
+          const newInstructor = coverPageData.instructor_name || 
+                               coverPageData.instructor || 
+                               coverPageData.lecturer_name ||
+                               assignmentData?.instructor_name
+          if (newInstructor) text = newInstructor
           break
         case 'submission_date':
         case 'date':
-          text = coverPageData.submission_date || 
-                 coverPageData.submissionDate || 
-                 assignmentData?.submission_date || 
-                 ''
+          const newDate = coverPageData.submission_date || 
+                         coverPageData.submissionDate || 
+                         assignmentData?.submission_date
+          if (newDate) text = newDate
           break
         case 'program_name':
           text = coverPageData.program_name || assignmentData?.program_name || ''
