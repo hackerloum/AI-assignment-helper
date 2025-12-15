@@ -18,7 +18,7 @@ const MODEL_MAPPING = {
 // Token limits for different features (max output tokens)
 const TOKEN_LIMITS = {
   GRAMMAR: 800,        // Increased for reasoning models
-  REWRITE: 800,        // Increased for reasoning models
+  REWRITE: 2000,       // Increased significantly for comprehensive rewriting with grammar fixes
   ASSIGNMENT: 2000,    // Increased for reasoning models
   RESEARCH: 3000,      // Increased for reasoning models
   PLAGIARISM: 800,     // Increased for reasoning models
@@ -327,13 +327,38 @@ ${text}
 
 Rewrite this text following all the guidelines provided. Return ONLY the rewritten text, no additional commentary.`;
 
-  return await callGemini(
-    prompt,
-    systemInstruction,
-    0.7, // Balanced temperature for creativity while maintaining accuracy
-    TOKEN_LIMITS.REWRITE,
-    MODEL_MAPPING.REWRITE
+  // Calculate dynamic token limit based on input text length
+  // Estimate: output is typically 0.8x to 1.2x the input length
+  const inputWordCount = text.split(/\s+/).length;
+  const estimatedOutputTokens = Math.ceil(inputWordCount * 1.5); // 1.5x for safety margin
+  // Use the larger of: base limit or estimated output, capped at 4000
+  const dynamicTokenLimit = Math.min(
+    Math.max(TOKEN_LIMITS.REWRITE, estimatedOutputTokens),
+    4000
   );
+
+  try {
+    return await callGemini(
+      prompt,
+      systemInstruction,
+      0.7, // Balanced temperature for creativity while maintaining accuracy
+      dynamicTokenLimit,
+      MODEL_MAPPING.REWRITE
+    );
+  } catch (error: any) {
+    // If token limit error, retry with base limit
+    if (error.message?.includes('token') || error.message?.includes('Token')) {
+      console.warn(`Token limit error, retrying with base limit: ${TOKEN_LIMITS.REWRITE}`);
+      return await callGemini(
+        prompt,
+        systemInstruction,
+        0.7,
+        TOKEN_LIMITS.REWRITE,
+        MODEL_MAPPING.REWRITE
+      );
+    }
+    throw error;
+  }
 }
 
 export async function checkGrammar(text: string): Promise<{

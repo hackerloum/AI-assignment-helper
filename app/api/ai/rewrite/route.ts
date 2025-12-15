@@ -74,18 +74,58 @@ export async function POST(request: NextRequest) {
       ? (style as typeof validTones[number])
       : 'academic'; // Default to academic if invalid or missing
     
-    const rewrittenText = await rewriteText(text, selectedTone);
+    // Check text length to provide better error messages
+    const textLength = text.trim().length;
+    const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    
+    if (textLength > 50000) {
+      return NextResponse.json(
+        { error: "Text is too long. Please limit your text to 50,000 characters (approximately 10,000 words)." },
+        { status: 400 }
+      );
+    }
 
-    // Save assignment
-    await supabase.from("assignments").insert({
-      user_id: user.id,
-      tool_type: "rewrite",
-      input_text: text,
-      output_text: rewrittenText,
-      credits_used: 5,
-    });
+    try {
+      const rewrittenText = await rewriteText(text, selectedTone);
 
-    return NextResponse.json({ rewrittenText });
+      // Save assignment
+      await supabase.from("assignments").insert({
+        user_id: user.id,
+        tool_type: "rewrite",
+        input_text: text,
+        output_text: rewrittenText,
+        credits_used: 5,
+      });
+
+      return NextResponse.json({ rewrittenText });
+    } catch (error: any) {
+      console.error("Error in rewrite API:", error);
+      
+      // Handle specific error types
+      if (error.message?.includes('token') || error.message?.includes('Token') || error.message?.includes('max_output_tokens')) {
+        return NextResponse.json(
+          { 
+            error: `Text is too long to rewrite in one go. Please try with a shorter text (under ${Math.floor(wordCount * 0.8)} words) or split it into smaller sections.` 
+          },
+          { status: 400 }
+        );
+      }
+      
+      if (error.isQuotaError) {
+        return NextResponse.json(
+          { 
+            error: "Service temporarily unavailable due to high demand. Please try again in a few moments.",
+            retryAfter: error.retryAfter 
+          },
+          { status: 503 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: error.message || "Failed to rewrite text. Please try again or contact support if the issue persists." },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
     console.error("Error in rewrite API:", error);
     return NextResponse.json(
