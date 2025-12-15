@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { deductCredits } from '@/lib/credits'
-import { generateEssay, stripMarkdownHeaders, callGemini } from '@/lib/ai-service'
+import { generateEssay, stripMarkdownHeaders, callGemini, generateSectionContent, DocumentStructure } from '@/lib/ai-service'
 
 /**
  * Detect the type of assignment question
@@ -108,11 +108,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { section, prompt, assignment_type, topic, wordCount, assignmentType } = await request.json()
+    const { section, prompt, assignment_type, topic, wordCount, assignmentType, document_analysis_id } = await request.json()
 
     const finalPrompt = prompt || topic
     const finalAssignmentType = assignment_type || assignmentType
     const targetWordCount = wordCount || 500
+
+    // Load document analysis if provided
+    let documentStructure: DocumentStructure | null = null
+    if (document_analysis_id) {
+      const { data: analysisData, error: analysisError } = await supabase
+        .from('document_analyses')
+        .select('structure_analysis')
+        .eq('id', document_analysis_id)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!analysisError && analysisData?.structure_analysis) {
+        documentStructure = analysisData.structure_analysis as DocumentStructure
+      }
+    }
 
     if (!finalPrompt) {
       return NextResponse.json({ error: 'Prompt or topic required' }, { status: 400 })
@@ -133,8 +148,20 @@ export async function POST(request: NextRequest) {
     // Generate content using AI
     // If section is provided, generate section-specific content ONLY
     // If no section is provided, generate full assignment with introduction, body, and conclusion
+    // If document_analysis_id is provided, use structure-aware generation
     let content: string = ''
-    if (section) {
+    
+    // Use structure-aware generation if document structure is available
+    if (documentStructure && section) {
+      // Generate content for specific section using structure-aware generation
+      content = await generateSectionContent(
+        section,
+        finalPrompt,
+        documentStructure,
+        finalPrompt
+      )
+      content = stripMarkdownHeaders(content)
+    } else if (section) {
       // Determine section-specific instructions
       const sectionInstructions = {
         'Introduction': `Write ONLY an introduction section (${targetWordCount} words). This should:
@@ -279,6 +306,41 @@ CRITICAL RULES:
           }
         }
       }
+    } else if (documentStructure) {
+      // Generate full assignment using structure-aware generation
+      const generatedSections: Record<string, string> = {}
+      
+      // Generate content for each section in the structure
+      for (const sectionInfo of documentStructure.sections) {
+        if (sectionInfo.type === 'references') {
+          // Skip references (handled separately)
+          continue
+        }
+        
+        try {
+          const sectionContent = await generateSectionContent(
+            sectionInfo.type,
+            `Generate ${sectionInfo.title || sectionInfo.type} section content for: ${finalPrompt}`,
+            documentStructure,
+            finalPrompt
+          )
+          generatedSections[sectionInfo.type] = stripMarkdownHeaders(sectionContent)
+        } catch (error: any) {
+          console.error(`Error generating ${sectionInfo.type} section:`, error)
+          // Continue with other sections
+        }
+      }
+      
+      // Combine sections into full content
+      content = Object.values(generatedSections).join('\n\n')
+      
+      // Clean up dashes in the middle of sentences
+      content = content
+        .replace(/—/g, ', ')
+        .replace(/–/g, ', ')
+        .replace(/\s-\s/g, ', ')
+        .replace(/\s{2,}/g, ' ')
+        .trim()
     } else {
       // Detect question type and generate accordingly
       const questionType = detectQuestionType(finalPrompt)

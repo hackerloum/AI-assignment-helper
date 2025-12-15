@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       method,
       templateId,
       customTemplateId,
+      documentAnalysisId,
       coverPageData,
       content,
       references,
@@ -161,6 +162,8 @@ export async function POST(request: NextRequest) {
       }
     } else if (method === 'sample' && customTemplateId) {
       assignmentData.custom_template_id = customTemplateId
+    } else if (method === 'analyze' && documentAnalysisId) {
+      assignmentData.document_analysis_id = documentAnalysisId
     }
 
     // Insert assignment

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { generateAssignmentDocument } from '@/lib/utils/docx-generator'
 import { generateFromTemplate, getTemplatePath } from '@/lib/utils/docx-template-generator'
+import { rebuildDocumentFromAnalysis } from '@/lib/utils/document-rebuilder'
 import { deductCredits } from '@/lib/credits'
 
 export async function POST(request: NextRequest) {
@@ -127,10 +128,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Try to use template-based generation if template is specified
+    // Try to use document analysis rebuild if analysis_id is present
     let buffer: Buffer
     try {
-      if (assignment.template_code && assignment.template_type) {
+      if (assignment.document_analysis_id) {
+        // Use document analysis rebuild (Step 4 - Code-based formatting)
+        console.log(`Using document analysis: ${assignment.document_analysis_id}`)
+        
+        // Fetch document analysis
+        const { data: analysisData, error: analysisError } = await supabase
+          .from('document_analyses')
+          .select('parsed_data, structure_analysis')
+          .eq('id', assignment.document_analysis_id)
+          .eq('user_id', user.id)
+          .single()
+
+        if (analysisError || !analysisData) {
+          console.warn('Document analysis not found, falling back to template generation')
+          throw new Error('Document analysis not found')
+        }
+
+        // Organize generated content by section type
+        const generatedContent: Record<string, string> = {
+          introduction: assignment.assignment_content || '',
+          body: assignment.assignment_content || '',
+          conclusion: assignment.assignment_content || '',
+          references: assignment.assignment_references?.map((ref: any) => 
+            `${ref.authors || ref.author || 'Unknown'}. (${ref.year || 'n.d.'}). ${ref.title || ''}. ${ref.source || ''}`
+          ).join('\n') || '',
+        }
+
+        // Rebuild document using analyzed format
+        buffer = await rebuildDocumentFromAnalysis(
+          analysisData.structure_analysis,
+          generatedContent,
+          analysisData.parsed_data.styles,
+          analysisData.parsed_data.images || [],
+          assignment
+        )
+        console.log('Document analysis rebuild successful')
+      } else if (assignment.template_code && assignment.template_type) {
         // Use DOCX template
         console.log(`Using template: ${assignment.template_code}_${assignment.template_type}`)
         const templatePath = getTemplatePath(assignment.template_code, assignment.template_type)
@@ -145,10 +182,8 @@ export async function POST(request: NextRequest) {
         buffer = await generateAssignmentDocument(assignment)
       }
     } catch (templateError: any) {
-      console.error('Template generation failed:', templateError)
+      console.error('Document generation failed:', templateError)
       console.error('Error stack:', templateError.stack)
-      console.error('Template code:', assignment.template_code)
-      console.error('Template type:', assignment.template_type)
       // Fallback to programmatic generation
       buffer = await generateAssignmentDocument(assignment)
     }

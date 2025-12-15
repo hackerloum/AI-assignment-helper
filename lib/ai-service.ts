@@ -13,6 +13,7 @@ const MODEL_MAPPING = {
   SUMMARIZE: "gpt-5-mini",
   PARAPHRASE: "gpt-5-mini",
   HUMANIZE: "gpt-5-mini",
+  DOCUMENT_ANALYSIS: "gpt-5.2",
 } as const;
 
 // Token limits for different features (max output tokens)
@@ -27,6 +28,7 @@ const TOKEN_LIMITS = {
   SUMMARIZE: 800,      // Increased for reasoning models
   PARAPHRASE: 800,     // Increased for reasoning models
   HUMANIZE: 1500,      // Increased significantly for text transformation
+  DOCUMENT_ANALYSIS: 4000, // Large token limit for comprehensive structure analysis
 } as const;
 
 interface OpenAIRequest {
@@ -1160,6 +1162,254 @@ Humanize this content following all the principles outlined in the system instru
   } catch (error: any) {
     console.error("Error humanizing content:", error);
     throw new Error(error.message || "Failed to humanize content");
+  }
+}
+
+/**
+ * Document Structure Analysis Interfaces
+ */
+export interface DocumentStructure {
+  cover_page: {
+    elements: Array<{ type: string; label?: string; position?: any }>;
+    layout: "centered" | "left-aligned" | "custom";
+    logo_position?: any;
+  };
+  sections: Array<{
+    type: "introduction" | "methodology" | "body" | "conclusion" | "references" | "abstract" | "acknowledgments" | "custom";
+    title?: string;
+    word_count_range: [number, number];
+    subsections?: Array<{ title: string; word_count_range: [number, number] }>;
+  }>;
+  academic_style: {
+    tone: string;
+    formality_level: string;
+    citation_style: "APA" | "MLA" | "Chicago" | "custom";
+  };
+  formatting_rules: {
+    fonts: Record<string, any>;
+    spacing: any;
+    margins: any;
+    heading_styles: Record<number, any>;
+  };
+  confidence_score: number;
+}
+
+/**
+ * Analyze document structure using GPT-5.2
+ * Takes parsed document data and returns structured analysis
+ */
+export async function analyzeDocumentStructure(
+  parsedDocument: any
+): Promise<DocumentStructure> {
+  const systemInstruction = `You are an expert academic document structure analyzer. Your task is to analyze the provided document structure and identify:
+
+1. Cover page elements and layout (logo position, title placement, field locations)
+2. Content sections (Introduction, Methodology, Results, Discussion, Conclusion, References, etc.)
+3. Section hierarchy and relationships
+4. Academic tone and style characteristics
+5. Citation/reference formatting style
+6. Overall document formatting rules
+
+You must return a structured JSON analysis that can be used to regenerate documents with the same structure and format. Be precise and thorough in your analysis.
+
+CRITICAL REQUIREMENTS:
+- Maintain strict section boundaries
+- Preserve academic formatting rules
+- Identify all structural elements accurately
+- Provide confidence scores for your analysis
+- Return ONLY valid JSON, no additional text or markdown`;
+
+  // Prepare structured input for AI
+  const structuredInput = {
+    document_type: "academic_assignment",
+    sections: parsedDocument.sections.map((section: any) => ({
+      title: section.title || "Untitled Section",
+      type: section.type,
+      word_count: section.wordCount || 0,
+      content_preview: section.content?.substring(0, 500) || "",
+    })),
+    headings: parsedDocument.headings.map((heading: any) => ({
+      level: heading.level,
+      text: heading.text,
+    })),
+    formatting: {
+      font_family: parsedDocument.styles?.fonts?.default?.name || "Times New Roman",
+      font_size: parsedDocument.styles?.fonts?.default?.size || 12,
+      line_spacing: parsedDocument.styles?.spacing?.line || 1.5,
+      margins: parsedDocument.styles?.margins || { top: 1, bottom: 1, left: 1, right: 1 },
+    },
+    metadata: {
+      word_count: parsedDocument.metadata?.wordCount || 0,
+      page_count: parsedDocument.metadata?.pageCount || 0,
+      has_images: (parsedDocument.images?.length || 0) > 0,
+    },
+  };
+
+  const prompt = `Analyze the following academic document structure and provide a comprehensive analysis:
+
+${JSON.stringify(structuredInput, null, 2)}
+
+Return a JSON object with this exact structure:
+{
+  "cover_page": {
+    "elements": [{"type": "string", "label": "string", "position": {}}],
+    "layout": "centered" | "left-aligned" | "custom",
+    "logo_position": {}
+  },
+  "sections": [
+    {
+      "type": "introduction" | "methodology" | "body" | "conclusion" | "references" | "abstract" | "acknowledgments" | "custom",
+      "title": "string",
+      "word_count_range": [min, max],
+      "subsections": [{"title": "string", "word_count_range": [min, max]}]
+    }
+  ],
+  "academic_style": {
+    "tone": "string",
+    "formality_level": "string",
+    "citation_style": "APA" | "MLA" | "Chicago" | "custom"
+  },
+  "formatting_rules": {
+    "fonts": {},
+    "spacing": {},
+    "margins": {},
+    "heading_styles": {}
+  },
+  "confidence_score": 0.0-1.0
+}
+
+Identify cover page elements, section types, word count ranges, academic style, and formatting rules.`;
+
+  try {
+    const response = await callGemini(
+      prompt,
+      systemInstruction,
+      0.3, // Lower temperature for more structured, consistent analysis
+      TOKEN_LIMITS.DOCUMENT_ANALYSIS,
+      MODEL_MAPPING.DOCUMENT_ANALYSIS
+    );
+
+    // Extract JSON from response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const jsonText = jsonMatch ? jsonMatch[0] : response;
+    const analysis = JSON.parse(jsonText) as DocumentStructure;
+
+    // Validate and set defaults if needed
+    if (!analysis.cover_page) {
+      analysis.cover_page = {
+        elements: [],
+        layout: "left-aligned",
+      };
+    }
+    if (!analysis.sections || analysis.sections.length === 0) {
+      analysis.sections = [
+        {
+          type: "body",
+          word_count_range: [0, 1000],
+        },
+      ];
+    }
+    if (!analysis.academic_style) {
+      analysis.academic_style = {
+        tone: "academic",
+        formality_level: "formal",
+        citation_style: "APA",
+      };
+    }
+    if (typeof analysis.confidence_score !== "number") {
+      analysis.confidence_score = 0.8;
+    }
+
+    return analysis;
+  } catch (error: any) {
+    console.error("Error analyzing document structure:", error);
+    // Return default structure on error
+    return {
+      cover_page: {
+        elements: [],
+        layout: "left-aligned",
+      },
+      sections: [
+        {
+          type: "body",
+          word_count_range: [0, 1000],
+        },
+      ],
+      academic_style: {
+        tone: "academic",
+        formality_level: "formal",
+        citation_style: "APA",
+      },
+      formatting_rules: {
+        fonts: {},
+        spacing: {},
+        margins: {},
+        heading_styles: {},
+      },
+      confidence_score: 0.5,
+    };
+  }
+}
+
+/**
+ * Generate content for a specific section using appropriate model
+ * Uses GPT-5.2 for complex sections, GPT-5-mini for simple ones
+ */
+export async function generateSectionContent(
+  sectionType: string,
+  prompt: string,
+  structure: DocumentStructure,
+  userPrompt: string
+): Promise<string> {
+  // Determine model based on section complexity
+  const complexSections = ["introduction", "methodology", "body", "results", "discussion"];
+  const isComplex = complexSections.includes(sectionType.toLowerCase());
+  const model = isComplex ? MODEL_MAPPING.DOCUMENT_ANALYSIS : MODEL_MAPPING.ASSIGNMENT;
+  const tokenLimit = isComplex ? TOKEN_LIMITS.RESEARCH : TOKEN_LIMITS.ASSIGNMENT;
+
+  const systemInstruction = `You are an expert academic writer. Generate content for a ${sectionType} section that matches the academic style and structure requirements.
+
+Academic Style:
+- Tone: ${structure.academic_style.tone}
+- Formality: ${structure.academic_style.formality_level}
+- Citation Style: ${structure.academic_style.citation_style}
+
+IMPORTANT:
+- Write ONLY the ${sectionType} section content
+- Match the academic tone and style
+- Use plain text format (no markdown headers)
+- Maintain appropriate word count for the section type
+- Write in a clear, structured manner`;
+
+  const sectionPrompt = `Generate ${sectionType} section content for the following topic:
+
+Topic: ${userPrompt}
+
+${prompt}
+
+Requirements:
+- Write in ${structure.academic_style.tone} tone
+- Maintain ${structure.academic_style.formality_level} formality level
+- Use ${structure.academic_style.citation_style} citation style if references are needed
+- Write ONLY the ${sectionType} section - do not include other sections`;
+
+  try {
+    const content = await callGemini(
+      sectionPrompt,
+      systemInstruction,
+      0.7,
+      tokenLimit,
+      model
+    );
+
+    // Strip any markdown or section headers that might have been added
+    return content
+      .replace(/^##+\s*.*$/gm, "")
+      .replace(/^#{1,6}\s+/gm, "")
+      .trim();
+  } catch (error: any) {
+    console.error(`Error generating ${sectionType} content:`, error);
+    throw new Error(`Failed to generate ${sectionType} content: ${error.message}`);
   }
 }
 

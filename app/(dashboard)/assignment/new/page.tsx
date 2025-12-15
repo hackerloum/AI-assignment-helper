@@ -19,6 +19,7 @@ import Link from 'next/link'
 import { AssignmentTypeSelector } from '@/components/assignment/AssignmentTypeSelector'
 import { TemplateSelector } from '@/components/assignment/TemplateSelector'
 import { SampleUploader } from '@/components/assignment/SampleUploader'
+import { DocumentFormatAnalyzer } from '@/components/assignment/DocumentFormatAnalyzer'
 import { CoverPageBuilder } from '@/components/assignment/CoverPageBuilder'
 import { GroupMembersManager } from '@/components/assignment/GroupMembersManager'
 import { ContentEditor } from '@/components/assignment/ContentEditor'
@@ -36,9 +37,10 @@ type Step =
 
 interface AssignmentData {
   type: 'individual' | 'group' | null
-  method: 'template' | 'sample' | null
+  method: 'template' | 'sample' | 'analyze' | null
   templateId: string | null
   customTemplateId: string | null
+  documentAnalysisId: string | null
   coverPageData: any
   content: string
   references: any[]
@@ -56,6 +58,7 @@ export default function NewAssignmentPage() {
     method: null,
     templateId: null,
     customTemplateId: null,
+    documentAnalysisId: null,
     coverPageData: {},
     content: '',
     references: [],
@@ -69,6 +72,7 @@ export default function NewAssignmentPage() {
     { id: 'type', label: 'Assignment Type', icon: FileText },
     { id: 'method', label: 'Choose Method', icon: Upload },
     { id: 'template', label: 'Select Template', icon: FileText },
+    { id: 'upload', label: 'Upload Document', icon: Upload },
     { id: 'cover', label: 'Cover Page', icon: User },
     { id: 'content', label: 'Content', icon: Sparkles },
     { id: 'preview', label: 'Preview', icon: Check },
@@ -78,6 +82,7 @@ export default function NewAssignmentPage() {
   const activeSteps = steps.filter(step => {
     if (assignmentData.method === 'template' && step.id === 'upload') return false
     if (assignmentData.method === 'sample' && step.id === 'template') return false
+    if (assignmentData.method === 'analyze' && step.id === 'template') return false
     return true
   })
 
@@ -259,6 +264,14 @@ export default function NewAssignmentPage() {
             />
           )}
 
+          {currentStep === 'upload' && assignmentData.method === 'analyze' && (
+            <DocumentFormatAnalyzer
+              onAnalysisComplete={(analysisId) => {
+                setAssignmentData({ ...assignmentData, documentAnalysisId: analysisId })
+              }}
+            />
+          )}
+
           {currentStep === 'cover' && (
             <CoverPageBuilder
               assignmentType={assignmentData.type!}
@@ -338,7 +351,8 @@ export default function NewAssignmentPage() {
               (currentStep === 'type' && !assignmentData.type) ||
               (currentStep === 'method' && !assignmentData.method) ||
               (currentStep === 'template' && !assignmentData.templateId) ||
-              (currentStep === 'upload' && !assignmentData.customTemplateId)
+              (currentStep === 'upload' && assignmentData.method === 'sample' && !assignmentData.customTemplateId) ||
+              (currentStep === 'upload' && assignmentData.method === 'analyze' && !assignmentData.documentAnalysisId)
             }
             className="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -356,8 +370,8 @@ function MethodSelector({
   value, 
   onChange 
 }: { 
-  value: 'template' | 'sample' | null
-  onChange: (method: 'template' | 'sample') => void 
+  value: 'template' | 'sample' | 'analyze' | null
+  onChange: (method: 'template' | 'sample' | 'analyze') => void 
 }) {
   const methods = [
     {
@@ -375,6 +389,14 @@ function MethodSelector({
       icon: Upload,
       color: 'from-purple-500 to-pink-500',
       features: ['Custom format', 'AI learning', 'Flexible'],
+    },
+    {
+      id: 'analyze' as const,
+      title: 'Analyze Document Format',
+      description: 'Upload your assignment document. AI will analyze the complete structure and format, then generate new content matching your layout exactly.',
+      icon: FileText,
+      color: 'from-green-500 to-emerald-500',
+      features: ['Complete structure analysis', 'Format preservation', 'Layout matching'],
     },
   ]
 
