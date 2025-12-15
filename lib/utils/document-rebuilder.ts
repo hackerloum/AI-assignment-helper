@@ -150,19 +150,27 @@ export async function rebuildDocumentFromAnalysis(
           if (newDate) text = newDate
           break
         case 'program_name':
-          text = coverPageData.program_name || assignmentData?.program_name || ''
+          const newProgramName = coverPageData.program_name || assignmentData?.program_name
+          if (newProgramName) text = newProgramName
           break
-        case 'module_name':
-          text = coverPageData.module_name || assignmentData?.module_name || ''
+        case 'type_of_work':
+          const newWorkType = coverPageData.type_of_work || assignmentData?.type_of_work
+          if (newWorkType) text = newWorkType
           break
         default:
           // Try to find by label or use label as-is
           const labelKey = element.label?.toLowerCase().replace(/\s+/g, '_') || ''
-          text = coverPageData[labelKey] || element.label || ''
+          const newValue = coverPageData[labelKey] || assignmentData?.[labelKey]
+          if (newValue) {
+            text = newValue
+          } else {
+            // Keep original text/label if no replacement provided
+            text = element.original_text || element.label || text
+          }
       }
 
-      // Only add paragraph if text exists or element is required
-      if (text || element.label) {
+      // Only add paragraph if text exists
+      if (text) {
         const displayText = text || element.label || ''
         // Determine font size - titles are larger
         const elementFontSize = element.type === 'title' ? fontSize + 4 : fontSize
