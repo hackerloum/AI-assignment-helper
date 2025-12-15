@@ -340,9 +340,14 @@ CRITICAL RULES:
       
       // Generate body content
       // If multiple body sections exist, generate them all, otherwise generate one body
-      const bodySections = documentStructure.sections.filter(s => 
-        s.type === 'body' || s.type === 'methodology' || s.type === 'results' || s.type === 'discussion' || (!hasIntroduction && !hasConclusion && s.type !== 'references')
-      )
+      const bodySections = documentStructure.sections.filter((s: any) => {
+        const sectionType = s.type.toLowerCase()
+        return sectionType === 'body' || 
+               sectionType === 'methodology' || 
+               sectionType === 'results' || 
+               sectionType === 'discussion' || 
+               (!hasIntroduction && !hasConclusion && sectionType !== 'references')
+      })
       
       if (bodySections.length > 0) {
         for (const bodySection of bodySections) {
@@ -394,9 +399,10 @@ CRITICAL RULES:
       }
       
       // Generate any other custom sections from the structure
-      const otherSections = documentStructure.sections.filter(s => 
-        !['introduction', 'body', 'conclusion', 'references', 'methodology', 'results', 'discussion'].includes(s.type)
-      )
+      const otherSections = documentStructure.sections.filter((s: any) => {
+        const sectionType = s.type.toLowerCase()
+        return !['introduction', 'body', 'conclusion', 'references', 'methodology', 'results', 'discussion'].includes(sectionType)
+      })
       
       for (const otherSection of otherSections) {
         try {
