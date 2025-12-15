@@ -310,37 +310,129 @@ CRITICAL RULES:
       // Generate full assignment using structure-aware generation
       const generatedSections: Record<string, string> = {}
       
-      // Generate content for each section in the structure
-      for (const sectionInfo of documentStructure.sections) {
-        if (sectionInfo.type === 'references') {
-          // Skip references (handled separately)
-          continue
-        }
-        
+      // Identify which standard sections exist in the structure
+      const hasIntroduction = documentStructure.sections.some(s => s.type === 'introduction')
+      const hasBody = documentStructure.sections.some(s => s.type === 'body')
+      const hasConclusion = documentStructure.sections.some(s => s.type === 'conclusion')
+      
+      // Calculate word distribution if needed
+      const totalWords = targetWordCount
+      const introWords = Math.floor(totalWords * 0.15) // 15% for introduction
+      const conclusionWords = Math.floor(totalWords * 0.10) // 10% for conclusion
+      const bodyWords = totalWords - introWords - conclusionWords // Rest for body
+      
+      // Always generate introduction if not present or if explicitly present
+      if (hasIntroduction || !hasBody) {
         try {
-          const sectionContent = await generateSectionContent(
-            sectionInfo.type,
-            `Generate ${sectionInfo.title || sectionInfo.type} section content for: ${finalPrompt}`,
+          const introSection = documentStructure.sections.find(s => s.type === 'introduction')
+          const wordCount = introSection?.word_count_range?.[1] || introWords
+          const introContent = await generateSectionContent(
+            'introduction',
+            `Generate introduction section (${wordCount} words) for: ${finalPrompt}. This should introduce the topic, provide background, and present a thesis statement.`,
             documentStructure,
             finalPrompt
           )
-          generatedSections[sectionInfo.type] = stripMarkdownHeaders(sectionContent)
+          generatedSections['introduction'] = stripMarkdownHeaders(introContent)
         } catch (error: any) {
-          console.error(`Error generating ${sectionInfo.type} section:`, error)
-          // Continue with other sections
+          console.error('Error generating introduction section:', error)
+        }
+      }
+      
+      // Generate body content
+      // If multiple body sections exist, generate them all, otherwise generate one body
+      const bodySections = documentStructure.sections.filter(s => 
+        s.type === 'body' || s.type === 'methodology' || s.type === 'results' || s.type === 'discussion' || (!hasIntroduction && !hasConclusion && s.type !== 'references')
+      )
+      
+      if (bodySections.length > 0) {
+        for (const bodySection of bodySections) {
+          if (bodySection.type === 'references') continue
+          
+          try {
+            const wordCount = bodySection.word_count_range?.[1] || Math.floor(bodyWords / bodySections.length)
+            const bodyContent = await generateSectionContent(
+              bodySection.type === 'body' ? 'body' : bodySection.type,
+              `Generate ${bodySection.title || bodySection.type} section (${wordCount} words) for: ${finalPrompt}. This should develop the main arguments, provide evidence, and support the thesis.`,
+              documentStructure,
+              finalPrompt
+            )
+            generatedSections[bodySection.type] = stripMarkdownHeaders(bodyContent)
+          } catch (error: any) {
+            console.error(`Error generating ${bodySection.type} section:`, error)
+          }
+        }
+      } else {
+        // Generate a single body section if none explicitly identified
+        try {
+          const bodyContent = await generateSectionContent(
+            'body',
+            `Generate body section (${bodyWords} words) for: ${finalPrompt}. This should develop the main arguments, provide evidence, examples, and support the thesis statement.`,
+            documentStructure,
+            finalPrompt
+          )
+          generatedSections['body'] = stripMarkdownHeaders(bodyContent)
+        } catch (error: any) {
+          console.error('Error generating body section:', error)
+        }
+      }
+      
+      // Always generate conclusion if not present or if explicitly present
+      if (hasConclusion || !hasBody) {
+        try {
+          const conclusionSection = documentStructure.sections.find(s => s.type === 'conclusion')
+          const wordCount = conclusionSection?.word_count_range?.[1] || conclusionWords
+          const conclusionContent = await generateSectionContent(
+            'conclusion',
+            `Generate conclusion section (${wordCount} words) for: ${finalPrompt}. This should summarize the main points, restate the thesis, and provide final thoughts.`,
+            documentStructure,
+            finalPrompt
+          )
+          generatedSections['conclusion'] = stripMarkdownHeaders(conclusionContent)
+        } catch (error: any) {
+          console.error('Error generating conclusion section:', error)
+        }
+      }
+      
+      // Generate any other custom sections from the structure
+      const otherSections = documentStructure.sections.filter(s => 
+        !['introduction', 'body', 'conclusion', 'references', 'methodology', 'results', 'discussion'].includes(s.type)
+      )
+      
+      for (const otherSection of otherSections) {
+        try {
+          const wordCount = otherSection.word_count_range?.[1] || 300
+          const otherContent = await generateSectionContent(
+            otherSection.type,
+            `Generate ${otherSection.title || otherSection.type} section (${wordCount} words) for: ${finalPrompt}.`,
+            documentStructure,
+            finalPrompt
+          )
+          generatedSections[otherSection.type] = stripMarkdownHeaders(otherContent)
+        } catch (error: any) {
+          console.error(`Error generating ${otherSection.type} section:`, error)
         }
       }
       
       // Combine sections into full content with section markers
       // Format: [SECTION:type]content[/SECTION] to preserve section boundaries
+      // Order: introduction, body/methodology/results/discussion, conclusion, others
       const sectionMarkers: string[] = []
-      documentStructure.sections.forEach((sectionInfo: any) => {
-        if (sectionInfo.type === 'references') return
-        const sectionContent = generatedSections[sectionInfo.type]
-        if (sectionContent) {
-          sectionMarkers.push(`[SECTION:${sectionInfo.type}]${sectionContent}[/SECTION]`)
+      const sectionOrder = ['introduction', 'body', 'methodology', 'results', 'discussion', 'conclusion']
+      
+      // Add sections in order
+      for (const type of sectionOrder) {
+        if (generatedSections[type]) {
+          sectionMarkers.push(`[SECTION:${type}]${generatedSections[type]}[/SECTION]`)
         }
-      })
+      }
+      
+      // Add any other sections
+      for (const [type, content] of Object.entries(generatedSections)) {
+        if (!sectionOrder.includes(type) && type !== 'references') {
+          sectionMarkers.push(`[SECTION:${type}]${content}[/SECTION]`)
+        }
+      }
+      
       content = sectionMarkers.join('\n\n')
       
       // Clean up dashes in the middle of sentences (but preserve section markers)
