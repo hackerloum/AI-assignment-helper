@@ -428,18 +428,18 @@ async function appendContentToTemplate(
         })
       )
       
+      // Get font settings
+      const refFontFamily = data.font_family || 'Times New Roman'
+      const refFontSize = (data.font_size || 12) * 2 // Convert to half-points
+      const headingFontSize = ((data.font_size || 12) + 2) * 2 // Slightly larger for heading
+      
       referenceParagraphs.push(
         new Paragraph({
-          text: 'REFERENCES',
-          heading: HeadingLevel.HEADING_1,
+          children: [new TextRun({ text: 'REFERENCES', font: refFontFamily, size: headingFontSize, bold: true })],
           alignment: AlignmentType.CENTER,
           spacing: { before: 400, after: 400 },
         })
       )
-      
-      // Get font settings
-      const refFontFamily = data.font_family || 'Times New Roman'
-      const refFontSize = (data.font_size || 12) * 2 // Convert to half-points
       
       data.assignment_references.forEach((ref: any) => {
         const author = ref.authors || ref.author || 'Unknown'
