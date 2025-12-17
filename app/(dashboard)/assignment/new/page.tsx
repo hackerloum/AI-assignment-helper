@@ -298,6 +298,8 @@ export default function NewAssignmentPage() {
               question={assignmentData.coverPageData?.task || assignmentData.coverPageData?.question || ''}
               fontFamily={assignmentData.fontFamily || 'Times New Roman'}
               fontSize={assignmentData.fontSize || 12}
+              documentAnalysisId={assignmentData.documentAnalysisId}
+              templateId={assignmentData.templateId}
               onChange={(content, references, fontFamily, fontSize) => {
                 setAssignmentData({ ...assignmentData, content, references, fontFamily, fontSize })
               }}

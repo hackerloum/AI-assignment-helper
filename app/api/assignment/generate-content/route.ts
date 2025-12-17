@@ -639,37 +639,81 @@ CRITICAL RULES:
 - Include concrete, specific examples rather than vague generalizations
 - When the question relates to Tanzanian context, make it the primary focus`
 
-      // Call Gemini directly for full assignment generation
-      // Using slightly higher temperature (0.75) for more creative and context-aware responses
-      // Increased token limit to allow for comprehensive content with examples
-      const rawContent = await callGemini(
-        fullAssignmentPrompt,
-        systemInstruction,
-        0.75, // Slightly higher for better creativity while maintaining quality
-        Math.floor(targetWordCount * 2.5) // Allow more tokens for detailed content with examples
-      )
+      // Generate sections separately to ensure all sections are created with proper markers
+      const generatedSections: Record<string, string> = {}
       
-      // Strip markdown headers (double-check)
-      content = stripMarkdownHeaders(rawContent)
+      // Calculate word distribution
+      const introWords = Math.floor(targetWordCount * 0.15) // 15% for introduction
+      const conclusionWords = Math.floor(targetWordCount * 0.10) // 10% for conclusion
+      const bodyWords = targetWordCount - introWords - conclusionWords // Rest for body
       
-      // Ensure we have a complete assignment structure
-      // Remove any section headers that might have been added
-      content = content
-        .replace(/^#{1,6}\s+(Introduction|Body|Conclusion|Intro|Body Paragraphs?|Concluding?)\s*$/gmi, '')
-        .trim()
+      // Generate introduction
+      try {
+        const introPrompt = `${fullAssignmentPrompt}
+
+IMPORTANT: Generate ONLY the introduction section (approximately ${introWords} words). This should introduce the topic, provide background context, present a thesis statement, and preview what will be discussed. Do NOT include body or conclusion content.`
+        const introContent = await callGemini(
+          introPrompt,
+          systemInstruction,
+          0.75,
+          Math.floor(introWords * 2.5)
+        )
+        generatedSections['introduction'] = stripMarkdownHeaders(introContent)
+      } catch (error: any) {
+        console.error('Error generating introduction section:', error)
+      }
       
-      // Clean up dashes in the middle of sentences
-      // Replace em-dashes and en-dashes with commas or periods
-      content = content
-        // Replace em-dash (—) with comma and space
-        .replace(/—/g, ', ')
-        // Replace en-dash (–) with comma and space
-        .replace(/–/g, ', ')
-        // Replace dash-space patterns (likely mid-sentence dashes) with comma
-        .replace(/\s-\s/g, ', ')
-        // Fix double spaces that might result
-        .replace(/\s{2,}/g, ' ')
-        .trim()
+      // Generate body
+      try {
+        const bodyPrompt = `${fullAssignmentPrompt}
+
+IMPORTANT: Generate ONLY the body section (approximately ${bodyWords} words). This should develop the main arguments, provide evidence, examples, and support the thesis statement. Include multiple well-developed paragraphs. Do NOT include introduction or conclusion content.`
+        const bodyContent = await callGemini(
+          bodyPrompt,
+          systemInstruction,
+          0.75,
+          Math.floor(bodyWords * 2.5)
+        )
+        generatedSections['body'] = stripMarkdownHeaders(bodyContent)
+      } catch (error: any) {
+        console.error('Error generating body section:', error)
+      }
+      
+      // Generate conclusion
+      try {
+        const conclusionPrompt = `${fullAssignmentPrompt}
+
+IMPORTANT: Generate ONLY the conclusion section (approximately ${conclusionWords} words). This should summarize the main points, restate the thesis in different words, and provide final thoughts. Do NOT include introduction or body content.`
+        const conclusionContent = await callGemini(
+          conclusionPrompt,
+          systemInstruction,
+          0.75,
+          Math.floor(conclusionWords * 2.5)
+        )
+        generatedSections['conclusion'] = stripMarkdownHeaders(conclusionContent)
+      } catch (error: any) {
+        console.error('Error generating conclusion section:', error)
+      }
+      
+      // Combine sections with section markers for consistent parsing
+      const sectionMarkers: string[] = []
+      const sectionOrder = ['introduction', 'body', 'conclusion']
+      
+      for (const type of sectionOrder) {
+        if (generatedSections[type] && generatedSections[type].trim().length > 0) {
+          let sectionContent = generatedSections[type]
+          // Clean up dashes in the middle of sentences
+          sectionContent = sectionContent
+            .replace(/—/g, ', ')
+            .replace(/–/g, ', ')
+            .replace(/\s-\s/g, ', ')
+            .replace(/\s{2,}/g, ' ')
+            .trim()
+          sectionMarkers.push(`[SECTION:${type}]${sectionContent}[/SECTION]`)
+        }
+      }
+      
+      content = sectionMarkers.join('\n\n')
     }
 
     // Extract references from content (simple extraction - in production, use better method)

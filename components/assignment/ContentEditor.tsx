@@ -41,6 +41,8 @@ interface ContentEditorProps {
   question?: string // The assignment question/task
   fontFamily?: string // Font family (default: 'Times New Roman')
   fontSize?: number // Font size (default: 12)
+  documentAnalysisId?: string | null // For document analysis method
+  templateId?: string | null // For template method
   onChange: (content: string, references: Reference[], fontFamily?: string, fontSize?: number) => void
 }
 
@@ -51,6 +53,8 @@ export function ContentEditor({
   question,
   fontFamily: initialFontFamily = 'Times New Roman',
   fontSize: initialFontSize = 12,
+  documentAnalysisId,
+  templateId,
   onChange 
 }: ContentEditorProps) {
   const [sections, setSections] = useState<Section[]>([
@@ -130,6 +134,8 @@ export function ContentEditor({
           prompt: finalQuestion,
           assignment_type: assignmentType,
           wordCount: wordCount,
+          document_analysis_id: documentAnalysisId || undefined, // Pass document analysis ID if available
+          template_id: templateId || undefined, // Pass template ID if available
         }),
       })
 
