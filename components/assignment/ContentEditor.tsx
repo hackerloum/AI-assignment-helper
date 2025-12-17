@@ -70,35 +70,12 @@ export function ContentEditor({
   // Parse existing content into sections on mount
   useEffect(() => {
     if (content && !sections.some(s => s.content)) {
-      const lines = content.split('\n')
-      const parsedSections: Section[] = []
-      let currentSection: Section | null = null
-      
-      lines.forEach((line) => {
-        if (line.startsWith('## ')) {
-          if (currentSection) {
-            parsedSections.push(currentSection)
-          }
-          currentSection = {
-            id: Date.now().toString() + parsedSections.length,
-            title: line.replace('## ', '').trim(),
-            content: '',
-            order: parsedSections.length + 1,
-          }
-        } else if (currentSection) {
-          currentSection.content += (currentSection.content ? '\n' : '') + line
-        }
-      })
-      
-      if (currentSection) {
-        parsedSections.push(currentSection)
-      }
-      
+      const parsedSections = parseContentIntoSections(content)
       if (parsedSections.length > 0) {
         setSections(parsedSections)
       }
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync references
   useEffect(() => {
@@ -187,7 +164,106 @@ export function ContentEditor({
   }
 
   const parseContentIntoSections = (content: string): Section[] => {
-    // Split content into paragraphs
+    // First, check if content uses section markers: [SECTION:type]content[/SECTION]
+    const sectionMarkerRegex = /\[SECTION:(\w+)\]([\s\S]*?)\[\/SECTION\]/g
+    const sectionsMap = new Map<string, string>()
+    let match
+    
+    while ((match = sectionMarkerRegex.exec(content)) !== null) {
+      const sectionType = match[1].toLowerCase()
+      const sectionContent = match[2].trim()
+      sectionsMap.set(sectionType, sectionContent)
+    }
+    
+    // If section markers were found, use them to build sections
+    if (sectionsMap.size > 0) {
+      const parsedSections: Section[] = []
+      const sectionOrder = ['introduction', 'body', 'methodology', 'results', 'discussion', 'conclusion']
+      let order = 1
+      
+      // Add sections in order
+      for (const type of sectionOrder) {
+        if (sectionsMap.has(type)) {
+          const title = type.charAt(0).toUpperCase() + type.slice(1)
+          parsedSections.push({
+            id: order.toString(),
+            title: title,
+            content: sectionsMap.get(type) || '',
+            order: order++
+          })
+          sectionsMap.delete(type)
+        }
+      }
+      
+      // Add any remaining sections (custom sections not in standard order)
+      sectionsMap.forEach((content, type) => {
+        if (type !== 'references') {
+          const title = type.charAt(0).toUpperCase() + type.slice(1)
+          parsedSections.push({
+            id: order.toString(),
+            title: title,
+            content: content,
+            order: order++
+          })
+        }
+      })
+      
+      // Ensure we have at least Introduction, Body, Conclusion
+      const hasIntroduction = parsedSections.some(s => s.title.toLowerCase() === 'introduction')
+      const hasBody = parsedSections.some(s => s.title.toLowerCase() === 'body')
+      const hasConclusion = parsedSections.some(s => s.title.toLowerCase() === 'conclusion')
+      
+      if (!hasIntroduction) {
+        parsedSections.unshift({ id: '1', title: 'Introduction', content: '', order: 1 })
+        parsedSections.forEach((s, i) => { s.order = i + 1; s.id = (i + 1).toString() })
+      }
+      if (!hasBody) {
+        const conclusionIndex = parsedSections.findIndex(s => s.title.toLowerCase() === 'conclusion')
+        const bodyIndex = conclusionIndex >= 0 ? conclusionIndex : parsedSections.length
+        parsedSections.splice(bodyIndex, 0, { id: (bodyIndex + 1).toString(), title: 'Body', content: '', order: bodyIndex + 1 })
+        parsedSections.forEach((s, i) => { s.order = i + 1; s.id = (i + 1).toString() })
+      }
+      if (!hasConclusion) {
+        parsedSections.push({ id: parsedSections.length.toString(), title: 'Conclusion', content: '', order: parsedSections.length + 1 })
+      }
+      
+      return parsedSections.length > 0 ? parsedSections : [
+        { id: '1', title: 'Introduction', content: '', order: 1 },
+        { id: '2', title: 'Body', content: '', order: 2 },
+        { id: '3', title: 'Conclusion', content: '', order: 3 },
+      ]
+    }
+    
+    // Fallback: Try parsing markdown headers (## Section Title)
+    const lines = content.split('\n')
+    const headerSections: Section[] = []
+    let currentSection: Section | null = null
+    
+    lines.forEach((line) => {
+      if (line.startsWith('## ')) {
+        if (currentSection) {
+          headerSections.push(currentSection)
+        }
+        currentSection = {
+          id: (headerSections.length + 1).toString(),
+          title: line.replace('## ', '').trim(),
+          content: '',
+          order: headerSections.length + 1,
+        }
+      } else if (currentSection) {
+        currentSection.content += (currentSection.content ? '\n' : '') + line
+      }
+    })
+    
+    if (currentSection) {
+      headerSections.push(currentSection)
+    }
+    
+    if (headerSections.length > 0) {
+      return headerSections
+    }
+    
+    // Final fallback: Heuristic parsing by paragraphs
     const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0)
     
     if (paragraphs.length === 0) {

@@ -310,92 +310,92 @@ CRITICAL RULES:
       // Generate full assignment using structure-aware generation
       const generatedSections: Record<string, string> = {}
       
-      // Identify which standard sections exist in the structure
+      // Identify which standard sections exist in the structure (for reference only)
       const hasIntroduction = documentStructure.sections.some(s => s.type === 'introduction')
       const hasBody = documentStructure.sections.some(s => s.type === 'body')
       const hasConclusion = documentStructure.sections.some(s => s.type === 'conclusion')
       
-      // Calculate word distribution if needed
+      // Calculate word distribution
       const totalWords = targetWordCount
       const introWords = Math.floor(totalWords * 0.15) // 15% for introduction
       const conclusionWords = Math.floor(totalWords * 0.10) // 10% for conclusion
       const bodyWords = totalWords - introWords - conclusionWords // Rest for body
       
-      // Always generate introduction if not present or if explicitly present
-      if (hasIntroduction || !hasBody) {
-        try {
-          const introSection = documentStructure.sections.find(s => s.type === 'introduction')
-          const wordCount = introSection?.word_count_range?.[1] || introWords
-          const introContent = await generateSectionContent(
-            'introduction',
-            `Generate introduction section (${wordCount} words) for: ${finalPrompt}. This should introduce the topic, provide background, and present a thesis statement.`,
-            documentStructure,
-            finalPrompt
-          )
-          generatedSections['introduction'] = stripMarkdownHeaders(introContent)
-        } catch (error: any) {
-          console.error('Error generating introduction section:', error)
-        }
+      // ALWAYS generate introduction (required section)
+      try {
+        const introSection = documentStructure.sections.find(s => s.type === 'introduction')
+        const wordCount = introSection?.word_count_range?.[1] || introWords
+        const introContent = await generateSectionContent(
+          'introduction',
+          `Generate introduction section (${wordCount} words) for: ${finalPrompt}. This should introduce the topic, provide background, and present a thesis statement.`,
+          documentStructure,
+          finalPrompt
+        )
+        generatedSections['introduction'] = stripMarkdownHeaders(introContent)
+      } catch (error: any) {
+        console.error('Error generating introduction section:', error)
       }
       
-      // Generate body content
-      // If multiple body sections exist, generate them all, otherwise generate one body
-      const bodySections = documentStructure.sections.filter((s: any) => {
+      // ALWAYS generate body content (required section)
+      // First, check if structure has specific body-related sections (methodology, results, discussion)
+      const additionalBodySections = documentStructure.sections.filter((s: any) => {
         const sectionType = s.type.toLowerCase()
-        return sectionType === 'body' || 
-               sectionType === 'methodology' || 
-               sectionType === 'results' || 
-               sectionType === 'discussion' || 
-               (!hasIntroduction && !hasConclusion && sectionType !== 'references')
+        return (sectionType === 'methodology' || 
+                sectionType === 'results' || 
+                sectionType === 'discussion') &&
+               sectionType !== 'body'
       })
       
-      if (bodySections.length > 0) {
-        for (const bodySection of bodySections) {
-          if (bodySection.type === 'references') continue
-          
+      // Calculate word distribution: if we have additional sections, split body words
+      let bodyWordCount = bodyWords
+      if (additionalBodySections.length > 0) {
+        // Allocate 70% to main body, 30% split among additional sections
+        bodyWordCount = Math.floor(bodyWords * 0.7)
+        const additionalWordsPerSection = Math.floor((bodyWords * 0.3) / additionalBodySections.length)
+        
+        // Generate additional body sections (methodology, results, discussion, etc.)
+        for (const bodySection of additionalBodySections) {
           try {
-            const wordCount = bodySection.word_count_range?.[1] || Math.floor(bodyWords / bodySections.length)
-            const bodyContent = await generateSectionContent(
-              bodySection.type === 'body' ? 'body' : bodySection.type,
+            const wordCount = bodySection.word_count_range?.[1] || additionalWordsPerSection
+            const sectionContent = await generateSectionContent(
+              bodySection.type,
               `Generate ${bodySection.title || bodySection.type} section (${wordCount} words) for: ${finalPrompt}. This should develop the main arguments, provide evidence, and support the thesis.`,
               documentStructure,
               finalPrompt
             )
-            generatedSections[bodySection.type] = stripMarkdownHeaders(bodyContent)
+            generatedSections[bodySection.type] = stripMarkdownHeaders(sectionContent)
           } catch (error: any) {
             console.error(`Error generating ${bodySection.type} section:`, error)
           }
         }
-      } else {
-        // Generate a single body section if none explicitly identified
-        try {
-          const bodyContent = await generateSectionContent(
-            'body',
-            `Generate body section (${bodyWords} words) for: ${finalPrompt}. This should develop the main arguments, provide evidence, examples, and support the thesis statement.`,
-            documentStructure,
-            finalPrompt
-          )
-          generatedSections['body'] = stripMarkdownHeaders(bodyContent)
-        } catch (error: any) {
-          console.error('Error generating body section:', error)
-        }
       }
       
-      // Always generate conclusion if not present or if explicitly present
-      if (hasConclusion || !hasBody) {
-        try {
-          const conclusionSection = documentStructure.sections.find(s => s.type === 'conclusion')
-          const wordCount = conclusionSection?.word_count_range?.[1] || conclusionWords
-          const conclusionContent = await generateSectionContent(
-            'conclusion',
-            `Generate conclusion section (${wordCount} words) for: ${finalPrompt}. This should summarize the main points, restate the thesis, and provide final thoughts.`,
-            documentStructure,
-            finalPrompt
-          )
-          generatedSections['conclusion'] = stripMarkdownHeaders(conclusionContent)
-        } catch (error: any) {
-          console.error('Error generating conclusion section:', error)
-        }
+      // ALWAYS generate main body section (required)
+      try {
+        const bodyContent = await generateSectionContent(
+          'body',
+          `Generate body section (${bodyWordCount} words) for: ${finalPrompt}. This should develop the main arguments, provide evidence, examples, and support the thesis statement.`,
+          documentStructure,
+          finalPrompt
+        )
+        generatedSections['body'] = stripMarkdownHeaders(bodyContent)
+      } catch (error: any) {
+        console.error('Error generating body section:', error)
+      }
+      
+      // ALWAYS generate conclusion (required section)
+      try {
+        const conclusionSection = documentStructure.sections.find(s => s.type === 'conclusion')
+        const wordCount = conclusionSection?.word_count_range?.[1] || conclusionWords
+        const conclusionContent = await generateSectionContent(
+          'conclusion',
+          `Generate conclusion section (${wordCount} words) for: ${finalPrompt}. This should summarize the main points, restate the thesis, and provide final thoughts.`,
+          documentStructure,
+          finalPrompt
+        )
+        generatedSections['conclusion'] = stripMarkdownHeaders(conclusionContent)
+      } catch (error: any) {
+        console.error('Error generating conclusion section:', error)
       }
       
       // Generate any other custom sections from the structure
